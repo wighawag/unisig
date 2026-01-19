@@ -153,6 +153,22 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
     return this.scope.itemDep(collection, id)
   }
 
+  /**
+   * Get or create a property dependency for a key.
+   * Returns null if no adapter is set.
+   */
+  propDep(key: string, prop: string): Dependency | null {
+    return this.scope.propDep(key, prop)
+  }
+
+  /**
+   * Get or create a property dependency for a specific item.
+   * Returns null if no adapter is set.
+   */
+  itemPropDep(collection: string, id: string | number, prop: string): Dependency | null {
+    return this.scope.itemPropDep(collection, id, prop)
+  }
+
   // ============ TRACKING (for reads) ============
 
   /**
@@ -168,12 +184,35 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
   /**
    * Track a read operation for a specific item.
    * Also tracks the collection for removal detection.
-   * 
+   *
    * @param collection - Name of the collection
    * @param id - Item identifier
    */
   trackItem(collection: string, id: string | number): void {
     this.scope.trackItem(collection, id)
+  }
+
+  /**
+   * Track a read operation for a specific property of a key.
+   * Also tracks the key itself.
+   *
+   * @param key - The dependency key
+   * @param prop - The property name
+   */
+  trackProp(key: string, prop: string): void {
+    this.scope.trackProp(key, prop)
+  }
+
+  /**
+   * Track a read operation for a specific property of an item.
+   * Also tracks the item and collection.
+   *
+   * @param collection - Name of the collection
+   * @param id - Item identifier
+   * @param prop - The property name
+   */
+  trackItemProp(collection: string, id: string | number, prop: string): void {
+    this.scope.trackItemProp(collection, id, prop)
   }
 
   // ============ TRIGGERING (for writes) ============
@@ -195,7 +234,8 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
   /**
    * Trigger a change for a specific item and optionally emit an event.
    * Does NOT trigger the collection - use triggerList() for that.
-   * 
+   * Also notifies all property watchers for this item.
+   *
    * @param collection - Name of the collection
    * @param id - Item identifier
    * @param event - Optional event to emit
@@ -208,6 +248,50 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
     data?: Events[K]
   ): void {
     this.scope.triggerItem(collection, id)
+    if (event !== undefined) {
+      (this.emitter as any).emit(event, data)
+    }
+  }
+
+  /**
+   * Trigger a change for a specific property of a key and optionally emit an event.
+   * Does NOT trigger the key itself - use trigger() for that.
+   *
+   * @param key - The dependency key
+   * @param prop - The property that changed
+   * @param event - Optional event to emit
+   * @param data - Optional event data
+   */
+  triggerProp<K extends keyof Events>(
+    key: string,
+    prop: string,
+    event?: K,
+    data?: Events[K]
+  ): void {
+    this.scope.triggerProp(key, prop)
+    if (event !== undefined) {
+      (this.emitter as any).emit(event, data)
+    }
+  }
+
+  /**
+   * Trigger a change for a specific property of an item and optionally emit an event.
+   * Does NOT trigger the item or collection.
+   *
+   * @param collection - Name of the collection
+   * @param id - Item identifier
+   * @param prop - The property that changed
+   * @param event - Optional event to emit
+   * @param data - Optional event data
+   */
+  triggerItemProp<K extends keyof Events>(
+    collection: string,
+    id: string | number,
+    prop: string,
+    event?: K,
+    data?: Events[K]
+  ): void {
+    this.scope.triggerItemProp(collection, id, prop)
     if (event !== undefined) {
       (this.emitter as any).emit(event, data)
     }
@@ -273,6 +357,49 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
    */
   emit<K extends keyof Events>(event: K, data: Events[K]): void {
     (this.emitter as any).emit(event, data)
+  }
+
+  // ============ AUTO-TRACKING PROXIES ============
+
+  /**
+   * Create a proxy that auto-tracks property reads and auto-triggers property writes.
+   *
+   * @param target - The object to wrap
+   * @param key - The dependency key for this object
+   * @returns A proxy that automatically tracks/triggers
+   *
+   * @example
+   * ```ts
+   * getConfig() {
+   *   this.$.track('config')
+   *   return this.$.proxy(this.config, 'config')
+   * }
+   * ```
+   */
+  proxy<T extends object>(target: T, key: string): T {
+    return this.scope.proxy(target, key)
+  }
+
+  /**
+   * Create a proxy for a collection item that auto-tracks property reads
+   * and auto-triggers property writes.
+   *
+   * @param target - The object to wrap
+   * @param collection - The collection name
+   * @param id - The item id
+   * @returns A proxy that automatically tracks/triggers
+   *
+   * @example
+   * ```ts
+   * getUser(id: string) {
+   *   this.$.trackItem('users', id)
+   *   const user = this.users.get(id)
+   *   return user ? this.$.itemProxy(user, 'users', id) : undefined
+   * }
+   * ```
+   */
+  itemProxy<T extends object>(target: T, collection: string, id: string | number): T {
+    return this.scope.itemProxy(target, collection, id)
   }
 
   // ============ CLEANUP ============

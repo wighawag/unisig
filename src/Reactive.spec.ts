@@ -381,4 +381,218 @@ describe('Reactive', () => {
       expect(removedListener).toHaveBeenCalledWith('1')
     })
   })
+
+  describe('Property tracking', () => {
+    describe('trackProp()', () => {
+      it('should track property and key', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        r.trackProp('config', 'theme')
+
+        expect(adapter.deps).toHaveLength(2)
+        expect(adapter.deps[0].depend).toHaveBeenCalledTimes(1)
+        expect(adapter.deps[1].depend).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    describe('trackItemProp()', () => {
+      it('should track property, item, and collection', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        r.trackItemProp('items', '1', 'value')
+
+        expect(adapter.deps).toHaveLength(3)
+      })
+    })
+
+    describe('triggerProp()', () => {
+      it('should notify property signal', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        r.propDep('config', 'theme')
+        r.triggerProp('config', 'theme')
+
+        expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1)
+      })
+
+      it('should emit event if provided', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+        const listener = vi.fn()
+
+        r.on('item:added', listener)
+        r.triggerProp('config', 'theme', 'item:added', { id: '1', value: 42 })
+
+        expect(listener).toHaveBeenCalledWith({ id: '1', value: 42 })
+      })
+    })
+
+    describe('triggerItemProp()', () => {
+      it('should notify property signal', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        r.itemPropDep('items', '1', 'value')
+        r.triggerItemProp('items', '1', 'value')
+
+        expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1)
+      })
+
+      it('should emit event if provided', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+        const listener = vi.fn()
+
+        r.on('item:added', listener)
+        r.triggerItemProp('items', '1', 'value', 'item:added', { id: '1', value: 42 })
+
+        expect(listener).toHaveBeenCalledWith({ id: '1', value: 42 })
+      })
+    })
+  })
+
+  describe('Auto-tracking proxies', () => {
+    describe('proxy()', () => {
+      it('should auto-track property reads', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        const obj = { theme: 'dark' }
+        const proxied = r.proxy(obj, 'config')
+
+        void proxied.theme
+
+        expect(adapter.deps.length).toBeGreaterThan(0)
+        expect(adapter.deps[0].depend).toHaveBeenCalled()
+      })
+
+      it('should auto-trigger property writes', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        const obj = { theme: 'dark' }
+        const proxied = r.proxy(obj, 'config')
+
+        r.propDep('config', 'theme')
+        proxied.theme = 'light'
+
+        expect(adapter.deps[0].notify).toHaveBeenCalled()
+      })
+    })
+
+    describe('itemProxy()', () => {
+      it('should auto-track property reads', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        const item = { id: '1', value: 42 }
+        const proxied = r.itemProxy(item, 'items', '1')
+
+        void proxied.value
+
+        expect(adapter.deps.length).toBeGreaterThan(0)
+      })
+
+      it('should auto-trigger property writes', () => {
+        const adapter = createMockAdapter()
+        const r = new Reactive<TestEvents>(adapter)
+
+        const item = { id: '1', value: 42 }
+        const proxied = r.itemProxy(item, 'items', '1')
+
+        r.itemPropDep('items', '1', 'value')
+        proxied.value = 100
+
+        expect(adapter.deps[0].notify).toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('Integration: Store with property-level reactivity', () => {
+    it('should support granular property updates', () => {
+      type PlayerEvents = {
+        'player:scored': { id: string; score: number }
+        'player:renamed': { id: string; name: string }
+      }
+
+      class PlayerStore {
+        private $ = new Reactive<PlayerEvents>()
+        private players = new Map<string, { id: string; name: string; score: number }>()
+
+        setAdapter(adapter: ReactivityAdapter) {
+          this.$.setAdapter(adapter)
+        }
+
+        on: typeof this.$.on = (e, l) => this.$.on(e, l)
+
+        // Get player with auto-tracking proxy
+        get(id: string) {
+          this.$.trackItem('players', id)
+          const player = this.players.get(id)
+          return player ? this.$.itemProxy(player, 'players', id) : undefined
+        }
+
+        // Get only the score (granular tracking)
+        getScore(id: string) {
+          this.$.trackItemProp('players', id, 'score')
+          return this.players.get(id)?.score
+        }
+
+        add(player: { id: string; name: string; score: number }) {
+          this.players.set(player.id, player)
+          this.$.triggerList('players')
+        }
+
+        // Update only score - triggers only score watchers
+        updateScore(id: string, score: number) {
+          const player = this.players.get(id)
+          if (!player) return
+          player.score = score
+          this.$.triggerItemProp('players', id, 'score', 'player:scored', { id, score })
+        }
+
+        // Update only name - triggers only name watchers
+        updateName(id: string, name: string) {
+          const player = this.players.get(id)
+          if (!player) return
+          player.name = name
+          this.$.triggerItemProp('players', id, 'name', 'player:renamed', { id, name })
+        }
+      }
+
+      const adapter = createMockAdapter()
+      const store = new PlayerStore()
+      store.setAdapter(adapter)
+
+      const scoreListener = vi.fn()
+      const nameListener = vi.fn()
+
+      store.on('player:scored', scoreListener)
+      store.on('player:renamed', nameListener)
+
+      // Add a player
+      store.add({ id: '1', name: 'Alice', score: 0 })
+
+      // Track only score
+      store.getScore('1')
+      const scoreDep = adapter.deps[0] // First dep created for score prop
+
+      // Track full player (creates more deps)
+      store.get('1')
+
+      // Update score - should trigger score dep
+      store.updateScore('1', 100)
+      expect(scoreListener).toHaveBeenCalledWith({ id: '1', score: 100 })
+      expect(scoreDep.notify).toHaveBeenCalled()
+
+      // Update name - should NOT trigger score dep again
+      const scoreNotifyCount = scoreDep.notify.mock.calls.length
+      store.updateName('1', 'Bob')
+      expect(nameListener).toHaveBeenCalledWith({ id: '1', name: 'Bob' })
+      expect(scoreDep.notify.mock.calls.length).toBe(scoreNotifyCount) // No new calls
+    })
+  })
 })

@@ -413,17 +413,27 @@ $.emit(event, data)        // Emit event only (no signal)
 // Tracking (for reads)
 $.track(key)               // Track dependency by key
 $.trackItem(collection, id) // Track specific item + collection
+$.trackProp(key, prop)     // Track specific property of a key
+$.trackItemProp(collection, id, prop) // Track specific property of an item
 
 // Triggering (for writes)
 $.trigger(key, event?, data?)           // Notify + emit
-$.triggerItem(collection, id, event?, data?)  // Notify item
+$.triggerItem(collection, id, event?, data?)  // Notify item + all its props
 $.triggerList(collection, event?, data?)      // Notify list
 $.triggerAdd(collection, event?, data?)       // Alias for triggerList
 $.triggerRemove(collection, id, event?, data?) // Notify item + list + cleanup
+$.triggerProp(key, prop, event?, data?)       // Notify property only
+$.triggerItemProp(collection, id, prop, event?, data?) // Notify item property only
+
+// Auto-tracking proxies
+$.proxy(target, key)       // Create auto-tracking proxy for an object
+$.itemProxy(target, collection, id) // Create auto-tracking proxy for a collection item
 
 // Direct access
 $.dep(key)                 // Get/create dependency
 $.itemDep(collection, id)  // Get/create item dependency
+$.propDep(key, prop)       // Get/create property dependency
+$.itemPropDep(collection, id, prop) // Get/create item property dependency
 $.clear()                  // Clear all dependencies
 ```
 
@@ -567,6 +577,145 @@ createEffect(() => {
 });
 
 store.updateScore("1", 100); // Only first effect runs!
+```
+
+## Property-Level Reactivity
+
+For even finer control, track individual properties of items:
+
+```typescript
+class PlayerStore {
+  private $ = new Reactive<PlayerEvents>();
+  private players = new Map<string, { id: string; name: string; score: number }>();
+
+  // Only re-runs when THIS player's score changes
+  getScore(id: string) {
+    this.$.trackItemProp("players", id, "score");
+    return this.players.get(id)?.score;
+  }
+
+  // Only re-runs when THIS player's name changes
+  getName(id: string) {
+    this.$.trackItemProp("players", id, "name");
+    return this.players.get(id)?.name;
+  }
+
+  // Only notifies score watchers, not name watchers
+  updateScore(id: string, score: number) {
+    const player = this.players.get(id);
+    if (!player) return;
+    player.score = score;
+    this.$.triggerItemProp("players", id, "score", "player:scored", { id, score });
+  }
+
+  // Only notifies name watchers, not score watchers
+  updateName(id: string, name: string) {
+    const player = this.players.get(id);
+    if (!player) return;
+    player.name = name;
+    this.$.triggerItemProp("players", id, "name");
+  }
+}
+
+// In Solid.js:
+createEffect(() => {
+  console.log("Score:", store.getScore("1")); // Only re-runs on score change
+});
+
+createEffect(() => {
+  console.log("Name:", store.getName("1")); // Only re-runs on name change
+});
+
+store.updateScore("1", 100); // Only first effect runs!
+store.updateName("1", "Bob"); // Only second effect runs!
+```
+
+## Auto-Tracking with Proxies
+
+For automatic property tracking without manual `trackProp`/`triggerProp` calls, use the proxy helpers:
+
+```typescript
+class PlayerStore {
+  private $ = new Reactive<PlayerEvents>();
+  private players = new Map<string, { id: string; name: string; score: number }>();
+
+  setAdapter(adapter: ReactivityAdapter) {
+    this.$.setAdapter(adapter);
+  }
+
+  // Returns a proxy that auto-tracks property reads
+  getPlayer(id: string) {
+    this.$.trackItem("players", id);
+    const player = this.players.get(id);
+    return player ? this.$.itemProxy(player, "players", id) : undefined;
+  }
+
+  add(player: { id: string; name: string; score: number }) {
+    this.players.set(player.id, player);
+    this.$.triggerList("players");
+  }
+}
+
+// Usage in Solid.js:
+createEffect(() => {
+  const player = store.getPlayer("1");
+  console.log("Score:", player?.score); // Auto-tracks 'players:1:score'
+});
+
+createEffect(() => {
+  const player = store.getPlayer("1");
+  console.log("Name:", player?.name); // Auto-tracks 'players:1:name'
+});
+
+// Can even modify through the proxy:
+const player = store.getPlayer("1");
+if (player) {
+  player.score = 100; // Auto-triggers 'players:1:score'
+}
+```
+
+### How Proxies Work
+
+The proxy intercepts property access:
+
+- **Read**: When you read `player.score`, it calls `trackItemProp('players', '1', 'score')`
+- **Write**: When you write `player.score = 100`, it calls `triggerItemProp('players', '1', 'score')`
+
+This gives you automatic fine-grained reactivity without manual tracking calls.
+
+### Proxy for Non-Collection Objects
+
+Use `proxy()` for single objects (not in collections):
+
+```typescript
+class ConfigStore {
+  private $ = new Reactive<ConfigEvents>();
+  private config = { theme: "dark", language: "en", fontSize: 14 };
+
+  setAdapter(adapter: ReactivityAdapter) {
+    this.$.setAdapter(adapter);
+  }
+
+  // Returns a proxy that auto-tracks property reads
+  getConfig() {
+    this.$.track("config");
+    return this.$.proxy(this.config, "config");
+  }
+}
+
+// Usage:
+createEffect(() => {
+  const config = store.getConfig();
+  console.log("Theme:", config.theme); // Only re-runs when theme changes
+});
+
+createEffect(() => {
+  const config = store.getConfig();
+  console.log("Font:", config.fontSize); // Only re-runs when fontSize changes
+});
+
+// Modify through proxy:
+store.getConfig().theme = "light"; // Only first effect re-runs
 ```
 
 ## TypeScript
