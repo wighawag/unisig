@@ -1,6 +1,6 @@
 # unisig
 
-**Universal signals** — add reactivity to any class with pluggable signal adapters and built-in events.
+**Universal signals** — add reactivity to any data with pluggable signal adapters and built-in events.
 
 **Zero dependencies.** Works with any signal library (Solid.js, Preact Signals, Vue, MobX, Svelte, etc.) or just events.
 
@@ -14,13 +14,13 @@ Without signals, you manually tell the UI to update:
 
 ```typescript
 // Manual approach - tedious and error-prone
-let count = 0
+let count = 0;
 
 function increment() {
-  count++
-  updateCountDisplay()    // Must remember to call this!
-  updateTotalDisplay()    // And this!
-  updateButtonState()     // And this!
+  count++;
+  updateCountDisplay(); // Must remember to call this!
+  updateTotalDisplay(); // And this!
+  updateButtonState(); // And this!
 }
 ```
 
@@ -32,14 +32,14 @@ Signals **automatically track** what depends on what, then update only what's ne
 
 ```typescript
 // With signals - automatic updates
-const count = signal(0)
+const count = signal(0);
 
 // This "effect" automatically re-runs when count changes
 effect(() => {
-  console.log('Count is:', count.value)  // Reading creates a dependency
-})
+  console.log("Count is:", count.value); // Reading creates a dependency
+});
 
-count.value++  // Effect automatically re-runs!
+count.value++; // Effect automatically re-runs!
 ```
 
 **Magic**: The effect re-ran without you telling it to. How?
@@ -75,6 +75,7 @@ Every signal library works the same way internally:
 ```
 
 **That's it!** Every signal library does these two things:
+
 - **depend()**: "Remember that this effect needs me"
 - **notify()**: "Tell all effects that need me to re-run"
 
@@ -85,36 +86,37 @@ This is the clever trick: **there's a global "current effect" variable**.
 ```typescript
 // Simplified internals of any signal library:
 
-let currentEffect: Function | null = null  // ← Global tracker!
+let currentEffect: Function | null = null; // ← Global tracker!
 
 function effect(fn) {
-  currentEffect = fn        // Step 1: Set "I'm the current effect"
-  fn()                       // Step 2: Run the function (which reads signals)
-  currentEffect = null      // Step 3: Clear it
+  currentEffect = fn; // Step 1: Set "I'm the current effect"
+  fn(); // Step 2: Run the function (which reads signals)
+  currentEffect = null; // Step 3: Clear it
 }
 
 function createSignal(initial) {
-  let value = initial
-  const subscribers = new Set()  // Effects that depend on this signal
-  
+  let value = initial;
+  const subscribers = new Set(); // Effects that depend on this signal
+
   return {
     get value() {
       // When READ: record whoever is currently running
       if (currentEffect) {
-        subscribers.add(currentEffect)  // ← This is depend()!
+        subscribers.add(currentEffect); // ← This is depend()!
       }
-      return value
+      return value;
     },
     set value(newVal) {
-      value = newVal
+      value = newVal;
       // When WRITTEN: re-run all recorded effects
-      subscribers.forEach(fn => fn())   // ← This is notify()!
-    }
-  }
+      subscribers.forEach((fn) => fn()); // ← This is notify()!
+    },
+  };
 }
 ```
 
 **The flow:**
+
 ```
 1. effect(() => { ... })     →  Sets currentEffect = thisEffect
 2.   count.value             →  count sees currentEffect, adds it to subscribers
@@ -128,13 +130,13 @@ This is why signals only work inside effects/computeds — outside of them, `cur
 
 Every signal library has `depend()` and `notify()` — they just call them different things:
 
-| Library | depend() equivalent | notify() equivalent |
-|---------|---------------------|---------------------|
-| Solid.js | Read a signal: `sig()` | Write a signal: `setSig()` |
-| Preact | Read: `sig.value` | Write: `sig.value = x` |
-| Vue | Read: `ref.value` | Write: `ref.value = x` or `triggerRef()` |
-| MobX | Read: `obs.prop` | Write: `obs.prop = x` |
-| Svelte 5 | Read a rune: `$state` getter | Write: `$state` setter |
+| Library  | depend() equivalent          | notify() equivalent                      |
+| -------- | ---------------------------- | ---------------------------------------- |
+| Solid.js | Read a signal: `sig()`       | Write a signal: `setSig()`               |
+| Preact   | Read: `sig.value`            | Write: `sig.value = x`                   |
+| Vue      | Read: `ref.value`            | Write: `ref.value = x` or `triggerRef()` |
+| MobX     | Read: `obs.prop`             | Write: `obs.prop = x`                    |
+| Svelte 5 | Read a rune: `$state` getter | Write: `$state` setter                   |
 
 An **adapter** simply maps these library-specific APIs to our generic interface:
 
@@ -142,24 +144,24 @@ An **adapter** simply maps these library-specific APIs to our generic interface:
 // Solid.js adapter
 const solidAdapter = {
   create: () => {
-    const [track, trigger] = createSignal(undefined)
+    const [track, trigger] = createSignal(undefined);
     return {
-      depend: () => track(),    // Reading = depend
-      notify: () => trigger()   // Writing = notify
-    }
-  }
-}
+      depend: () => track(), // Reading = depend
+      notify: () => trigger(), // Writing = notify
+    };
+  },
+};
 
 // Preact adapter
 const preactAdapter = {
   create: () => {
-    const sig = signal(0)
+    const sig = signal(0);
     return {
-      depend: () => sig.value,  // Reading = depend
-      notify: () => sig.value++ // Writing = notify
-    }
-  }
-}
+      depend: () => sig.value, // Reading = depend
+      notify: () => sig.value++, // Writing = notify
+    };
+  },
+};
 ```
 
 **The adapter is just a translator** between this library's generic `depend()`/`notify()` and your signal library's specific API.
@@ -170,24 +172,26 @@ Signals require a "reactive scope" (an effect, computed, etc.) to work. Outside 
 
 ```typescript
 // This WON'T work - not inside an effect
-const users = store.getAll()  // track() does nothing outside reactive scope
+const users = store.getAll(); // track() does nothing outside reactive scope
 ```
 
 **Events always work**, regardless of context:
 
 ```typescript
 // This ALWAYS works
-store.on('user:added', (user) => {
-  console.log('Added:', user)  // Fires every time, no matter where you call it
-})
+store.on("user:added", (user) => {
+  console.log("Added:", user); // Fires every time, no matter where you call it
+});
 ```
 
 **Use events when:**
+
 - Working in plain JavaScript (no framework)
 - Doing one-time operations (API calls, logging)
 - Framework hasn't set up reactive scope yet
 
 **Use signals when:**
+
 - Inside a framework's reactive system (Solid's `createEffect`, Vue's `watchEffect`, etc.)
 - You want automatic, fine-grained updates
 
@@ -202,47 +206,47 @@ npm install unisig
 ## Quick Start
 
 ```typescript
-import { Reactive } from 'unisig'
+import { Reactive } from "unisig";
 
 // Define your events (use `type`, not `interface`)
 type MyEvents = {
-  'user:added': { id: string; name: string }
-  'user:removed': string
-}
+  "user:added": { id: string; name: string };
+  "user:removed": string;
+};
 
 class UserStore {
   // Add reactivity with one line
-  private $ = new Reactive<MyEvents>()
-  private users = new Map<string, { id: string; name: string }>()
+  private $ = new Reactive<MyEvents>();
+  private users = new Map<string, { id: string; name: string }>();
 
   // Expose event subscription
-  on: typeof this.$.on = (e, l) => this.$.on(e, l)
+  on: typeof this.$.on = (e, l) => this.$.on(e, l);
 
   // Optional: enable signal-based reactivity
   setReactivityAdapter(adapter: ReactivityAdapter) {
-    this.$.setAdapter(adapter)
+    this.$.setAdapter(adapter);
   }
 
   // READ methods: call track()
   getAll() {
-    this.$.track('users')
-    return [...this.users.values()]
+    this.$.track("users");
+    return [...this.users.values()];
   }
 
   get(id: string) {
-    this.$.trackItem('users', id)
-    return this.users.get(id)
+    this.$.trackItem("users", id);
+    return this.users.get(id);
   }
 
   // WRITE methods: call trigger() with optional event
   add(user: { id: string; name: string }) {
-    this.users.set(user.id, user)
-    this.$.triggerAdd('users', 'user:added', user)
+    this.users.set(user.id, user);
+    this.$.triggerAdd("users", "user:added", user);
   }
 
   remove(id: string) {
-    this.users.delete(id)
-    this.$.triggerRemove('users', id, 'user:removed', id)
+    this.users.delete(id);
+    this.$.triggerRemove("users", id, "user:removed", id);
   }
 }
 ```
@@ -253,135 +257,137 @@ The library works with any data structure. Here's an example using arrays:
 
 ```typescript
 type TodoEvents = {
-  'todo:added': { id: string; text: string }
-  'todo:toggled': { id: string; done: boolean }
-  'todo:removed': string
-}
+  "todo:added": { id: string; text: string };
+  "todo:toggled": { id: string; done: boolean };
+  "todo:removed": string;
+};
 
 class TodoStore {
-  private $ = new Reactive<TodoEvents>()
-  private todos: Array<{ id: string; text: string; done: boolean }> = []
+  private $ = new Reactive<TodoEvents>();
+  private todos: Array<{ id: string; text: string; done: boolean }> = [];
 
-  on: typeof this.$.on = (e, l) => this.$.on(e, l)
-  setReactivityAdapter(a: ReactivityAdapter) { this.$.setAdapter(a) }
+  on: typeof this.$.on = (e, l) => this.$.on(e, l);
+  setReactivityAdapter(a: ReactivityAdapter) {
+    this.$.setAdapter(a);
+  }
 
   // Get all todos
   getAll() {
-    this.$.track('todos')
-    return this.todos
+    this.$.track("todos");
+    return this.todos;
   }
 
   // Get single todo by ID (granular tracking)
   getById(id: string) {
-    this.$.trackItem('todos', id)
-    return this.todos.find(t => t.id === id)
+    this.$.trackItem("todos", id);
+    return this.todos.find((t) => t.id === id);
   }
 
   // Get by index - tracks BOTH list (for reordering) and item (for changes)
   // Note: This re-runs on ANY list change, not just this index
   getByIndex(index: number) {
-    this.$.track('todos')  // Track list - index meaning changes with list
-    const todo = this.todos[index]
+    this.$.track("todos"); // Track list - index meaning changes with list
+    const todo = this.todos[index];
     if (todo) {
-      this.$.trackItem('todos', todo.id)  // Also track the specific item
+      this.$.trackItem("todos", todo.id); // Also track the specific item
     }
-    return todo
+    return todo;
   }
 
   // Get filtered todos
   getActive() {
-    this.$.track('todos')  // Any todo change affects this
-    return this.todos.filter(t => !t.done)
+    this.$.track("todos"); // Any todo change affects this
+    return this.todos.filter((t) => !t.done);
   }
 
   add(text: string) {
-    const todo = { id: crypto.randomUUID(), text, done: false }
-    this.todos.push(todo)
-    this.$.triggerAdd('todos', 'todo:added', { id: todo.id, text })
+    const todo = { id: crypto.randomUUID(), text, done: false };
+    this.todos.push(todo);
+    this.$.triggerAdd("todos", "todo:added", { id: todo.id, text });
   }
 
   toggle(id: string) {
-    const todo = this.todos.find(t => t.id === id)
-    if (!todo) return
-    todo.done = !todo.done
+    const todo = this.todos.find((t) => t.id === id);
+    if (!todo) return;
+    todo.done = !todo.done;
     // Notify both the specific item AND the list (for filtered views)
-    this.$.triggerItem('todos', id, 'todo:toggled', { id, done: todo.done })
-    this.$.triggerList('todos')  // getActive() needs to re-run too
+    this.$.triggerItem("todos", id, "todo:toggled", { id, done: todo.done });
+    this.$.triggerList("todos"); // getActive() needs to re-run too
   }
 
   remove(id: string) {
-    const index = this.todos.findIndex(t => t.id === id)
-    if (index === -1) return
-    this.todos.splice(index, 1)
-    this.$.triggerRemove('todos', id, 'todo:removed', id)
+    const index = this.todos.findIndex((t) => t.id === id);
+    if (index === -1) return;
+    this.todos.splice(index, 1);
+    this.$.triggerRemove("todos", id, "todo:removed", id);
   }
 }
 
 // Usage:
-const todos = new TodoStore()
+const todos = new TodoStore();
 
 // Events work anywhere
-todos.on('todo:added', ({ text }) => console.log('New todo:', text))
+todos.on("todo:added", ({ text }) => console.log("New todo:", text));
 
 // With a signal library (e.g., in Solid.js):
 createEffect(() => {
-  console.log('Active todos:', todos.getActive())  // Re-runs on any change
-})
+  console.log("Active todos:", todos.getActive()); // Re-runs on any change
+});
 
 createEffect(() => {
   // getById - ONLY re-runs when todo with id='abc' changes
   // Even works if item doesn't exist yet (will re-run when added)
-  console.log('Specific todo:', todos.getById('abc'))
-})
+  console.log("Specific todo:", todos.getById("abc"));
+});
 
 createEffect(() => {
   // getByIndex - Re-runs on ANY list change (less granular)
   // Because "item at index 0" changes meaning when list changes
-  console.log('First todo:', todos.getByIndex(0))
-})
+  console.log("First todo:", todos.getByIndex(0));
+});
 ```
 
 ### Use with Events (always works)
 
 ```typescript
-const store = new UserStore()
+const store = new UserStore();
 
-store.on('user:added', (user) => {
-  console.log('Added:', user.name)
-})
+store.on("user:added", (user) => {
+  console.log("Added:", user.name);
+});
 
-store.on('user:removed', (id) => {
-  console.log('Removed:', id)
-})
+store.on("user:removed", (id) => {
+  console.log("Removed:", id);
+});
 
-store.add({ id: '1', name: 'Alice' })  // Logs: "Added: Alice"
-store.remove('1')                        // Logs: "Removed: 1"
+store.add({ id: "1", name: "Alice" }); // Logs: "Added: Alice"
+store.remove("1"); // Logs: "Removed: 1"
 ```
 
 ### Use with Signals (Solid.js example)
 
 ```typescript
-import { createSignal, getOwner, onCleanup, createEffect } from 'solid-js'
+import { createSignal, getOwner, onCleanup, createEffect } from "solid-js";
 
 // Create adapter for your signal library
 const solidAdapter = {
   create: () => {
-    const [track, trigger] = createSignal(undefined, { equals: false })
-    return { depend: () => track(), notify: () => trigger(undefined) }
+    const [track, trigger] = createSignal(undefined, { equals: false });
+    return { depend: () => track(), notify: () => trigger(undefined) };
   },
   isInScope: () => !!getOwner(),
-  onDispose: (cb) => onCleanup(cb)
-}
+  onDispose: (cb) => onCleanup(cb),
+};
 
-const store = new UserStore()
-store.setReactivityAdapter(solidAdapter)
+const store = new UserStore();
+store.setReactivityAdapter(solidAdapter);
 
 // Now reads are automatically tracked!
 createEffect(() => {
-  console.log('Users:', store.getAll())  // Re-runs when users change
-})
+  console.log("Users:", store.getAll()); // Re-runs when users change
+});
 
-store.add({ id: '1', name: 'Alice' })  // Effect re-runs
+store.add({ id: "1", name: "Alice" }); // Effect re-runs
 ```
 
 ## API
@@ -441,82 +447,93 @@ instance.on('something', (data) => { ... })
 Standalone signal scope if you only need signals.
 
 ```typescript
-const scope = new Scope(adapter)
-scope.track('key')
-scope.trigger('key')
+const scope = new Scope(adapter);
+scope.track("key");
+scope.trigger("key");
 ```
 
 ### Creating Adapters
 
 ```typescript
-import { createReactivityAdapter } from 'unisig'
+import { createReactivityAdapter } from "unisig";
 
 // Preact Signals
-import { signal } from '@preact/signals-core'
+import { signal } from "@preact/signals-core";
 
 const preactAdapter = createReactivityAdapter({
   create: () => {
-    const s = signal(0)
+    const s = signal(0);
     return {
-      depend: () => { s.value },
-      notify: () => { s.value++ }
-    }
-  }
-})
+      depend: () => {
+        s.value;
+      },
+      notify: () => {
+        s.value++;
+      },
+    };
+  },
+});
 
 // Vue
-import { shallowRef, triggerRef } from 'vue'
+import { shallowRef, triggerRef } from "vue";
 
 const vueAdapter = createReactivityAdapter({
   create: () => {
-    const r = shallowRef(0)
+    const r = shallowRef(0);
     return {
-      depend: () => { r.value },
-      notify: () => triggerRef(r)
-    }
-  }
-})
+      depend: () => {
+        r.value;
+      },
+      notify: () => triggerRef(r),
+    };
+  },
+});
 
 // MobX
-import { observable, runInAction } from 'mobx'
+import { observable, runInAction } from "mobx";
 
 const mobxAdapter = createReactivityAdapter({
   create: () => {
-    const o = observable({ v: 0 })
+    const o = observable({ v: 0 });
     return {
-      depend: () => { o.v },
-      notify: () => runInAction(() => { o.v++ })
-    }
-  }
-})
+      depend: () => {
+        o.v;
+      },
+      notify: () =>
+        runInAction(() => {
+          o.v++;
+        }),
+    };
+  },
+});
 
 // Svelte 5 (with runes)
-import { createSubscriber } from 'svelte/reactivity'
+import { createSubscriber } from "svelte/reactivity";
 
 class SvelteDependency {
-  #subscribe: () => void
-  #update: (() => void) | undefined
+  #subscribe: () => void;
+  #update: (() => void) | undefined;
 
   constructor() {
     this.#subscribe = createSubscriber((update) => {
-      this.#update = update
-      return () => {}
-    })
+      this.#update = update;
+      return () => {};
+    });
   }
 
   depend() {
-    this.#subscribe()
+    this.#subscribe();
   }
 
   notify() {
-    this.#update?.()
+    this.#update?.();
   }
 }
 
 const svelteAdapter = createReactivityAdapter({
   create: () => new SvelteDependency(),
-  isInScope: () => $effect.tracking()
-})
+  isInScope: () => $effect.tracking(),
+});
 ```
 
 ## Granular Reactivity
@@ -525,31 +542,31 @@ Use `trackItem()` and `triggerItem()` for per-item updates:
 
 ```typescript
 class PlayerStore {
-  private $ = new Reactive<PlayerEvents>()
+  private $ = new Reactive<PlayerEvents>();
 
   // Only re-renders when THIS player changes
   getPlayer(id: string) {
-    this.$.trackItem('players', id)
-    return this.players.get(id)
+    this.$.trackItem("players", id);
+    return this.players.get(id);
   }
 
   // Only notifies watchers of THIS player
   updateScore(id: string, score: number) {
-    this.players.get(id)!.score = score
-    this.$.triggerItem('players', id, 'player:scored', { id, score })
+    this.players.get(id)!.score = score;
+    this.$.triggerItem("players", id, "player:scored", { id, score });
   }
 }
 
 // In Solid.js:
 createEffect(() => {
-  console.log('Player 1:', store.getPlayer('1'))  // Only player 1
-})
+  console.log("Player 1:", store.getPlayer("1")); // Only player 1
+});
 
 createEffect(() => {
-  console.log('Player 2:', store.getPlayer('2'))  // Only player 2
-})
+  console.log("Player 2:", store.getPlayer("2")); // Only player 2
+});
 
-store.updateScore('1', 100)  // Only first effect runs!
+store.updateScore("1", 100); // Only first effect runs!
 ```
 
 ## TypeScript
@@ -559,21 +576,21 @@ Full TypeScript support with strong event typing:
 ```typescript
 // Use `type` instead of `interface` for event maps
 type Events = {
-  'item:added': { id: string; value: number }
-  'item:removed': string
-  'cleared': void
-}
+  "item:added": { id: string; value: number };
+  "item:removed": string;
+  cleared: void;
+};
 
-const $ = new Reactive<Events>()
+const $ = new Reactive<Events>();
 
 // Type-safe events
-$.on('item:added', (item) => {
-  item.id    // string
-  item.value // number
-})
+$.on("item:added", (item) => {
+  item.id; // string
+  item.value; // number
+});
 
-$.emit('item:added', { id: '1', value: 42 })  // ✓
-$.emit('item:added', { id: '1' })             // ✗ Error: missing value
+$.emit("item:added", { id: "1", value: 42 }); // ✓
+$.emit("item:added", { id: "1" }); // ✗ Error: missing value
 ```
 
 ## License
