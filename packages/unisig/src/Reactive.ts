@@ -79,8 +79,25 @@ export class Reactive<
 	}
 
 	/**
-	 * Check if currently inside a reactive scope.
-	 */
+		* Set or change the reactivity adapter.
+		* Existing dependencies are not affected.
+		*
+		* @param adapter - The reactivity adapter to use
+		*/
+	setAdapter(adapter: ReactivityAdapter): void {
+		this.scope.setAdapter(adapter);
+	}
+
+	/**
+		* Get the current adapter, if any.
+		*/
+	getAdapter(): ReactivityAdapter | undefined {
+		return this.scope.getAdapter();
+	}
+
+	/**
+		* Check if currently inside a reactive scope.
+		*/
 	isInScope(): boolean {
 		return this.scope.isInScope();
 	}
