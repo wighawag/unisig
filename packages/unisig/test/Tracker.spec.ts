@@ -651,7 +651,7 @@ describe('Tracker', () => {
 
 			const errorHandler = vi.fn((event, error) => {
 				// In production, you might log this or send to error tracking
-				console.error(`Error in ${String(event)}:`, error);
+				// console.error(`Error in ${String(event)}:`, error);
 			});
 
 			class UserStore {
