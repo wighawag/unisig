@@ -1,45 +1,47 @@
 {
-  "name": "unisig",
-  "version": "0.1.0",
-  "description": "Universal signals - add reactivity to any data with pluggable signal adapters and built-in events",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "tsc --noEmit"
-  },
-  "keywords": [
-    "unisig",
-    "signals",
-    "reactivity",
-    "events",
-    "reactive",
-    "state",
-    "solid",
-    "preact",
-    "vue",
-    "svelte",
-    "mobx",
-    "framework-agnostic",
-    "universal"
-  ],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.3.0",
-    "vitest": "^2.0.0"
-  }
+	"name": "unisig",
+	"version": "0.1.0",
+	"description": "Universal signals - add reactivity to any data with pluggable signal adapters and built-in events",
+	"keywords": [
+		"unisig",
+		"signals",
+		"reactivity",
+		"events",
+		"reactive",
+		"state",
+		"solid",
+		"preact",
+		"vue",
+		"svelte",
+		"mobx",
+		"framework-agnostic",
+		"universal"
+	],
+	"author": "",
+	"license": "MIT",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"devDependencies": {
+		"prettier": "^3.8.0",
+		"typescript": "^5.3.0",
+		"vitest": "^2.0.0"
+	},
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier .",
+		"build": "tsc",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	}
 }
