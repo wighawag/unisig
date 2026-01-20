@@ -96,6 +96,8 @@ export class Tracker<
 > {
 	private scope: Scope;
 	private emitter: Emitter<Events>;
+	private batching = false;
+	private pendingTriggers = new Set<string>();
 
 	/**
 	 * Create a new Tracker instance.
@@ -284,6 +286,8 @@ export class Tracker<
 	/**
 	 * Trigger a change notification and optionally emit an event.
 	 *
+	 * When inside a batch() operation, triggers are queued and executed once at the end.
+	 *
 	 * @param key - The dependency key that changed
 	 * @param event - Event to emit (must provide data with this)
 	 * @param data - Event data (required when event is provided)
@@ -291,7 +295,11 @@ export class Tracker<
 	trigger(key: string): void;
 	trigger<K extends keyof Events>(key: string, event: K, data: Events[K]): void;
 	trigger(key: string, event?: unknown, data?: unknown): void {
-		this.scope.trigger(key);
+		if (this.batching) {
+			this.pendingTriggers.add(key);
+		} else {
+			this.scope.trigger(key);
+		}
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -573,6 +581,53 @@ export class Tracker<
 	}
 
 	// ============ CLEANUP ============
+
+	/**
+	 * Batch multiple trigger operations into a single notification.
+	 * Reduces reactivity overhead when making multiple changes.
+	 *
+	 * All trigger calls inside the batch function are queued and executed once at the end.
+	 * Event emissions still happen immediately.
+	 *
+	 * @param fn - Function containing multiple trigger operations
+	 *
+	 * @example
+	 * ```ts
+	 * // Without batch - triggers each change separately
+	 * updateMultipleUsers(updates) {
+	 *   for (const update of updates) {
+	 *     this.users.set(update.id, update.data)
+	 *     this.$.triggerItem('users', update.id) // Triggers for each update
+	 *   }
+	 * }
+	 *
+	 * // With batch - triggers once at the end
+	 * updateMultipleUsers(updates) {
+	 *   this.$.batch(() => {
+	 *     for (const update of updates) {
+	 *       this.users.set(update.id, update.data)
+	 *       this.$.triggerItem('users', update.id) // Queued, not triggered yet
+	 *     }
+	 *   }) // All triggers execute once here
+	 * }
+	 * ```
+	 */
+	batch(fn: () => void): void {
+		const wasBatching = this.batching;
+		this.batching = true;
+		this.pendingTriggers.clear();
+		
+		try {
+			fn();
+			// Trigger all pending notifications once
+			for (const key of this.pendingTriggers) {
+				this.scope.trigger(key);
+			}
+		} finally {
+			this.batching = wasBatching;
+			this.pendingTriggers.clear();
+		}
+	}
 
 	/**
 	 * Clear all dependencies.
