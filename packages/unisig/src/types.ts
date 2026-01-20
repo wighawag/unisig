@@ -1,4 +1,34 @@
 /**
+ * Generic event listener type
+ */
+export type Listener<T = unknown> = (data: T) => void;
+
+/**
+ * Error handler type for managing errors in event listeners.
+ *
+ * Used by both Emitter and Tracker to provide custom error handling
+ * when listeners throw exceptions.
+ *
+ * @param event - The event being emitted
+ * @param error - The error that occurred
+ * @param listener - The listener function that threw the error
+ *
+ * @example
+ * ```ts
+ * const errorHandler: ErrorHandler<MyEvents> = (event, error, listener) => {
+ *   console.error(`Error in ${String(event)}:`, error);
+ *   // Send to error tracking service
+ *   Sentry.captureException(error);
+ * };
+ * ```
+ */
+export type ErrorHandler<Events> = (
+	event: keyof Events,
+	error: Error,
+	listener: Listener<unknown>,
+) => void;
+
+/**
  * Core dependency interface - the minimal abstraction every signal library can implement.
  *
  * This is the "lowest common denominator" of reactive systems:

@@ -1,7 +1,6 @@
-import type {ReactivityAdapter, Dependency} from './types.js';
+import type {ReactivityAdapter, Dependency, ErrorHandler, Listener} from './types.js';
 import {
 	Emitter,
-	type Listener,
 	type Unsubscribe,
 	type EmitterOptions,
 } from './Emitter.js';
@@ -36,11 +35,7 @@ export interface TrackerOptions<Events> {
 	 * });
 	 * ```
 	 */
-	errorHandler?: (
-		event: keyof Events,
-		error: Error,
-		listener: Listener<unknown>,
-	) => void;
+	errorHandler?: ErrorHandler<Events>;
 }
 
 /**

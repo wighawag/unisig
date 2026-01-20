@@ -1,7 +1,4 @@
-/**
- * Generic event listener type
- */
-export type Listener<T = unknown> = (data: T) => void;
+import type {Listener, ErrorHandler} from './types.js';
 
 /**
  * Unsubscribe function returned by `on()`
@@ -32,11 +29,7 @@ export interface EmitterOptions<Events> {
 	 * });
 	 * ```
 	 */
-	errorHandler?: (
-		event: keyof Events,
-		error: Error,
-		listener: Listener<unknown>,
-	) => void;
+	errorHandler?: ErrorHandler<Events>;
 }
 
 /**

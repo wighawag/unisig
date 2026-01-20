@@ -1,5 +1,5 @@
 // Types
-export type {Dependency, ReactivityAdapter} from './types.js';
+export type {Dependency, ReactivityAdapter, Listener, ErrorHandler} from './types.js';
 export {createReactivityAdapter} from './types.js';
 
 // Errors
@@ -7,7 +7,7 @@ export {NoAdapterError} from './standalone.js';
 
 // Emitter
 export {Emitter} from './Emitter.js';
-export type {Listener, Unsubscribe, EmitterOptions} from './Emitter.js';
+export type {Unsubscribe, EmitterOptions} from './Emitter.js';
 
 // Scope
 export {Scope} from './Scope.js';
