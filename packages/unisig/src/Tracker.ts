@@ -300,17 +300,19 @@ export class Tracker<
 	 * Trigger a change notification and optionally emit an event.
 	 *
 	 * @param key - The dependency key that changed
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	trigger(key: string): void;
 	trigger<K extends keyof Events>(
 		key: string,
-		event?: K,
-		data?: Events[K],
-	): void {
+		event: K,
+		data: Events[K],
+	): void;
+	trigger(key: string, event?: unknown, data?: unknown): void {
 		this.scope.trigger(key);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 3) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -321,18 +323,25 @@ export class Tracker<
 	 *
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerItem(collection: string, id: string | number): void;
 	triggerItem<K extends keyof Events>(
 		collection: string,
 		id: string | number,
-		event?: K,
-		data?: Events[K],
+		event: K,
+		data: Events[K],
+	): void;
+	triggerItem(
+		collection: string,
+		id: string | number,
+		event?: unknown,
+		data?: unknown,
 	): void {
 		this.scope.triggerItem(collection, id);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 4) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -342,18 +351,20 @@ export class Tracker<
 	 *
 	 * @param key - The dependency key
 	 * @param prop - The property that changed
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerProp(key: string, prop: string): void;
 	triggerProp<K extends keyof Events>(
 		key: string,
 		prop: string,
-		event?: K,
-		data?: Events[K],
-	): void {
+		event: K,
+		data: Events[K],
+	): void;
+	triggerProp(key: string, prop: string, event?: unknown, data?: unknown): void {
 		this.scope.triggerProp(key, prop);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 4) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -364,19 +375,27 @@ export class Tracker<
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier
 	 * @param prop - The property that changed
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerItemProp(collection: string, id: string | number, prop: string): void;
 	triggerItemProp<K extends keyof Events>(
 		collection: string,
 		id: string | number,
 		prop: string,
-		event?: K,
-		data?: Events[K],
+		event: K,
+		data: Events[K],
+	): void;
+	triggerItemProp(
+		collection: string,
+		id: string | number,
+		prop: string,
+		event?: unknown,
+		data?: unknown,
 	): void {
 		this.scope.triggerItemProp(collection, id, prop);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 5) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -384,17 +403,19 @@ export class Tracker<
 	 * Trigger a list change and optionally emit an event.
 	 *
 	 * @param collection - Name of the collection
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerList(collection: string): void;
 	triggerList<K extends keyof Events>(
 		collection: string,
-		event?: K,
-		data?: Events[K],
-	): void {
+		event: K,
+		data: Events[K],
+	): void;
+	triggerList(collection: string, event?: unknown, data?: unknown): void {
 		this.scope.triggerList(collection);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 3) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -404,18 +425,25 @@ export class Tracker<
 	 *
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier being removed
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerRemove(collection: string, id: string | number): void;
 	triggerRemove<K extends keyof Events>(
 		collection: string,
 		id: string | number,
-		event?: K,
-		data?: Events[K],
+		event: K,
+		data: Events[K],
+	): void;
+	triggerRemove(
+		collection: string,
+		id: string | number,
+		event?: unknown,
+		data?: unknown,
 	): void {
 		this.scope.triggerRemove(collection, id);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 4) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
@@ -423,17 +451,19 @@ export class Tracker<
 	 * Trigger for item addition: notifies list watchers and optionally emits an event.
 	 *
 	 * @param collection - Name of the collection
-	 * @param event - Optional event to emit
-	 * @param data - Optional event data
+	 * @param event - Event to emit (must provide data with this)
+	 * @param data - Event data (required when event is provided)
 	 */
+	triggerAdd(collection: string): void;
 	triggerAdd<K extends keyof Events>(
 		collection: string,
-		event?: K,
-		data?: Events[K],
-	): void {
+		event: K,
+		data: Events[K],
+	): void;
+	triggerAdd(collection: string, event?: unknown, data?: unknown): void {
 		this.scope.triggerList(collection);
-		if (event !== undefined) {
-			this.emitter.emit(event, data!);
+		if (arguments.length === 3) {
+			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
 	}
 
