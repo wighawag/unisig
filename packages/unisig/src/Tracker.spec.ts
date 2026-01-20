@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Reactive, reactive} from './Reactive';
+import {Tracker, tracker} from './Tracker';
 import type {ReactivityAdapter} from './types';
 
 // Mock adapter
@@ -34,28 +34,28 @@ type TestEvents = {
 	'list:cleared': void;
 };
 
-describe('Reactive', () => {
-	describe('constructor and reactive()', () => {
+describe('Tracker', () => {
+	describe('constructor and tracker()', () => {
 		it('should create without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.getAdapter()).toBeUndefined();
 		});
 
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
-		it('reactive() should be equivalent to new Reactive()', () => {
-			const r = reactive<TestEvents>();
-			expect(r).toBeInstanceOf(Reactive);
+		it('tracker() should be equivalent to new Tracker()', () => {
+			const r = tracker<TestEvents>();
+			expect(r).toBeInstanceOf(Tracker);
 		});
 	});
 
 	describe('setAdapter()', () => {
 		it('should set the adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const adapter = createMockAdapter();
 
 			r.setAdapter(adapter);
@@ -65,7 +65,7 @@ describe('Reactive', () => {
 
 	describe('Event methods', () => {
 		it('on() should subscribe to events', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -75,7 +75,7 @@ describe('Reactive', () => {
 		});
 
 		it('on() should return unsubscribe function', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			const unsub = r.on('item:added', listener);
@@ -86,7 +86,7 @@ describe('Reactive', () => {
 		});
 
 		it('off() should unsubscribe', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -97,7 +97,7 @@ describe('Reactive', () => {
 		});
 
 		it('once() should only fire once', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			r.once('item:added', listener);
@@ -111,7 +111,7 @@ describe('Reactive', () => {
 	describe('Tracking methods', () => {
 		it('track() should call depend when in scope', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.track('items');
 
@@ -122,7 +122,7 @@ describe('Reactive', () => {
 		it('track() should not track when not in scope', () => {
 			const adapter = createMockAdapter();
 			adapter.inScope = false;
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.track('items');
 
@@ -131,7 +131,7 @@ describe('Reactive', () => {
 
 		it('trackItem() should track both item and collection', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.trackItem('items', '1');
 
@@ -143,7 +143,7 @@ describe('Reactive', () => {
 		describe('trigger()', () => {
 			it('should notify signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.dep('items'); // Create dep
 				r.trigger('items');
@@ -153,7 +153,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -164,7 +164,7 @@ describe('Reactive', () => {
 
 			it('should work without event', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -177,7 +177,7 @@ describe('Reactive', () => {
 		describe('triggerItem()', () => {
 			it('should notify item signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.itemDep('items', '1');
 				r.triggerItem('items', '1');
@@ -187,7 +187,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -200,7 +200,7 @@ describe('Reactive', () => {
 		describe('triggerList()', () => {
 			it('should notify list signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 	
 				r.dep('items');
 				r.triggerList('items');
@@ -210,7 +210,7 @@ describe('Reactive', () => {
 	
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 	
 				r.on('list:cleared', listener);
@@ -223,7 +223,7 @@ describe('Reactive', () => {
 		describe('triggerRemove()', () => {
 			it('should notify item and list signals', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.itemDep('items', '1');
 				r.dep('items');
@@ -235,7 +235,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:removed', listener);
@@ -248,7 +248,7 @@ describe('Reactive', () => {
 		describe('triggerAdd()', () => {
 			it('should notify list signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.dep('items');
 				r.triggerAdd('items');
@@ -258,7 +258,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -272,7 +272,7 @@ describe('Reactive', () => {
 	describe('emit()', () => {
 		it('should emit event without triggering signals', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const listener = vi.fn();
 
 			r.dep('items'); // Create a dep
@@ -287,7 +287,7 @@ describe('Reactive', () => {
 	describe('clear()', () => {
 		it('should clear dependencies but not events', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const listener = vi.fn();
 
 			r.dep('items');
@@ -309,7 +309,7 @@ describe('Reactive', () => {
 			};
 
 			class UserStore {
-				private $ = new Reactive<StoreEvents>();
+				private $ = new Tracker<StoreEvents>();
 				private users = new Map<
 					string,
 					{id: string; name: string; score: number}
@@ -398,7 +398,7 @@ describe('Reactive', () => {
 		describe('trackProp()', () => {
 			it('should track property and key', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.trackProp('config', 'theme');
 
@@ -411,7 +411,7 @@ describe('Reactive', () => {
 		describe('trackItemProp()', () => {
 			it('should track property, item, and collection', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.trackItemProp('items', '1', 'value');
 
@@ -422,7 +422,7 @@ describe('Reactive', () => {
 		describe('triggerProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.propDep('config', 'theme');
 				r.triggerProp('config', 'theme');
@@ -432,7 +432,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -445,7 +445,7 @@ describe('Reactive', () => {
 		describe('triggerItemProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				r.itemPropDep('items', '1', 'value');
 				r.triggerItemProp('items', '1', 'value');
@@ -455,7 +455,7 @@ describe('Reactive', () => {
 
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
@@ -473,7 +473,7 @@ describe('Reactive', () => {
 		describe('proxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -486,7 +486,7 @@ describe('Reactive', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -501,7 +501,7 @@ describe('Reactive', () => {
 		describe('itemProxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -513,7 +513,7 @@ describe('Reactive', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Reactive<TestEvents>(adapter);
+				const r = new Tracker<TestEvents>(adapter);
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -534,7 +534,7 @@ describe('Reactive', () => {
 			};
 
 			class PlayerStore {
-				private $ = new Reactive<PlayerEvents>();
+				private $ = new Tracker<PlayerEvents>();
 				private players = new Map<
 					string,
 					{id: string; name: string; score: number}

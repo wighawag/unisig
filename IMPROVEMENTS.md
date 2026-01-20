@@ -20,7 +20,7 @@ The unisig package has been comprehensively reviewed and improved across multipl
 **Changes:**
 
 - Made `emit()`, `hasListeners()`, `listenerCount()`, and `removeAllListeners()` public methods
-- Removed unnecessary wrapper class in Reactive class
+- Removed unnecessary wrapper class in Tracker class
 - Simplified constructor
 
 **Benefits:**
@@ -31,7 +31,7 @@ The unisig package has been comprehensively reviewed and improved across multipl
 
 **File:** [`packages/unisig/src/Emitter.ts`](packages/unisig/src/Emitter.ts)
 
-### 2. Reactive Class Simplification
+### 2. Tracker Class Simplification
 
 **Changes:**
 
@@ -45,7 +45,7 @@ The unisig package has been comprehensively reviewed and improved across multipl
 - Better performance (one less class instantiation)
 - Easier to understand and maintain
 
-**File:** [`packages/unisig/src/Reactive.ts`](packages/unisig/src/Reactive.ts)
+**File:** [`packages/unisig/src/Tracker.ts`](packages/unisig/src/Tracker.ts)
 
 ### 3. Index File Organization
 
@@ -156,7 +156,7 @@ state(() => {});
 
 **File:** [`packages/unisig/src/Scope.deepProxy.spec.ts`](packages/unisig/src/Scope.deepProxy.spec.ts)
 
-**Reactive Edge Cases:**
+**Tracker Edge Cases:**
 
 - Created comprehensive edge case test suite (48 tests)
 - Tests for constructor variations
@@ -170,7 +170,7 @@ state(() => {});
 - Tests for proxy() edge cases
 - Tests for error handling
 
-**File:** [`packages/unisig/src/Reactive.edgeCases.spec.ts`](packages/unisig/src/Reactive.edgeCases.spec.ts)
+**File:** [`packages/unisig/src/Tracker.edgeCases.spec.ts`](packages/unisig/src/Tracker.edgeCases.spec.ts)
 
 ### 2. Test Statistics
 
@@ -357,7 +357,7 @@ export type { Listener, Unsubscribe } from "./Emitter";
 
 **File:** [`packages/unisig/src/Emitter.spec.ts`](packages/unisig/src/Emitter.spec.ts)
 
-### 3. Reactive Edge Cases
+### 3. Tracker Edge Cases
 
 **Handled:**
 
@@ -369,7 +369,7 @@ export type { Listener, Unsubscribe } from "./Emitter";
 - Symbol properties
 - Getter/setter properties
 
-**File:** [`packages/unisig/src/Reactive.edgeCases.spec.ts`](packages/unisig/src/Reactive.edgeCases.spec.ts)
+**File:** [`packages/unisig/src/Tracker.edgeCases.spec.ts`](packages/unisig/src/Tracker.edgeCases.spec.ts)
 
 ### 4. State/Ref Edge Cases
 
@@ -406,7 +406,7 @@ Test Files  7 passed (7)
 
 - **Emitter:** 19 tests
 - **Scope:** 77 tests (49 + 28 deep proxy)
-- **Reactive:** 84 tests (36 + 48 edge cases)
+- **Tracker:** 84 tests (36 + 48 edge cases)
 - **Runes:** 43 tests
 - **Types:** 7 tests
 
@@ -421,7 +421,7 @@ Test Files  7 passed (7)
 
 ### Optimized
 
-- Removed unnecessary class wrapper in Reactive
+- Removed unnecessary class wrapper in Tracker
 - Simplified emitter instantiation
 - Better type inference reduces runtime overhead
 
@@ -486,9 +486,9 @@ No migration needed! All improvements are additive:
 
 ```typescript
 // This still works exactly as before
-import { Reactive } from "unisig";
+import { Tracker } from "unisig";
 
-const store = new Reactive<MyEvents>();
+const store = new Tracker<MyEvents>();
 ```
 
 ### New Factory API
@@ -524,18 +524,18 @@ store.$.removeAllListeners(); // All events
 
 1. `packages/unisig/src/index.ts` - Reorganized exports, updated state/ref exports
 2. `packages/unisig/src/Emitter.ts` - Made methods public
-3. `packages/unisig/src/Reactive.ts` - Simplified implementation
-4. `packages/unisig/src/runes.ts` - Replaced global adapter pattern with factory functions
+3. `packages/unisig/src/Tracker.ts` - Simplified implementation
+4. `packages/unisig/src/standalone.ts` - Replaced global adapter pattern with factory functions
 5. `packages/unisig/src/Emitter.spec.ts` - Added new tests
-6. `packages/unisig/src/Reactive.spec.ts` - Fixed test for void events
-7. `packages/unisig/src/runes.spec.ts` - Updated tests for factory API
+6. `packages/unisig/src/Tracker.spec.ts` - Fixed test for void events
+7. `packages/unisig/src/standalone.spec.ts` - Updated tests for factory API
 8. `README.md` - Comprehensive update
 9. `examples/svelte/README.md` - Added example documentation
 
 ### New Files
 
 1. `packages/unisig/src/Scope.deepProxy.spec.ts` - Deep proxy tests
-2. `packages/unisig/src/Reactive.edgeCases.spec.ts` - Edge case tests
+2. `packages/unisig/src/Tracker.edgeCases.spec.ts` - Edge case tests
 3. `CONTRIBUTING.md` - Contribution guide
 4. `examples/svelte/EXAMPLE_GUIDE.md` - Implementation guide
 

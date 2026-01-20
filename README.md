@@ -212,7 +212,7 @@ This library gives you **both** — events for reliability, signals for power.
 ### Basic Usage with Events
 
 ```typescript
-import { Reactive } from "unisig";
+import { Tracker } from "unisig";
 
 // Define your events (use `type`, not `interface`)
 type MyEvents = {
@@ -221,7 +221,7 @@ type MyEvents = {
 };
 
 class UserStore {
-  private $ = new Reactive<MyEvents>();
+  private $ = new Tracker<MyEvents>();
   private users = new Map<string, { id: string; name: string }>();
 
   // Expose event subscription
@@ -266,8 +266,8 @@ const solidAdapter = {
   onDispose: (cb) => onCleanup(cb),
 };
 
-// Use with Reactive
-const $ = new Reactive<UserEvents>(solidAdapter);
+// Use with Tracker
+const $ = new Tracker<UserEvents>(solidAdapter);
 
 // In a reactive context:
 createEffect(() => {
@@ -277,12 +277,12 @@ createEffect(() => {
 
 ## API Reference
 
-### `Reactive<Events>`
+### `Tracker<Events>`
 
 Main class combining signals and events.
 
 ```typescript
-const $ = new Reactive<MyEvents>()
+const $ = new Tracker<MyEvents>()
 
 // Configuration
 $.setAdapter(adapter)      // Set signal adapter
@@ -401,9 +401,9 @@ Example with Solid.js:
 
 ```typescript
 import { solidReactivityAdapter } from '@signaldb/reactivity/solid';
-import { Reactive } from 'unisig';
+import { Tracker } from 'unisig';
 
-const $ = new Reactive<UserEvents>(solidReactivityAdapter);
+const $ = new Tracker<UserEvents>(solidReactivityAdapter);
 ```
 
 Or create your own adapter by implementing the `ReactivityAdapter` interface:
@@ -430,7 +430,7 @@ Track the entire collection:
 
 ```typescript
 class UserStore {
-  private $ = new Reactive<UserEvents>();
+  private $ = new Tracker<UserEvents>();
 
   getAll() {
     this.$.track("users");
@@ -450,7 +450,7 @@ Track specific items:
 
 ```typescript
 class UserStore {
-  private $ = new Reactive<UserEvents>();
+  private $ = new Tracker<UserEvents>();
 
   getUser(id) {
     this.$.trackItem("users", id);
@@ -470,7 +470,7 @@ Track specific properties:
 
 ```typescript
 class UserStore {
-  private $ = new Reactive<UserEvents>();
+  private $ = new Tracker<UserEvents>();
 
   getScore(id) {
     this.$.trackItemProp("users", id, "score");
@@ -490,7 +490,7 @@ class UserStore {
 
 ```typescript
 class UserStore {
-  private $ = new Reactive<UserEvents>();
+  private $ = new Tracker<UserEvents>();
 
   getUser(id) {
     this.$.trackItem("users", id);
@@ -523,7 +523,7 @@ For nested objects, use deep proxies:
 
 ```typescript
 class GameStore {
-  private $ = new Reactive<GameEvents>();
+  private $ = new Tracker<GameEvents>();
   private players = new Map<string, Player>();
 
   getPlayer(id) {
@@ -567,7 +567,7 @@ type Events = {
   cleared: void;
 };
 
-const $ = new Reactive<Events>();
+const $ = new Tracker<Events>();
 
 // Type-safe events
 $.on("item:added", (item) => {

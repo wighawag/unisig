@@ -19,7 +19,7 @@ When you frequently access items by a specific field (like `starSystemId`), main
 
 ```typescript
 class ActionsStore {
-  private $ = new Reactive<{ actions: void }>()
+  private $ = new Tracker<{ actions: void }>()
   private actions: Action[] = []
 
   // ❌ BAD: O(n) filter runs on EVERY call
@@ -48,7 +48,7 @@ type ActionEvents = {
 }
 
 class ActionsStore {
-  private $ = new Reactive<ActionEvents>()
+  private $ = new Tracker<ActionEvents>()
   private actions: Action[] = []
   // Pre-computed index: starSystemId → actions for that system
   private actionsBySystem = new Map<string, Action[]>()
@@ -172,7 +172,7 @@ type ActionEvents = {
 }
 
 class ActionsStore {
-  private $ = new Reactive<ActionEvents>()
+  private $ = new Tracker<ActionEvents>()
   private actions: Action[] = []
   private cache = new Map<string, { value: Action[], valid: boolean }>()
 
@@ -249,7 +249,7 @@ type ActionEvents = {
 }
 
 class ActionsStore {
-  private $ = new Reactive<ActionEvents>()
+  private $ = new Tracker<ActionEvents>()
   private actionsBySystem = new Map<string, Action[]>()
 
   getByStarSystem(starSystemId: bigint): Action[] {
@@ -279,7 +279,7 @@ type SystemEvents = {
 }
 
 class StarSystemsStore {
-  private $ = new Reactive<SystemEvents>()
+  private $ = new Tracker<SystemEvents>()
   private systems = new Map<string, StarSystem>()
   
   constructor(private actionsStore: ActionsStore) {}
@@ -355,7 +355,7 @@ type ActionEvents = {
 
 class ActionsStore {
   // Make $ public for event subscriptions
-  public readonly $ = new Reactive<ActionEvents>()
+  public readonly $ = new Tracker<ActionEvents>()
   private actionsBySystem = new Map<string, Action[]>()
 
   // Same method works for both signals AND events
@@ -408,7 +408,7 @@ class ActionsStore {
 
 ```typescript
 class StarSystemsStore {
-  public readonly $ = new Reactive<SystemEvents>()
+  public readonly $ = new Tracker<SystemEvents>()
   private systems = new Map<string, StarSystem>()
   
   constructor(private actionsStore: ActionsStore) {}

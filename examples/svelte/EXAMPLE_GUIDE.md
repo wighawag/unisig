@@ -18,14 +18,14 @@ The store is implemented as a class with these key features:
 
 ```typescript
 class PlayerStore {
-  private $ = new Reactive<PlayerEvents>();
+  private $ = new Tracker<PlayerEvents>();
   private players = new Map<string, Player>();
 }
 ```
 
 **Key Design Decisions:**
 
-1. **Private Reactive Instance**: The `Reactive` instance is private to prevent external manipulation
+1. **Private Tracker Instance**: The `Tracker` instance is private to prevent external manipulation
 2. **Public Event Subscription**: The `on` method is exposed to allow external event listeners
 3. **Adapter Configuration**: The adapter is set during construction or via `setAdapter()`
 4. **Granular Getters**: Multiple getter methods for different levels of reactivity:
@@ -51,8 +51,8 @@ The adapter wraps `@signaldb/svelte` to provide fine-grained reactivity. This ad
 ### 1. Creating a Reactive Store
 
 ```typescript
-// Import Reactive and define your events
-import { Reactive, type ReactivityAdapter } from 'unisig';
+// Import Tracker and define your events
+import { Tracker, type ReactivityAdapter } from 'unisig';
 
 type PlayerEvents = {
   'player:added': Player;
@@ -61,7 +61,7 @@ type PlayerEvents = {
 };
 
 class PlayerStore {
-  private $ = new Reactive<PlayerEvents>(adapter);
+  private $ = new Tracker<PlayerEvents>(adapter);
   private players = new Map<string, Player>();
 
   // Expose event subscription

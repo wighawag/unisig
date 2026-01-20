@@ -46,7 +46,7 @@ unisig/
 │       │   ├── types.ts           # Type definitions
 │       │   ├── Emitter.ts         # Event emitter implementation
 │       │   ├── Scope.ts           # Signal scope implementation
-│       │   ├── Reactive.ts        # Combined Reactive class
+│       │   ├── Tracker.ts        # Combined Tracker class
 │       │   ├── standalone.ts      # Standalone state/ref functions
 │       │   └── *.spec.ts          # Test files
 │       ├── package.json

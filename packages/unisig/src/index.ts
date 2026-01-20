@@ -12,8 +12,8 @@ export type {Listener, Unsubscribe} from './Emitter';
 // Scope
 export {Scope} from './Scope';
 
-// Reactive (main export)
-export {Reactive, reactive} from './Reactive';
+// Tracker (main export)
+export {Tracker, tracker} from './Tracker';
 
 // Standalone reactive state (rune-like API)
 export {

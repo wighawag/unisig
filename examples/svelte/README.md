@@ -104,7 +104,7 @@ get(id: string): Player | undefined {
 ┌─────────────────────────────────────────┐
 │           PlayerStore                   │
 │  ┌─────────────────────────────────┐   │
-│  │  Reactive<PlayerEvents>        │   │
+│  │  Tracker<PlayerEvents>         │   │
 │  │  - track()                     │   │
 │  │  - trackItem()                 │   │
 │  │  - trackItemProp()             │   │

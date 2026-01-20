@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Reactive, reactive} from './Reactive';
+import {Tracker, tracker} from './Tracker';
 import type {ReactivityAdapter} from './types';
 
 // Mock adapter
@@ -35,28 +35,28 @@ type TestEvents = {
 	'error:occurred': {message: string};
 };
 
-describe('Reactive - Edge Cases', () => {
-	describe('constructor and reactive()', () => {
+describe('Tracker - Edge Cases', () => {
+	describe('constructor and tracker()', () => {
 		it('should create without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.getAdapter()).toBeUndefined();
 		});
 
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
-		it('reactive() should be equivalent to new Reactive()', () => {
-			const r = reactive<TestEvents>();
-			expect(r).toBeInstanceOf(Reactive);
+		it('tracker() should be equivalent to new Tracker()', () => {
+			const r = tracker<TestEvents>();
+			expect(r).toBeInstanceOf(Tracker);
 		});
 	});
 
 	describe('setAdapter()', () => {
 		it('should set the adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const adapter = createMockAdapter();
 
 			r.setAdapter(adapter);
@@ -66,7 +66,7 @@ describe('Reactive - Edge Cases', () => {
 		it('should replace existing adapter', () => {
 			const adapter1 = createMockAdapter();
 			const adapter2 = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter1);
+			const r = new Tracker<TestEvents>(adapter1);
 
 			r.setAdapter(adapter2);
 			expect(r.getAdapter()).toBe(adapter2);
@@ -75,7 +75,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('isInScope()', () => {
 		it('should return false when no adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.isInScope()).toBe(false);
 		});
 
@@ -83,13 +83,13 @@ describe('Reactive - Edge Cases', () => {
 			const adapter: ReactivityAdapter = {
 				create: () => ({depend: vi.fn(), notify: vi.fn()}),
 			};
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			expect(r.isInScope()).toBe(true);
 		});
 
 		it('should delegate to adapter.isInScope', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			adapter.inScope = true;
 			expect(r.isInScope()).toBe(true);
@@ -101,7 +101,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('Event listener edge cases', () => {
 		it('should handle multiple unsubscribes without errors', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			const unsub = r.on('item:added', listener);
@@ -112,7 +112,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should handle off() with non-existent listener', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			// Should not throw
@@ -121,7 +121,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should handle off() with non-existent event', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			// Should not throw
@@ -130,7 +130,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should handle once() that unsubscribes before firing', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			const unsub = r.once('item:added', listener);
@@ -143,7 +143,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('Tracking without adapter', () => {
 		it('should not throw when tracking without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 
 			// Should not throw
 			r.track('items');
@@ -155,7 +155,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should not throw when triggering without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 
 			// Should not throw
 			r.trigger('items');
@@ -172,13 +172,13 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('dep() edge cases', () => {
 		it('should return null when no adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.dep('test')).toBeNull();
 		});
 
 		it('should return same dependency for same key', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.dep('test');
 			const dep2 = r.dep('test');
@@ -189,7 +189,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should return different dependencies for different keys', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.dep('key1');
 			const dep2 = r.dep('key2');
@@ -201,13 +201,13 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('itemDep() edge cases', () => {
 		it('should return null when no adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.itemDep('users', '1')).toBeNull();
 		});
 
 		it('should return same dependency for same collection and id', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '1');
@@ -217,7 +217,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should return different dependencies for different ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '2');
@@ -227,7 +227,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should return different dependencies for different collections', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('posts', '1');
@@ -237,7 +237,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should support numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemDep('items', 1);
 			const dep2 = r.itemDep('items', 2);
@@ -248,13 +248,13 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('propDep() edge cases', () => {
 		it('should return null when no adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.propDep('config', 'theme')).toBeNull();
 		});
 
 		it('should return same dependency for same key and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'theme');
@@ -264,7 +264,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'language');
@@ -275,13 +275,13 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('itemPropDep() edge cases', () => {
 		it('should return null when no adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			expect(r.itemPropDep('users', '1', 'score')).toBeNull();
 		});
 
 		it('should return same dependency for same collection, id, and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'score');
@@ -291,7 +291,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'name');
@@ -303,7 +303,7 @@ describe('Reactive - Edge Cases', () => {
 	describe('trigger() edge cases', () => {
 		it('should create dep if not exists', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.trigger('test');
 
@@ -313,7 +313,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should work without event', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.trigger('items');
 
@@ -324,7 +324,7 @@ describe('Reactive - Edge Cases', () => {
 	describe('triggerRemove() edge cases', () => {
 		it('should clean up item deps after removal', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.itemDep('users', '1');
 			r.dep('users');
@@ -338,7 +338,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('emit() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -348,7 +348,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should do nothing if no listeners', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 
 			// Should not throw
 			r.emit('item:added', {id: '1', value: 42});
@@ -356,7 +356,7 @@ describe('Reactive - Edge Cases', () => {
 		});
 
 		it('should call all listeners in order', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const order: number[] = [];
 
 			r.on('item:added', () => order.push(1));
@@ -372,7 +372,7 @@ describe('Reactive - Edge Cases', () => {
 	describe('clear() edge cases', () => {
 		it('should clear all dependencies', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 
 			r.dep('key1');
 			r.dep('key2');
@@ -389,7 +389,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should not affect events', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -403,7 +403,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('proxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const obj = {theme: 'dark'};
 
 			const proxied = r.proxy(obj, 'config');
@@ -414,7 +414,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should handle symbol properties', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const sym = Symbol('test');
 			const obj = {theme: 'dark', [sym]: 'value'};
 
@@ -426,7 +426,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should maintain original object behavior', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const obj = {
 				get value() {
 					return 42;
@@ -441,7 +441,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('itemProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const item = {id: '1', value: 42};
 
 			const proxied = r.itemProxy(item, 'items', '1');
@@ -452,7 +452,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const item = {id: 1, value: 42};
 
 			const proxied = r.itemProxy(item, 'items', 1);
@@ -463,7 +463,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('deepProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const obj = {nested: {value: 42}};
 
 			const proxied = r.deepProxy(obj, 'config');
@@ -474,7 +474,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should handle deeply nested objects', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const obj = {
 				level1: {
 					level2: {
@@ -494,7 +494,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('deepItemProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const item = {nested: {value: 42}};
 
 			const proxied = r.deepItemProxy(item, 'items', '1');
@@ -505,7 +505,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const item = {id: 1, nested: {value: 42}};
 
 			const proxied = r.deepItemProxy(item, 'items', 1);
@@ -517,7 +517,7 @@ describe('Reactive - Edge Cases', () => {
 	describe('Integration with events and signals', () => {
 		it('should emit event when triggering with event', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -529,7 +529,7 @@ describe('Reactive - Edge Cases', () => {
 
 		it('should only emit event without signal when using emit()', () => {
 			const adapter = createMockAdapter();
-			const r = new Reactive<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>(adapter);
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -543,7 +543,7 @@ describe('Reactive - Edge Cases', () => {
 
 	describe('Error handling', () => {
 		it('should handle errors in event listeners gracefully', () => {
-			const r = new Reactive<TestEvents>();
+			const r = new Tracker<TestEvents>();
 			const errorListener = vi.fn(() => {
 				throw new Error('Test error');
 			});

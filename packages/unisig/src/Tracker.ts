@@ -16,7 +16,7 @@ import {Scope} from './Scope';
  * }
  *
  * class UserStore {
- *   private $ = new Reactive<MyEvents>()
+ *   private $ = new Tracker<MyEvents>()
  *   private users = new Map<string, User>()
  *
  *   // Expose configuration
@@ -54,14 +54,14 @@ import {Scope} from './Scope';
  * }
  * ```
  */
-export class Reactive<
+export class Tracker<
 	Events extends Record<string, unknown> = Record<string, unknown>,
 > {
 	private scope: Scope;
 	private emitter: Emitter<Events>;
 
 	/**
-	 * Create a new Reactive instance.
+	 * Create a new Tracker instance.
 	 *
 	 * @param adapter - Optional reactivity adapter to use immediately
 	 */
@@ -492,13 +492,13 @@ export class Reactive<
 }
 
 /**
- * Create a new Reactive instance.
- * Convenience function alternative to `new Reactive()`.
+ * Create a new Tracker instance.
+ * Convenience function alternative to `new Tracker()`.
  *
  * @param adapter - Optional reactivity adapter
  */
-export function reactive<
+export function tracker<
 	Events extends Record<string, unknown> = Record<string, unknown>,
->(adapter?: ReactivityAdapter): Reactive<Events> {
-	return new Reactive<Events>(adapter);
+>(adapter?: ReactivityAdapter): Tracker<Events> {
+	return new Tracker<Events>(adapter);
 }

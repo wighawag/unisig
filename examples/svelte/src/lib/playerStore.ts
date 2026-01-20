@@ -1,5 +1,5 @@
 import {
-	Reactive,
+	Tracker,
 	type ReactivityAdapter,
 	type Listener,
 	type Unsubscribe,
@@ -28,10 +28,10 @@ type PlayerEvents = {
  * - Property level (specific property of a player)
  */
 class PlayerStore {
-	private $: Reactive<PlayerEvents>;
+	private $: Tracker<PlayerEvents>;
 
 	constructor(adapter?: ReactivityAdapter) {
-		this.$ = new Reactive<PlayerEvents>(adapter);
+		this.$ = new Tracker<PlayerEvents>(adapter);
 	}
 	private players = new Map<string, Player>();
 
