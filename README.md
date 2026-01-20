@@ -686,10 +686,105 @@ $.emit("item:added", { id: "1", value: 42 }); // ✓
 $.emit("item:added", { id: "1" }); // ✗ Error: missing value
 ```
 
+## Performance: Read-Only vs Proxied Getters
+
+When designing your store API, you have an important choice between returning read-only objects (fast) or proxied objects (granular reactivity). This choice has significant performance implications.
+
+### Performance Comparison
+
+| Approach | Performance | Speedup |
+|----------|-------------|---------|
+| Proxied getters (deep proxy) | ~100K ops/sec | 1x (baseline) |
+| **Read-only getters (raw object)** | **~16M ops/sec** | **160x faster** |
+
+### Recommendation: Use Read-Only Getters by Default
+
+Return raw objects with `Readonly<T>` type annotation for most use cases:
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>()
+  private players = new Map<string, Player>()
+
+  // ✅ Fast: Returns raw object with tracking
+  get(id: string): Readonly<Player> | undefined {
+    this.$.trackItem('players', id)
+    return this.players.get(id)  // No proxy!
+  }
+
+  // Update methods trigger reactivity
+  updateScore(id: string, score: number): void {
+    const player = this.players.get(id)
+    if (!player) return
+    player.score = score
+    this.$.triggerItemProp('players', id, 'score', 'player:scored', { id, score })
+  }
+}
+```
+
+**Why this works:**
+- `trackItem()` registers the dependency, so components re-render when the item changes
+- Direct property access is 160x faster than through a proxy
+- `Readonly<T>` prevents accidental mutations at compile time
+- Component re-renders entirely when data changes (usually fine for simple displays)
+
+### When to Use Live Objects
+
+Use live getters (with proxies) only when you need fine-grained property-level tracking:
+
+```typescript
+// For complex components that need granular updates
+getLive(id: string): Player | undefined {
+  this.$.trackItem('players', id)
+  const player = this.players.get(id)
+  return player ? this.$.deepItemProxy(player, 'players', id) : undefined
+}
+```
+
+**Use cases for proxies:**
+- Component has expensive rendering logic
+- You need to avoid full re-renders
+- Different properties update at different times
+- Performance of property-level updates matters
+
+### Property-Level Getters (Alternative)
+
+For fine-grained tracking without proxy overhead:
+
+```typescript
+class PlayerStore {
+  // Fast property-level tracking (no proxy overhead)
+  getScore(id: string): number | undefined {
+    this.$.trackItemProp('players', id, 'score')
+    return this.players.get(id)?.score
+  }
+
+  getName(id: string): string | undefined {
+    this.$.trackItemProp('players', id, 'name')
+    return this.players.get(id)?.name
+  }
+}
+```
+
+**Performance:** Same as read-only getters (~16M ops/sec), but with granular tracking.
+
+### Summary
+
+| Use Case | Recommended Approach | Performance |
+|----------|---------------------|-------------|
+| Simple list display | `get()` / `getAll()` (read-only) | ⚡ ~16M ops/sec |
+| Property display | `getName()` / `getScore()` (property getters) | ⚡ ~16M ops/sec |
+| Complex component | `getLive()` / `getAllLive()` (live/proxied) | 🐢 ~100K ops/sec |
+
+**Key insight:** Start with read-only getters. They're 160x faster and work great for most use cases. Only use live objects when you have a proven performance problem that property-level tracking can solve.
+
+For detailed examples and usage patterns, see [PATTERNS.md - Read-Only vs Proxied Getters](./PATTERNS.md#read-only-vs-proxied-getters).
+
 ## Patterns and Best Practices
 
 See [PATTERNS.md](./PATTERNS.md) for:
 
+- Read-Only vs Proxied Getters
 - Pre-indexing for O(1) lookups
 - Lazy caching strategies
 - Cross-store dependencies

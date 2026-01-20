@@ -4,12 +4,305 @@ This guide covers common patterns for building efficient, reactive data stores w
 
 ## Table of Contents
 
+- [Read-Only vs Proxied Getters](#read-only-vs-proxied-getters)
 - [Pre-Indexing for O(1) Lookups](#pre-indexing-for-o1-lookups)
 - [Lazy Caching](#lazy-caching)
 - [Cross-Store Dependencies](#cross-store-dependencies)
 - [Event-Based Alternatives](#event-based-alternatives)
 
 ---
+
+## Read-Only vs Live Getters
+
+When designing your store API, you have a choice between returning read-only objects (fast) or live objects with granular reactivity (proxied). This choice has significant performance implications.
+
+### The Trade-off
+
+| Approach | Performance | Granularity | Best For |
+|----------|-------------|-------------|----------|
+| **Read-only getters** | ~16M ops/sec (fast) | Item-level tracking | Display components, lists, simple UIs |
+| **Live getters (proxied)** | ~100K ops/sec (160x slower) | Property-level tracking | Complex components, fine-grained updates |
+
+### Read-Only Getters (Recommended Default)
+
+Return raw objects with `Readonly<T>` type annotation. This is fast and works great for most use cases.
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>()
+  private players = new Map<string, Player>()
+
+  /**
+   * Get a specific player as readonly.
+   * Returns the raw object (fast - no proxy overhead) but tracks changes.
+   * The return type is `Readonly<Player>` to prevent mutations.
+   * Use update methods to modify the player instead.
+   *
+   * Re-runs when this player changes OR is removed.
+   *
+   * Performance: ~16M ops/sec (vs ~100K ops/sec for proxied version)
+   * Use this for read-only display components that re-render entirely.
+   */
+  get(id: string): Readonly<Player> | undefined {
+    this.$.trackItem('players', id)  // Track at item level
+    return this.players.get(id)      // Return raw object
+  }
+
+  /**
+   * Get all players as readonly.
+   * Returns raw objects (fast - no proxy overhead) but tracks collection changes.
+   * The return type is `Readonly<Player>[]` to prevent mutations.
+   *
+   * Re-runs when players are added or removed.
+   */
+  getAll(): Readonly<Player>[] {
+    this.$.track('players')
+    return [...this.players.values()]
+  }
+
+  /**
+   * Update a player's name.
+   * ONLY triggers name watchers, not score or level watchers.
+   */
+  updateName(id: string, name: string): void {
+    const player = this.players.get(id)
+    if (!player) return
+    player.name = name
+    this.$.triggerItemProp('players', id, 'name', 'player:renamed', { id, name })
+  }
+}
+```
+
+**Usage in components:**
+
+```svelte
+<!-- In Svelte -->
+<script>
+  const player = playerStore.get('player-1')
+  // Type: Readonly<Player> | undefined
+</script>
+
+{#if player}
+  <h1>{player.name}</h1>
+  <p>Score: {player.score}</p>
+  
+  <!-- TypeScript error: cannot assign to readonly property -->
+  <!-- player.score = 100  ❌ Error! -->
+{/if}
+
+<!-- To update, use the store's update method -->
+<button on:click={() => playerStore.updateScore('player-1', 100)}>
+  Add points
+</button>
+```
+
+### When to Use Read-Only Getters
+
+✅ **Use read-only getters when:**
+- Displaying data in components (lists, cards, tables)
+- Component will re-render entirely when data changes
+- Simple CRUD operations
+- Performance is important
+- You don't need property-level granular updates
+
+❌ **Avoid read-only getters when:**
+- You need property-level tracking to avoid re-rendering
+- Component has expensive rendering logic
+- You want to update only specific DOM elements
+
+### Proxied Getters (For Granular Reactivity)
+
+Return proxied objects for automatic property-level tracking. Use this sparingly when you really need fine-grained updates.
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>()
+  private players = new Map<string, Player>()
+
+  /**
+   * Get a specific player with deep proxy.
+   * Property access is automatically tracked at any nesting level.
+   * Use this when you need fine-grained property-level tracking.
+   *
+   * Performance: ~100K ops/sec (slower due to proxy overhead)
+   * Use this for complex components that need granular reactivity.
+   */
+  getProxied(id: string): Player | undefined {
+    this.$.trackItem('players', id)
+    const player = this.players.get(id)
+    return player ? this.$.deepItemProxy(player, 'players', id) : undefined
+  }
+
+  /**
+   * Get all players with deep proxies.
+   * Each player's property access is tracked.
+   * Use this when you need fine-grained property-level tracking for each item.
+   *
+   * Performance: ~100K ops/sec (slower due to proxy overhead)
+   * Use this for complex components that need granular reactivity.
+   */
+  getAllProxied(): Player[] {
+    this.$.track('players')
+    return [...this.players.values()].map((player) =>
+      this.$.deepItemProxy(player, 'players', player.id)
+    )
+  }
+}
+```
+
+**Usage in components:**
+
+```svelte
+<!-- In Svelte -->
+<script>
+  const player = $derived(playerStore.getProxied('player-1'))
+  // Type: Player | undefined (proxied)
+</script>
+
+<!-- This only re-renders when player.name changes -->
+<h1>{player?.name}</h1>
+
+<!-- This only re-renders when player.score changes -->
+<p>Score: {player?.score}</p>
+
+<!-- This works (modifies the proxy, which triggers updates) -->
+<button on:click={() => player && (player.score += 10)}>
+  Add points
+</button>
+```
+
+### When to Use Proxied Getters
+
+✅ **Use proxied getters when:**
+- Component has expensive rendering logic
+- You need to avoid full re-renders
+- Different properties update at different times
+- Performance of property-level updates matters
+
+❌ **Avoid proxied getters when:**
+- Simple display components
+- Lists where entire item re-renders anyway
+- Performance-critical code paths
+- You're already fine with item-level updates
+
+### Property-Level Getters (Alternative to Proxies)
+
+For fine-grained tracking without proxy overhead, provide explicit property getters.
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>()
+  private players = new Map<string, Player>()
+
+  /**
+   * Get only a player's score.
+   * ONLY re-runs when this specific player's score changes.
+   */
+  getScore(id: string): number | undefined {
+    this.$.trackItemProp('players', id, 'score')
+    return this.players.get(id)?.score
+  }
+
+  /**
+   * Get only a player's name.
+   * ONLY re-runs when this specific player's name changes.
+   */
+  getName(id: string): string | undefined {
+    this.$.trackItemProp('players', id, 'name')
+    return this.players.get(id)?.name
+  }
+
+  /**
+   * Get only a player's level.
+   * ONLY re-runs when this specific player's level changes.
+   */
+  getLevel(id: string): number | undefined {
+    this.$.trackItemProp('players', id, 'level')
+    return this.players.get(id)?.level
+  }
+}
+```
+
+**Usage in components:**
+
+```svelte
+<!-- In Svelte -->
+<script>
+  const playerName = $derived(playerStore.getName('player-1'))
+  const playerScore = $derived(playerStore.getScore('player-1'))
+  const playerLevel = $derived(playerStore.getLevel('player-1'))
+</script>
+
+<!-- Each only re-renders when its specific property changes -->
+<h1>{playerName}</h1>
+<p>Score: {playerScore}</p>
+<p>Level: {playerLevel}</p>
+```
+
+**Performance:** Same as read-only getters (~16M ops/sec), but with granular tracking.
+
+### Hybrid Approach (Best of Both Worlds)
+
+Provide both APIs and let the consumer choose based on their needs.
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>()
+  private players = new Map<string, Player>()
+
+  // Fast read-only access (default)
+  get(id: string): Readonly<Player> | undefined {
+    this.$.trackItem('players', id)
+    return this.players.get(id)
+  }
+
+  getAll(): Readonly<Player>[] {
+    this.$.track('players')
+    return [...this.players.values()]
+  }
+
+  // Granular property access (fast)
+  getScore(id: string): number | undefined {
+    this.$.trackItemProp('players', id, 'score')
+    return this.players.get(id)?.score
+  }
+
+  getName(id: string): string | undefined {
+    this.$.trackItemProp('players', id, 'name')
+    return this.players.get(id)?.name
+  }
+
+  // Proxied access (for complex components)
+  getProxied(id: string): Player | undefined {
+    this.$.trackItem('players', id)
+    const player = this.players.get(id)
+    return player ? this.$.deepItemProxy(player, 'players', id) : undefined
+  }
+
+  getAllProxied(): Player[] {
+    this.$.track('players')
+    return [...this.players.values()].map((player) =>
+      this.$.deepItemProxy(player, 'players', player.id)
+    )
+  }
+
+  // Raw access (no tracking)
+  getRaw(id: string): Player | undefined {
+    return this.players.get(id)
+  }
+}
+```
+
+### Summary: Which Should You Use?
+
+| Use Case | Recommended Approach | Performance |
+|----------|---------------------|-------------|
+| Simple list display | `get()` / `getAll()` (read-only) | ⚡ ~16M ops/sec |
+| Property display | `getName()` / `getScore()` (property getters) | ⚡ ~16M ops/sec |
+| Complex component | `getProxied()` / `getAllProxied()` (proxied) | 🐢 ~100K ops/sec |
+| Non-reactive access | `getRaw()` (raw) | ⚡ ~16M ops/sec |
+
+**Key insight:** Start with read-only getters. They're 160x faster and work great for most use cases. Only use proxies when you have a proven performance problem that property-level tracking can solve.
 
 ## Pre-Indexing for O(1) Lookups
 
@@ -535,6 +828,9 @@ You don't need separate "Direct" methods - the same methods work everywhere!
 
 | Pattern | Use Case |
 |---------|----------|
+| **Read-Only Getters** | Fast access for display components (default choice) |
+| **Property-Level Getters** | Granular tracking without proxy overhead |
+| **Proxied Getters** | Complex components needing fine-grained updates |
 | **Pre-Indexing** | Frequent lookups by a specific field |
 | **Lazy Caching** | Less frequent lookups, simpler code |
 | **Cross-Store Tracking** | Derived values from multiple stores (signals) |

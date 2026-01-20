@@ -66,11 +66,30 @@ class PlayerStore {
 	}
 
 	/**
-	 * Get all players with deep proxies.
-	 * Each player's property access is tracked.
+	 * Get all players as readonly.
+	 * Returns raw objects (fast - no proxy overhead) but tracks collection changes.
+	 * The return type is `Readonly<Player>[]` to prevent mutations.
+	 * Use update methods to modify players instead.
+	 *
 	 * Re-runs when players are added or removed.
+	 *
+	 * Performance: ~16M ops/sec (vs ~100K ops/sec for proxied version)
+	 * Use this for read-only display components that re-render entirely.
 	 */
-	getAll(): Player[] {
+	getAll(): Readonly<Player>[] {
+		this.$.track('players');
+		return [...this.players.values()];
+	}
+
+	/**
+	 * Get all players as live objects.
+	 * Each player's property access is tracked.
+	 * Use this when you need fine-grained property-level tracking for each item.
+	 *
+	 * Performance: ~100K ops/sec (slower due to proxy overhead)
+	 * Use this for complex components that need granular reactivity.
+	 */
+	getAllLive(): Player[] {
 		this.$.track('players');
 		return [...this.players.values()].map((player) =>
 			this.$.deepItemProxy(player, 'players', player.id),
@@ -89,11 +108,30 @@ class PlayerStore {
 	// ==================== ITEM LEVEL ====================
 
 	/**
-	 * Get a specific player with deep proxy.
-	 * Property access is automatically tracked at any nesting level.
+	 * Get a specific player as readonly.
+	 * Returns the raw object (fast - no proxy overhead) but tracks changes.
+	 * The return type is `Readonly<Player>` to prevent mutations.
+	 * Use update methods to modify the player instead.
+	 *
 	 * Re-runs when this player changes OR is removed.
+	 *
+	 * Performance: ~16M ops/sec (vs ~100K ops/sec for proxied version)
+	 * Use this for read-only display components that re-render entirely.
 	 */
-	get(id: string): Player | undefined {
+	get(id: string): Readonly<Player> | undefined {
+		this.$.trackItem('players', id);
+		return this.players.get(id);
+	}
+
+	/**
+	 * Get a specific player as live object.
+	 * Property access is automatically tracked at any nesting level.
+	 * Use this when you need fine-grained property-level tracking.
+	 *
+	 * Performance: ~100K ops/sec (slower due to proxy overhead)
+	 * Use this for complex components that need granular reactivity.
+	 */
+	getLive(id: string): Player | undefined {
 		this.$.trackItem('players', id);
 		const player = this.players.get(id);
 		return player ? this.$.deepItemProxy(player, 'players', id) : undefined;
@@ -102,6 +140,9 @@ class PlayerStore {
 	/**
 	 * Get a raw player object (snapshot, no tracking).
 	 * Use this when you need the actual data without reactivity.
+	 *
+	 * Performance: Direct access, no tracking overhead.
+	 * Use this for non-reactive operations (e.g., export, logging).
 	 */
 	getRaw(id: string): Player | undefined {
 		return this.players.get(id);

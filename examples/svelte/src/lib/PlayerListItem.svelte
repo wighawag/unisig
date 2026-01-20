@@ -8,7 +8,7 @@
 	const {playerId}: Props = $props();
 
 	// Using deep proxy - property access is automatically tracked
-	const player = $derived.by(() => playerStore.get(playerId));
+	const player = $derived.by(() => playerStore.getLive(playerId));
 </script>
 
 {#if player}
