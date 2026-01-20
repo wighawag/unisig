@@ -11,6 +11,7 @@
     "format:check": "pnpm -r format:check",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "bench": "pnpm -r bench",
     "dev": "pnpm --filter examples/svelte dev"
   }
 }
