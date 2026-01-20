@@ -48,12 +48,25 @@ class PlayerStore {
   // ==================== COLLECTION LEVEL ====================
 
   /**
-   * Get all players.
+   * Get all player IDs.
+   * Re-runs when players are added or removed.
+   * Use this for iterating and pass IDs to get() for each item.
+   */
+  getIds(): string[] {
+    this.$.track('players')
+    return [...this.players.keys()]
+  }
+
+  /**
+   * Get all players with deep proxies.
+   * Each player's property access is tracked.
    * Re-runs when players are added or removed.
    */
   getAll(): Player[] {
     this.$.track('players')
-    return [...this.players.values()]
+    return [...this.players.values()].map(player =>
+      this.$.deepItemProxy(player, 'players', player.id)
+    )
   }
 
   /**
@@ -65,34 +78,25 @@ class PlayerStore {
     return this.players.size
   }
 
-  /**
-   * Get all player IDs.
-   * Re-runs when players are added or removed.
-   */
-  getIds(): string[] {
-    this.$.track('players')
-    return [...this.players.keys()]
-  }
-
   // ==================== ITEM LEVEL ====================
 
   /**
-   * Get a specific player.
+   * Get a specific player with deep proxy.
+   * Property access is automatically tracked at any nesting level.
    * Re-runs when this player changes OR is removed.
    */
   get(id: string): Player | undefined {
     this.$.trackItem('players', id)
-    return this.players.get(id)
+    const player = this.players.get(id)
+    return player ? this.$.deepItemProxy(player, 'players', id) : undefined
   }
 
   /**
-   * Get a player with auto-tracking proxy.
-   * The returned object auto-tracks property reads.
+   * Get a raw player object (snapshot, no tracking).
+   * Use this when you need the actual data without reactivity.
    */
-  getWithProxy(id: string): Player | undefined {
-    this.$.trackItem('players', id)
-    const player = this.players.get(id)
-    return player ? this.$.itemProxy(player, 'players', id) : undefined
+  getRaw(id: string): Player | undefined {
+    return this.players.get(id)
   }
 
   // ==================== PROPERTY LEVEL ====================

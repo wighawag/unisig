@@ -467,4 +467,292 @@ export class Scope {
       }
     })
   }
+
+  // ============ DEEP AUTO-TRACKING PROXIES ============
+
+  /**
+   * Types that should not be proxied (they have special internal state)
+   */
+  private static readonly SKIP_PROXY_TYPES = [
+    Date, RegExp, Map, Set, WeakMap, WeakSet, Error
+  ]
+
+  /**
+   * Check if a value should be deeply proxied
+   */
+  private shouldDeepProxy(value: unknown): value is object {
+    if (value === null || typeof value !== 'object') return false
+    if (Scope.SKIP_PROXY_TYPES.some(Type => value instanceof Type)) return false
+    // Skip if it's a promise-like object
+    if (typeof (value as any).then === 'function') return false
+    return true
+  }
+
+  /**
+   * Create a deep proxy that auto-tracks property reads at any nesting level.
+   * Uses dot notation for nested paths (e.g., 'stats.health').
+   *
+   * @param target - The object to wrap
+   * @param key - The dependency key for this object
+   * @returns A deeply proxied object
+   *
+   * @example
+   * ```ts
+   * getConfig() {
+   *   this.scope.track('config')
+   *   return this.scope.deepProxy(this.config, 'config')
+   * }
+   *
+   * // Nested access is tracked:
+   * createEffect(() => {
+   *   console.log(store.getConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
+   * })
+   * ```
+   */
+  deepProxy<T extends object>(target: T, key: string): T {
+    return this.createDeepProxy(target, key, '', new WeakMap())
+  }
+
+  /**
+   * Create a deep proxy for a collection item that auto-tracks property reads
+   * at any nesting level. Uses dot notation for nested paths.
+   *
+   * @param target - The object to wrap
+   * @param collection - The collection name
+   * @param id - The item id
+   * @returns A deeply proxied object
+   *
+   * @example
+   * ```ts
+   * getUser(id: string) {
+   *   this.scope.trackItem('users', id)
+   *   const user = this.users.get(id)
+   *   return user ? this.scope.deepItemProxy(user, 'users', id) : undefined
+   * }
+   *
+   * // Nested access is tracked:
+   * createEffect(() => {
+   *   const user = store.getUser('1')
+   *   console.log(user?.stats.health) // Tracks 'stats.health'
+   * })
+   * ```
+   */
+  deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T {
+    return this.createDeepItemProxy(target, collection, id, '', new WeakMap())
+  }
+
+  /**
+   * Internal: Create a deep proxy for key-based tracking
+   */
+  private createDeepProxy<T extends object>(
+    target: T,
+    key: string,
+    basePath: string,
+    cache: WeakMap<object, object>
+  ): T {
+    // Return cached proxy if exists (maintains identity)
+    if (cache.has(target)) {
+      return cache.get(target) as T
+    }
+
+    const scope = this
+
+    const proxy = new Proxy(target, {
+      get(obj, prop, receiver) {
+        const value = Reflect.get(obj, prop, receiver)
+
+        // Only track string properties (not symbols)
+        if (typeof prop === 'string') {
+          const fullPath = basePath ? `${basePath}.${prop}` : prop
+          scope.trackProp(key, fullPath)
+
+          // Recursively proxy nested objects
+          if (scope.shouldDeepProxy(value)) {
+            return scope.createDeepProxy(value, key, fullPath, cache)
+          }
+
+          // Handle arrays specially
+          if (Array.isArray(value)) {
+            return scope.createDeepArrayProxy(value, key, '', fullPath, cache, 'prop')
+          }
+        }
+
+        return value
+      },
+
+      set(obj, prop, value, receiver) {
+        const result = Reflect.set(obj, prop, value, receiver)
+
+        if (typeof prop === 'string') {
+          const fullPath = basePath ? `${basePath}.${prop}` : prop
+          scope.triggerProp(key, fullPath)
+        }
+
+        return result
+      }
+    })
+
+    cache.set(target, proxy)
+    return proxy as T
+  }
+
+  /**
+   * Internal: Create a deep proxy for item-based tracking
+   */
+  private createDeepItemProxy<T extends object>(
+    target: T,
+    collection: string,
+    id: string | number,
+    basePath: string,
+    cache: WeakMap<object, object>
+  ): T {
+    // Return cached proxy if exists (maintains identity)
+    if (cache.has(target)) {
+      return cache.get(target) as T
+    }
+
+    const scope = this
+
+    const proxy = new Proxy(target, {
+      get(obj, prop, receiver) {
+        const value = Reflect.get(obj, prop, receiver)
+
+        // Only track string properties (not symbols)
+        if (typeof prop === 'string') {
+          const fullPath = basePath ? `${basePath}.${prop}` : prop
+          scope.trackItemProp(collection, id, fullPath)
+
+          // Recursively proxy nested objects
+          if (scope.shouldDeepProxy(value)) {
+            return scope.createDeepItemProxy(value, collection, id, fullPath, cache)
+          }
+
+          // Handle arrays specially
+          if (Array.isArray(value)) {
+            return scope.createDeepArrayProxy(value, collection, id, fullPath, cache, 'item')
+          }
+        }
+
+        return value
+      },
+
+      set(obj, prop, value, receiver) {
+        const result = Reflect.set(obj, prop, value, receiver)
+
+        if (typeof prop === 'string') {
+          const fullPath = basePath ? `${basePath}.${prop}` : prop
+          scope.triggerItemProp(collection, id, fullPath)
+        }
+
+        return result
+      }
+    })
+
+    cache.set(target, proxy)
+    return proxy as T
+  }
+
+  /**
+   * Internal: Create a deep proxy for arrays
+   * Handles both numeric index access and mutation methods
+   */
+  private createDeepArrayProxy<T>(
+    arr: T[],
+    keyOrCollection: string,
+    idOrPath: string | number,
+    path: string,
+    cache: WeakMap<object, object>,
+    mode: 'prop' | 'item'
+  ): T[] {
+    // Return cached proxy if exists
+    if (cache.has(arr)) {
+      return cache.get(arr) as T[]
+    }
+
+    const scope = this
+
+    // Helper to track/trigger based on mode
+    const track = (propPath: string) => {
+      if (mode === 'prop') {
+        scope.trackProp(keyOrCollection, propPath)
+      } else {
+        scope.trackItemProp(keyOrCollection, idOrPath, propPath)
+      }
+    }
+
+    const trigger = (propPath: string) => {
+      if (mode === 'prop') {
+        scope.triggerProp(keyOrCollection, propPath)
+      } else {
+        scope.triggerItemProp(keyOrCollection, idOrPath, propPath)
+      }
+    }
+
+    // Mutation methods that should trigger the array itself
+    const mutationMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']
+
+    const proxy = new Proxy(arr, {
+      get(target, prop, receiver) {
+        const value = Reflect.get(target, prop, receiver)
+
+        if (typeof prop === 'string') {
+          // Numeric index access
+          if (!isNaN(Number(prop))) {
+            const fullPath = `${path}.${prop}`
+            track(fullPath)
+
+            if (scope.shouldDeepProxy(value)) {
+              if (mode === 'prop') {
+                return scope.createDeepProxy(value as object, keyOrCollection, fullPath, cache)
+              } else {
+                return scope.createDeepItemProxy(value as object, keyOrCollection, idOrPath, fullPath, cache)
+              }
+            }
+
+            return value
+          }
+
+          // Array length
+          if (prop === 'length') {
+            track(`${path}.length`)
+            return value
+          }
+
+          // Mutation methods - wrap to trigger after mutation
+          if (mutationMethods.includes(prop) && typeof value === 'function') {
+            return function (this: T[], ...args: unknown[]) {
+              const result = (value as Function).apply(target, args)
+              trigger(path) // Trigger the array path
+              return result
+            }
+          }
+
+          // Iteration methods that access elements
+          if (['forEach', 'map', 'filter', 'find', 'findIndex', 'some', 'every', 'reduce', 'reduceRight'].includes(prop)) {
+            track(path) // Track the whole array for iteration
+            return value
+          }
+        }
+
+        return value
+      },
+
+      set(target, prop, value, receiver) {
+        const result = Reflect.set(target, prop, value, receiver)
+
+        if (typeof prop === 'string') {
+          if (!isNaN(Number(prop))) {
+            trigger(`${path}.${prop}`)
+          } else if (prop === 'length') {
+            trigger(path)
+          }
+        }
+
+        return result
+      }
+    })
+
+    cache.set(arr, proxy)
+    return proxy as T[]
+  }
 }

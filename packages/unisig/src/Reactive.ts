@@ -402,6 +402,61 @@ export class Reactive<Events extends Record<string, unknown> = Record<string, un
     return this.scope.itemProxy(target, collection, id)
   }
 
+  // ============ DEEP AUTO-TRACKING PROXIES ============
+
+  /**
+   * Create a deep proxy that auto-tracks property reads at any nesting level.
+   * Uses dot notation for nested paths (e.g., 'stats.health').
+   *
+   * @param target - The object to wrap
+   * @param key - The dependency key for this object
+   * @returns A deeply proxied object
+   *
+   * @example
+   * ```ts
+   * getConfig() {
+   *   this.$.track('config')
+   *   return this.$.deepProxy(this.config, 'config')
+   * }
+   *
+   * // Nested access is tracked:
+   * createEffect(() => {
+   *   console.log(store.getConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
+   * })
+   * ```
+   */
+  deepProxy<T extends object>(target: T, key: string): T {
+    return this.scope.deepProxy(target, key)
+  }
+
+  /**
+   * Create a deep proxy for a collection item that auto-tracks property reads
+   * at any nesting level. Uses dot notation for nested paths.
+   *
+   * @param target - The object to wrap
+   * @param collection - The collection name
+   * @param id - The item id
+   * @returns A deeply proxied object
+   *
+   * @example
+   * ```ts
+   * getUser(id: string) {
+   *   this.$.trackItem('users', id)
+   *   const user = this.users.get(id)
+   *   return user ? this.$.deepItemProxy(user, 'users', id) : undefined
+   * }
+   *
+   * // Nested access is tracked:
+   * createEffect(() => {
+   *   const user = store.getUser('1')
+   *   console.log(user?.stats.health) // Tracks 'stats.health'
+   * })
+   * ```
+   */
+  deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T {
+    return this.scope.deepItemProxy(target, collection, id)
+  }
+
   // ============ CLEANUP ============
 
   /**

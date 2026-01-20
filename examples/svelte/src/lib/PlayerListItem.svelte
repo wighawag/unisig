@@ -7,16 +7,13 @@
   
   const { playerId }: Props = $props()
   
-  // Using specific property getters for fine-grained reactivity
-  // Each property is tracked independently
-  const name = $derived.by(() => playerStore.getName(playerId))
-  const score = $derived.by(() => playerStore.getScore(playerId))
-  const level = $derived.by(() => playerStore.getLevel(playerId))
+  // Using deep proxy - property access is automatically tracked
+  const player = $derived.by(() => playerStore.get(playerId))
 </script>
 
-{#if name !== undefined}
+{#if player}
   <li>
-    {name} - Score: {score}, Level: {level}
+    {player.name} - Score: {player.score}, Level: {player.level}
     <button class="small" onclick={() => playerStore.remove(playerId)}>×</button>
   </li>
 {/if}

@@ -425,9 +425,13 @@ $.triggerRemove(collection, id, event?, data?) // Notify item + list + cleanup
 $.triggerProp(key, prop, event?, data?)       // Notify property only
 $.triggerItemProp(collection, id, prop, event?, data?) // Notify item property only
 
-// Auto-tracking proxies
+// Auto-tracking proxies (shallow - first level only)
 $.proxy(target, key)       // Create auto-tracking proxy for an object
 $.itemProxy(target, collection, id) // Create auto-tracking proxy for a collection item
+
+// Deep auto-tracking proxies (any nesting level)
+$.deepProxy(target, key)   // Deep proxy with dot notation paths
+$.deepItemProxy(target, collection, id) // Deep proxy for collection items
 
 // Direct access
 $.dep(key)                 // Get/create dependency
@@ -716,6 +720,119 @@ createEffect(() => {
 
 // Modify through proxy:
 store.getConfig().theme = "light"; // Only first effect re-runs
+```
+
+## Deep Auto-Tracking Proxies
+
+For objects with nested properties, use `deepProxy()` and `deepItemProxy()`. These recursively wrap nested objects and track property access at any depth using dot notation paths.
+
+```typescript
+interface Player {
+  id: string
+  name: string
+  stats: {
+    health: number
+    mana: number
+  }
+  inventory: string[]
+}
+
+class GameStore {
+  private $ = new Reactive<GameEvents>()
+  private players = new Map<string, Player>()
+  
+  setAdapter(adapter: ReactivityAdapter) {
+    this.$.setAdapter(adapter)
+  }
+  
+  // Returns a deep proxy - nested access is tracked
+  getPlayer(id: string) {
+    this.$.trackItem('players', id)
+    const player = this.players.get(id)
+    return player ? this.$.deepItemProxy(player, 'players', id) : undefined
+  }
+  
+  // Raw access without tracking
+  getPlayerRaw(id: string) {
+    return this.players.get(id)
+  }
+}
+
+// Usage in Solid.js:
+createEffect(() => {
+  const player = store.getPlayer('1')
+  // Nested access is automatically tracked with dot notation:
+  console.log(player?.stats.health)  // Tracks 'stats.health'
+  console.log(player?.stats.mana)    // Tracks 'stats.mana'
+  console.log(player?.inventory[0])  // Tracks 'inventory.0'
+})
+```
+
+### Deep vs Shallow Proxies
+
+| Method | Nesting | Path Format | Use Case |
+|--------|---------|-------------|----------|
+| `proxy()` | First level only | `'theme'` | Flat objects |
+| `itemProxy()` | First level only | `'score'` | Flat items |
+| `deepProxy()` | Any depth | `'stats.health'` | Nested objects |
+| `deepItemProxy()` | Any depth | `'stats.health'` | Nested items |
+
+### What Gets Proxied
+
+Deep proxies recursively wrap:
+- Plain objects `{}`
+- Arrays `[]` (with index tracking and mutation method support)
+
+Deep proxies do **not** proxy:
+- `Date`, `RegExp`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Error`
+- Promise-like objects
+- Primitives (strings, numbers, booleans, null, undefined)
+
+### Array Support
+
+Arrays are proxied with full support for:
+
+```typescript
+createEffect(() => {
+  const player = store.getPlayer('1')
+  
+  // Index access - tracks 'inventory.0'
+  console.log(player?.inventory[0])
+  
+  // Length - tracks 'inventory.length'
+  console.log(player?.inventory.length)
+  
+  // Mutation methods trigger the array path
+  player?.inventory.push('sword')  // Triggers 'inventory'
+})
+```
+
+### Proxy Identity
+
+Deep proxies maintain identity via WeakMap caching:
+
+```typescript
+const player = store.getPlayer('1')
+player.stats === player.stats  // true (same proxy instance)
+```
+
+### Best Practices
+
+1. **Use deep proxy for nested data** - When your items have nested objects
+2. **Use shallow proxy for flat data** - When your items are simple (id, name, score)
+3. **Use `getRaw()` for snapshots** - When you need the actual data without reactivity
+4. **Prefer `getIds()` for iteration** - Return IDs and let consumers call `get(id)` for each
+
+```typescript
+// ✓ Good - each item gets its own reactive scope
+const ids = store.getIds()
+for (const id of ids) {
+  const player = store.get(id)  // Deep proxy, auto-tracked
+}
+
+// ✗ Less ideal - getAll() creates proxies but may not track properly
+// depending on where property access happens
+const players = store.getAll()
 ```
 
 ## TypeScript
