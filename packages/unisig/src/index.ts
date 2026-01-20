@@ -7,13 +7,14 @@ export {NoAdapterError} from './standalone';
 
 // Emitter
 export {Emitter} from './Emitter';
-export type {Listener, Unsubscribe} from './Emitter';
+export type {Listener, Unsubscribe, EmitterOptions} from './Emitter';
 
 // Scope
 export {Scope} from './Scope';
 
 // Tracker (main export)
 export {Tracker, tracker} from './Tracker';
+export type {TrackerOptions} from './Tracker';
 
 // Standalone reactive state (rune-like API)
 export {

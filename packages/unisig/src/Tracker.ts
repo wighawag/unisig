@@ -1,6 +1,42 @@
 import type {ReactivityAdapter, Dependency} from './types';
-import {Emitter, type Listener, type Unsubscribe} from './Emitter';
+import {Emitter, type Listener, type Unsubscribe, type EmitterOptions} from './Emitter';
 import {Scope} from './Scope';
+
+/**
+ * Options for configuring Tracker behavior
+ */
+export interface TrackerOptions<Events> {
+	/**
+	 * Optional reactivity adapter to use immediately
+	 */
+	adapter?: ReactivityAdapter;
+
+	/**
+	 * Optional error handler for event listener errors.
+	 * If provided, errors in listeners will be caught and passed to this handler.
+	 * If not provided, errors will propagate to the caller (fail-fast).
+	 *
+	 * @param event - The event being emitted
+	 * @param error - The error that occurred
+	 * @param listener - The listener function that threw the error
+	 *
+	 * @example
+	 * ```ts
+	 * const tracker = new Tracker<MyEvents>({
+	 *   adapter: myAdapter,
+	 *   errorHandler: (event, error, listener) => {
+	 *     console.error(`Error in ${String(event)}:`, error);
+	 *     Sentry.captureException(error);
+	 *   },
+	 * });
+	 * ```
+	 */
+	errorHandler?: (
+		event: keyof Events,
+		error: Error,
+		listener: Listener<unknown>,
+	) => void;
+}
 
 /**
  * Combined reactive helper that provides both signal tracking and event emission.
@@ -63,11 +99,46 @@ export class Tracker<
 	/**
 	 * Create a new Tracker instance.
 	 *
-	 * @param adapter - Optional reactivity adapter to use immediately
+	 * @param adapterOrOptions - Optional reactivity adapter, or options object with adapter and error handler
+	 *
+	 * @example
+	 * ```ts
+	 * // With adapter only (backward compatible)
+	 * const tracker = new Tracker<MyEvents>(adapter);
+	 *
+	 * // With error handler
+	 * const tracker = new Tracker<MyEvents>({
+	 *   adapter: myAdapter,
+	 *   errorHandler: (event, error, listener) => {
+	 *     console.error(`Error in ${String(event)}:`, error);
+	 *   },
+	 * });
+	 *
+	 * // With error handler only (no adapter)
+	 * const tracker = new Tracker<MyEvents>({
+	 *   errorHandler: (event, error, listener) => {
+	 *     console.error(`Error in ${String(event)}:`, error);
+	 *   },
+	 * });
+	 * ```
 	 */
-	constructor(adapter?: ReactivityAdapter) {
+	constructor(adapterOrOptions?: ReactivityAdapter | TrackerOptions<Events>) {
+		const isOptions =
+			typeof adapterOrOptions === 'object' &&
+			adapterOrOptions !== null &&
+			!('create' in adapterOrOptions); // Check if it's an adapter (has create method)
+
+		const adapter = isOptions
+			? (adapterOrOptions as TrackerOptions<Events>).adapter
+			: adapterOrOptions;
+		const errorHandler = isOptions
+			? (adapterOrOptions as TrackerOptions<Events>).errorHandler
+			: undefined;
+
 		this.scope = new Scope(adapter);
-		this.emitter = new Emitter<Events>();
+		this.emitter = new Emitter<Events>(
+			errorHandler ? {errorHandler} : undefined,
+		);
 	}
 
 	/**
@@ -495,10 +566,26 @@ export class Tracker<
  * Create a new Tracker instance.
  * Convenience function alternative to `new Tracker()`.
  *
- * @param adapter - Optional reactivity adapter
+ * @param adapterOrOptions - Optional reactivity adapter, or options object with adapter and error handler
+ *
+ * @example
+ * ```ts
+ * // With adapter only
+ * const tracker = tracker<MyEvents>(adapter);
+ *
+ * // With error handler
+ * const tracker = tracker<MyEvents>({
+ *   adapter: myAdapter,
+ *   errorHandler: (event, error, listener) => {
+ *     console.error(`Error in ${String(event)}:`, error);
+ *   },
+ * });
+ * ```
  */
 export function tracker<
 	Events extends Record<string, unknown> = Record<string, unknown>,
->(adapter?: ReactivityAdapter): Tracker<Events> {
-	return new Tracker<Events>(adapter);
+>(
+	adapterOrOptions?: ReactivityAdapter | TrackerOptions<Events>,
+): Tracker<Events> {
+	return new Tracker<Events>(adapterOrOptions);
 }

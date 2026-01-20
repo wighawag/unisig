@@ -619,4 +619,90 @@ describe('Tracker', () => {
 			expect(scoreDep.notify.mock.calls.length).toBe(scoreNotifyCount); // No new calls
 		});
 	});
+
+	describe('Error handling with error handler', () => {
+		it('should handle errors in event listeners with error handler', () => {
+			type Events = {
+				'user:error': {error: Error};
+			};
+
+			const errorHandler = vi.fn();
+			const r = new Tracker<Events>({errorHandler});
+			const testError = new Error('Test error');
+
+			r.on('user:error', (data) => {
+				throw testError;
+			});
+
+			r.emit('user:error', {error: testError});
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'user:error',
+				testError,
+				expect.any(Function),
+			);
+		});
+
+		it('should integrate error handler with store pattern', () => {
+			type StoreEvents = {
+				'user:added': {id: string; name: string};
+				'listener:error': {event: string; error: Error};
+			};
+
+			const errorHandler = vi.fn((event, error) => {
+				// In production, you might log this or send to error tracking
+				console.error(`Error in ${String(event)}:`, error);
+			});
+
+			class UserStore {
+				private $ = new Tracker<StoreEvents>({errorHandler});
+				private users = new Map<string, {id: string; name: string}>();
+
+				on: typeof this.$.on = (e, l) => this.$.on(e, l);
+
+				getAll() {
+					this.$.track('users');
+					return [...this.users.values()];
+				}
+
+				add(user: {id: string; name: string}) {
+					this.users.set(user.id, user);
+					this.$.trigger('users', 'user:added', user);
+				}
+			}
+
+			const store = new UserStore();
+			const errorListener = vi.fn(() => {
+				throw new Error('Listener crashed');
+			});
+
+			store.on('user:added', errorListener);
+			store.add({id: '1', name: 'Alice'});
+
+			expect(errorHandler).toHaveBeenCalled();
+			expect(errorHandler).toHaveBeenCalledWith(
+				'user:added',
+				expect.any(Error),
+				expect.any(Function),
+			);
+		});
+
+		it('should work with tracker() factory function and error handler', () => {
+			const errorHandler = vi.fn();
+			const r = tracker<TestEvents>({errorHandler});
+			const error = new Error('Factory error');
+
+			r.on('item:added', () => {
+				throw error;
+			});
+
+			r.emit('item:added', {id: '1', value: 42});
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
+		});
+	});
 });

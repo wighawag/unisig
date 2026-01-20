@@ -9,6 +9,37 @@ export type Listener<T = unknown> = (data: T) => void;
 export type Unsubscribe = () => void;
 
 /**
+ * Options for configuring Emitter behavior
+ */
+export interface EmitterOptions<Events> {
+	/**
+	 * Optional error handler for listener errors.
+	 * If provided, errors in listeners will be caught and passed to this handler.
+	 * If not provided, errors will propagate to the caller (fail-fast).
+	 *
+	 * @param event - The event being emitted
+	 * @param error - The error that occurred
+	 * @param listener - The listener function that threw the error
+	 *
+	 * @example
+	 * ```ts
+	 * const emitter = new Emitter<MyEvents>({
+	 *   errorHandler: (event, error, listener) => {
+	 *     console.error(`Error in ${String(event)}:`, error);
+	 *     // Send to error tracking service
+	 *     Sentry.captureException(error);
+	 *   },
+	 * });
+	 * ```
+	 */
+	errorHandler?: (
+		event: keyof Events,
+		error: Error,
+		listener: Listener<unknown>,
+	) => void;
+}
+
+/**
  * A minimal, type-safe event emitter.
  *
  * Extend this class or use it as a property to add event capabilities
@@ -30,11 +61,31 @@ export type Unsubscribe = () => void;
  *   }
  * }
  * ```
+ *
+ * @example
+ * ```ts
+ * // With error handler (production)
+ * const emitter = new Emitter<MyEvents>({
+ *   errorHandler: (event, error, listener) => {
+ *     console.error(`Error in ${String(event)}:`, error);
+ *   },
+ * });
+ * ```
  */
 export class Emitter<
 	Events extends Record<string, unknown> = Record<string, unknown>,
 > {
 	private _listeners = new Map<keyof Events, Set<Listener<unknown>>>();
+	private _errorHandler?: EmitterOptions<Events>['errorHandler'];
+
+	/**
+	 * Create a new Emitter instance.
+	 *
+	 * @param options - Optional configuration including error handler
+	 */
+	constructor(options?: EmitterOptions<Events>) {
+		this._errorHandler = options?.errorHandler;
+	}
 
 	/**
 	 * Subscribe to an event.
@@ -96,6 +147,11 @@ export class Emitter<
 	/**
 	 * Emit an event to all subscribed listeners.
 	 *
+	 * If an error handler is configured, errors in listeners will be caught
+	 * and passed to the handler, allowing other listeners to execute.
+	 * If no error handler is configured, errors will propagate immediately
+	 * (fail-fast behavior), stopping further listener execution.
+	 *
 	 * @param event - The event name to emit
 	 * @param data - The data to pass to listeners
 	 *
@@ -105,7 +161,22 @@ export class Emitter<
 	 * ```
 	 */
 	emit<K extends keyof Events>(event: K, data: Events[K]): void {
-		this._listeners.get(event)?.forEach((fn) => fn(data));
+		const listeners = this._listeners.get(event);
+		if (!listeners) return;
+
+		if (this._errorHandler) {
+			// Safe path with error handling
+			for (const fn of listeners) {
+				try {
+					fn(data);
+				} catch (err) {
+					this._errorHandler(event, err as Error, fn);
+				}
+			}
+		} else {
+			// Fast path - no error handling (fail-fast)
+			listeners.forEach((fn) => fn(data));
+		}
 	}
 
 	/**

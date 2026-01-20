@@ -252,4 +252,157 @@ describe('Emitter', () => {
 			expect(true).toBe(true);
 		});
 	});
+
+	describe('error handling', () => {
+		it('should propagate error when no error handler (fail-fast)', () => {
+			const emitter = new Emitter<TestEvents>();
+			const error = new Error('Listener error');
+
+			emitter.on('item:added', () => {
+				throw error;
+			});
+
+			expect(() => emitter.emit('item:added', {id: '1', name: 'Test'})).toThrow(
+				error,
+			);
+		});
+
+		it('should call error handler when configured', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+			const error = new Error('Listener error');
+
+			emitter.on('item:added', () => {
+				throw error;
+			});
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
+		});
+
+		it('should continue execution after error when handler configured', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+			const listener1 = vi.fn(() => {
+				throw new Error('Listener 1 error');
+			});
+			const listener2 = vi.fn();
+
+			emitter.on('item:added', listener1);
+			emitter.on('item:added', listener2);
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+
+			expect(listener1).toHaveBeenCalledTimes(1);
+			expect(listener2).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+		});
+
+		it('should handle multiple errors in same emit', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+			const error1 = new Error('Error 1');
+			const error2 = new Error('Error 2');
+
+			emitter.on('item:added', () => {
+				throw error1;
+			});
+			emitter.on('item:added', () => {
+				throw error2;
+			});
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+
+			expect(errorHandler).toHaveBeenCalledTimes(2);
+			expect(errorHandler).toHaveBeenNthCalledWith(
+				1,
+				'item:added',
+				error1,
+				expect.any(Function),
+			);
+			expect(errorHandler).toHaveBeenNthCalledWith(
+				2,
+				'item:added',
+				error2,
+				expect.any(Function),
+			);
+		});
+
+		it('should pass the listener function to error handler', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+			const error = new Error('Listener error');
+			const listenerFn = () => {
+				throw error;
+			};
+
+			emitter.on('item:added', listenerFn);
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				listenerFn,
+			);
+		});
+
+		it('should work with once() and error handler', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+			const listener = vi.fn(() => {
+				throw new Error('Once listener error');
+			});
+
+			emitter.once('item:added', listener);
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+
+			// Should not be called again (once behavior)
+			emitter.emit('item:added', {id: '2', name: 'Test'});
+			expect(listener).toHaveBeenCalledTimes(1);
+		});
+
+		it('should stop execution immediately when no error handler', () => {
+			const emitter = new Emitter<TestEvents>();
+			const listener1 = vi.fn(() => {
+				throw new Error('Error');
+			});
+			const listener2 = vi.fn();
+
+			emitter.on('item:added', listener1);
+			emitter.on('item:added', listener2);
+
+			expect(() => emitter.emit('item:added', {id: '1', name: 'Test'})).toThrow();
+
+			expect(listener1).toHaveBeenCalledTimes(1);
+			expect(listener2).not.toHaveBeenCalled();
+		});
+
+		it('should handle void events with errors', () => {
+			const errorHandler = vi.fn();
+			const emitter = new Emitter<TestEvents>({errorHandler});
+
+			emitter.on('cleared', () => {
+				throw new Error('Cleared error');
+			});
+
+			emitter.emit('cleared', undefined as void);
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'cleared',
+				expect.any(Error),
+				expect.any(Function),
+			);
+		});
+	});
 });

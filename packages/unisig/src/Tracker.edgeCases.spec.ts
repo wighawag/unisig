@@ -542,25 +542,131 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('Error handling', () => {
-		it('should handle errors in event listeners gracefully', () => {
+		it('should propagate error when no error handler (fail-fast)', () => {
 			const r = new Tracker<TestEvents>();
-			const errorListener = vi.fn(() => {
-				throw new Error('Test error');
+			const error = new Error('Listener error');
+
+			r.on('item:added', () => {
+				throw error;
 			});
-			const normalListener = vi.fn();
 
-			r.on('item:added', errorListener);
-			r.on('item:added', normalListener);
+			expect(() => r.emit('item:added', {id: '1', value: 42})).toThrow(
+				error,
+			);
+		});
 
-			// This might throw depending on implementation
-			try {
-				r.emit('item:added', {id: '1', value: 42});
-			} catch (e) {
-				// Error is expected
-			}
+		it('should call error handler when configured in Tracker', () => {
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({errorHandler});
+			const error = new Error('Listener error');
 
-			// Normal listener should have been called (implementation dependent)
-			// This test documents current behavior
+			r.on('item:added', () => {
+				throw error;
+			});
+
+			r.emit('item:added', {id: '1', value: 42});
+
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
+		});
+
+		it('should continue execution after error when handler configured', () => {
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({errorHandler});
+			const listener1 = vi.fn(() => {
+				throw new Error('Listener 1 error');
+			});
+			const listener2 = vi.fn();
+
+			r.on('item:added', listener1);
+			r.on('item:added', listener2);
+
+			r.emit('item:added', {id: '1', value: 42});
+
+			expect(listener1).toHaveBeenCalledTimes(1);
+			expect(listener2).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+		});
+
+		it('should handle errors in trigger() with event', () => {
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({errorHandler});
+			const error = new Error('Trigger error');
+
+			r.on('item:added', () => {
+				throw error;
+			});
+
+			r.trigger('items', 'item:added', {id: '1', value: 42});
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
+		});
+
+		it('should handle errors in once() listeners', () => {
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({errorHandler});
+			const listener = vi.fn(() => {
+				throw new Error('Once listener error');
+			});
+
+			r.once('item:added', listener);
+
+			r.emit('item:added', {id: '1', value: 42});
+
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(errorHandler).toHaveBeenCalledTimes(1);
+
+			// Should not be called again (once behavior)
+			r.emit('item:added', {id: '2', value: 43});
+			expect(listener).toHaveBeenCalledTimes(1);
+		});
+
+		it('should work with adapter and error handler together', () => {
+			const adapter = createMockAdapter();
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({adapter, errorHandler});
+			const error = new Error('Listener error');
+
+			r.on('item:added', () => {
+				throw error;
+			});
+
+			r.trigger('items', 'item:added', {id: '1', value: 42});
+
+			// Signal should still be triggered
+			expect(adapter.deps[0].notify).toHaveBeenCalled();
+			// Error should be handled
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
+		});
+
+		it('should work with options object containing only errorHandler', () => {
+			const errorHandler = vi.fn();
+			const r = new Tracker<TestEvents>({errorHandler});
+			const error = new Error('Listener error');
+
+			r.on('item:added', () => {
+				throw error;
+			});
+
+			r.emit('item:added', {id: '1', value: 42});
+
+			expect(errorHandler).toHaveBeenCalledWith(
+				'item:added',
+				error,
+				expect.any(Function),
+			);
 		});
 	});
 });
