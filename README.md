@@ -353,14 +353,13 @@ scope.track("key");
 scope.trigger("key");
 ```
 
-
 ## Standalone State with `withAdapter`
 
 For standalone reactive state (like Svelte runes, Solid signals, or Vue refs), use the factory pattern:
 
 ```typescript
-import { withAdapter, withAdapterRef } from 'unisig';
-import { solidReactivityAdapter } from '@signaldb/reactivity/solid';
+import { withAdapter, withAdapterRef } from "unisig";
+import { solidReactivityAdapter } from "@signaldb/solid";
 
 // Create configured state function
 const state = withAdapter(solidReactivityAdapter);
@@ -368,16 +367,16 @@ const ref = withAdapterRef(solidReactivityAdapter);
 
 // Primitives return Ref<T>
 const count = state(0);
-console.log(count.value);  // 0
-count.value++;             // Triggers updates
+console.log(count.value); // 0
+count.value++; // Triggers updates
 
 // Objects return deeply proxied versions
-const player = state({ name: 'Alice', score: 0, stats: { health: 100 } });
-console.log(player.name);        // Tracks 'name'
-player.score = 50;              // Notifies 'score' watchers
+const player = state({ name: "Alice", score: 0, stats: { health: 100 } });
+console.log(player.name); // Tracks 'name'
+player.score = 50; // Notifies 'score' watchers
 
 // Derived values use framework primitives
-const doubled = $derived.by(() => count.value * 2);  // Svelte
+const doubled = $derived.by(() => count.value * 2); // Svelte
 ```
 
 ### Benefits of Factory Pattern
@@ -391,17 +390,17 @@ const doubled = $derived.by(() => count.value * 2);  // Svelte
 
 unisig uses the same adapter pattern as [signaldb](https://github.com/MaxGraey/signaldb). You can use any adapter from the signaldb ecosystem:
 
-- `@signaldb/reactivity/solid` for Solid.js
-- `@signaldb/reactivity/preact` for Preact
-- `@signaldb/reactivity/vue` for Vue
-- `@signaldb/reactivity/mobx` for MobX
-- `@signaldb/reactivity/svelte` for Svelte
+- `@signaldb/solid` for Solid.js
+- `@signaldb/preact` for Preact
+- `@signaldb/vue` for Vue
+- `@signaldb/mobx` for MobX
+- `@signaldb/svelte` for Svelte
 
 Example with Solid.js:
 
 ```typescript
-import { solidReactivityAdapter } from '@signaldb/reactivity/solid';
-import { Tracker } from 'unisig';
+import { solidReactivityAdapter } from "@signaldb/solid";
+import { Tracker } from "unisig";
 
 const $ = new Tracker<UserEvents>(solidReactivityAdapter);
 ```
