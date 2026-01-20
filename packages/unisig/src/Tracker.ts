@@ -197,6 +197,51 @@ export class Tracker<
 		return this.emitter.once(event, listener);
 	}
 
+	/**
+	 * Create a subscription function for an event that calls the listener
+	 * immediately with the current value, then subscribes for future emissions.
+	 *
+	 * This factory pattern is useful for value-like events where subscribers
+	 * want to receive the current state immediately upon subscription.
+	 * Not all events have a concept of "current value", so this is opt-in
+	 * per event type.
+	 *
+	 * @param event - Event name to create subscription for
+	 * @param getCurrentValue - Function that returns the current value
+	 * @returns A subscription function that accepts a listener
+	 *
+	 * @example
+	 * ```ts
+	 * class Store {
+	 *   private $ = new Tracker<{ 'count:changed': number }>()
+	 *   private count = 0
+	 *
+	 *   // Create subscription function once
+	 *   subscribe = this.$.createSubscription('count:changed', () => this.count)
+	 *
+	 *   increment() {
+	 *     this.count++
+	 *     this.$.emit('count:changed', this.count)
+	 *   }
+	 * }
+	 *
+	 * // Subscriber receives current value immediately
+	 * store.subscribe((count) => console.log('Count:', count))
+	 * // Logs: "Count: 0" immediately upon subscription
+	 * ```
+	 */
+	createSubscription<K extends keyof Events>(
+		event: K,
+		getCurrentValue: () => Events[K],
+	): (listener: Listener<Events[K]>) => Unsubscribe {
+		return (listener: Listener<Events[K]>): Unsubscribe => {
+			// Call listener immediately with current value
+			listener(getCurrentValue());
+			// Then subscribe for future events
+			return this.on(event, listener);
+		};
+	}
+
 	// ============ DEPENDENCY ACCESS ============
 
 	/**

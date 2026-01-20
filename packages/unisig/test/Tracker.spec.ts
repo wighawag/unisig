@@ -108,6 +108,119 @@ describe('Tracker', () => {
 		});
 	});
 
+	describe('createSubscription()', () => {
+		it('should create a subscription function that calls listener immediately', () => {
+			type Events = {'count:changed': number};
+			const r = new Tracker<Events>();
+			const currentValue = 42;
+			
+			const subscribe = r.createSubscription('count:changed', () => currentValue);
+			const listener = vi.fn();
+
+			subscribe(listener);
+
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(listener).toHaveBeenCalledWith(42);
+		});
+
+		it('should also subscribe for future events', () => {
+			type Events = {'count:changed': number};
+			const r = new Tracker<Events>();
+			let currentValue = 42;
+			
+			const subscribe = r.createSubscription('count:changed', () => currentValue);
+			const listener = vi.fn();
+
+			subscribe(listener);
+			currentValue = 100;
+			r.emit('count:changed', currentValue);
+
+			expect(listener).toHaveBeenCalledTimes(2);
+			expect(listener).toHaveBeenNthCalledWith(1, 42);
+			expect(listener).toHaveBeenNthCalledWith(2, 100);
+		});
+
+		it('should return unsubscribe function from subscription', () => {
+			type Events = {'count:changed': number};
+			const r = new Tracker<Events>();
+			
+			const subscribe = r.createSubscription('count:changed', () => 42);
+			const listener = vi.fn();
+
+			const unsub = subscribe(listener);
+			
+			expect(listener).toHaveBeenCalledTimes(1);
+			
+			unsub();
+			r.emit('count:changed', 100);
+
+			expect(listener).toHaveBeenCalledTimes(1);
+		});
+
+		it('should work with store pattern for exposing subscription', () => {
+			type StoreEvents = {'state:changed': {value: number}};
+			
+			class Store {
+				private $ = new Tracker<StoreEvents>();
+				private state = {value: 42};
+
+				// Expose as public method
+				subscribe = this.$.createSubscription('state:changed', () => this.state);
+
+				setState(value: number) {
+					this.state = {value};
+					this.$.emit('state:changed', this.state);
+				}
+			}
+
+			const store = new Store();
+			const listener = vi.fn();
+
+			// Subscribe gets initial value immediately
+			const unsub = store.subscribe(listener);
+			expect(listener).toHaveBeenCalledTimes(1);
+			expect(listener).toHaveBeenCalledWith({value: 42});
+
+			// Future events also trigger
+			store.setState(100);
+			expect(listener).toHaveBeenCalledTimes(2);
+			expect(listener).toHaveBeenNthCalledWith(2, {value: 100});
+
+			// Unsubscribe works
+			unsub();
+			store.setState(200);
+			expect(listener).toHaveBeenCalledTimes(2);
+		});
+
+		it('should call getCurrentValue function at subscription time, not creation time', () => {
+			type Events = {'count:changed': number};
+			const r = new Tracker<Events>();
+			let value = 0;
+			
+			// Create subscription function
+			const subscribe = r.createSubscription('count:changed', () => value);
+
+			const listener1 = vi.fn();
+			const listener2 = vi.fn();
+
+			// Subscribe first listener with value = 0
+			subscribe(listener1);
+			expect(listener1).toHaveBeenCalledWith(0);
+
+			// Change value
+			value = 42;
+
+			// Subscribe second listener - should get current value (42)
+			subscribe(listener2);
+			expect(listener2).toHaveBeenCalledWith(42);
+
+			// First listener also gets the new value on emit
+			r.emit('count:changed', 100);
+			expect(listener1).toHaveBeenNthCalledWith(2, 100);
+			expect(listener2).toHaveBeenNthCalledWith(2, 100);
+		});
+	});
+
 	describe('Tracking methods', () => {
 		it('track() should call depend when in scope', () => {
 			const adapter = createMockAdapter();
