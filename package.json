@@ -4,6 +4,7 @@
   "private": true,
   "description": "Universal signals monorepo",
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "typescript": "^5.3.0"
   },
   "scripts": {
