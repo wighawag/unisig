@@ -1,13 +1,11 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {
-	state,
-	ref,
-	setDefaultAdapter,
-	getDefaultAdapter,
+	withAdapter,
+	withAdapterRef,
 	isRef,
 	NoAdapterError,
 	type Ref,
-} from './runes';
+} from './standalone';
 import type {ReactivityAdapter, Dependency} from './types';
 
 // Simple mock adapter that tracks depend/notify calls
@@ -39,23 +37,6 @@ function createMockAdapter() {
 	return adapter;
 }
 
-describe('setDefaultAdapter / getDefaultAdapter', () => {
-	beforeEach(() => {
-		// Reset default adapter before each test
-		setDefaultAdapter(undefined as any);
-	});
-
-	it('should set and get the default adapter', () => {
-		const adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
-		expect(getDefaultAdapter()).toBe(adapter);
-	});
-
-	it('should return undefined when no adapter is set', () => {
-		expect(getDefaultAdapter()).toBeUndefined();
-	});
-});
-
 describe('NoAdapterError', () => {
 	it('should be a proper Error subclass', () => {
 		const error = new NoAdapterError();
@@ -67,81 +48,128 @@ describe('NoAdapterError', () => {
 	it('should have a descriptive message', () => {
 		const error = new NoAdapterError();
 		expect(error.message).toContain('No adapter provided');
-		expect(error.message).toContain('setDefaultAdapter');
+		expect(error.message).toContain('withAdapter');
+	});
+});
+
+describe('withAdapter', () => {
+	it('should return a function that creates reactive state', () => {
+		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
+
+		expect(typeof state).toBe('function');
+	});
+
+	it('should create state with objects', () => {
+		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
+
+		const obj = state({name: 'Alice', score: 0});
+
+		// Access should trigger depend
+		const _ = obj.name;
+		expect(adapter.deps.length).toBeGreaterThan(0);
+		expect(adapter.deps[0].depend).toHaveBeenCalled();
+	});
+
+	it('should create state with primitives', () => {
+		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
+
+		const count = state(0);
+		expect(count.value).toBe(0);
+
+		// Access should trigger depend
+		const _ = count.value;
+		expect(adapter.deps.length).toBeGreaterThan(0);
+		expect(adapter.deps[0].depend).toHaveBeenCalled();
+	});
+
+	it('should work with multiple state creations', () => {
+		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
+
+		const count = state(0);
+		const name = state('Alice');
+		const player = state({score: 100});
+
+		expect(count.value).toBe(0);
+		expect(name.value).toBe('Alice');
+		expect(player.score).toBe(100);
+	});
+});
+
+describe('withAdapterRef', () => {
+	it('should return a function that creates reactive refs', () => {
+		const adapter = createMockAdapter();
+		const ref = withAdapterRef(adapter);
+
+		expect(typeof ref).toBe('function');
+	});
+
+	it('should create refs', () => {
+		const adapter = createMockAdapter();
+		const ref = withAdapterRef(adapter);
+
+		const count = ref(0);
+		expect(count.value).toBe(0);
+
+		// Access should trigger depend
+		const _ = count.value;
+		expect(adapter.deps.length).toBeGreaterThan(0);
+		expect(adapter.deps[0].depend).toHaveBeenCalled();
+	});
+
+	it('should work with different types', () => {
+		const adapter = createMockAdapter();
+		const ref = withAdapterRef(adapter);
+
+		const str = ref('hello');
+		const bool = ref(true);
+		const arr = ref([1, 2, 3]);
+
+		expect(str.value).toBe('hello');
+		expect(bool.value).toBe(true);
+		expect(arr.value).toEqual([1, 2, 3]);
+	});
+
+	it('should work with objects', () => {
+		const adapter = createMockAdapter();
+		const ref = withAdapterRef(adapter);
+
+		const obj = ref({name: 'Alice', score: 100});
+		expect(obj.value).toEqual({name: 'Alice', score: 100});
 	});
 });
 
 describe('state error handling', () => {
-	beforeEach(() => {
-		setDefaultAdapter(undefined as any);
-	});
-
-	it('should throw NoAdapterError when no adapter is available', () => {
-		expect(() => state({value: 1})).toThrow(NoAdapterError);
-	});
-
-	it('should throw NoAdapterError with primitive when no adapter is available', () => {
-		expect(() => state(0)).toThrow(NoAdapterError);
-		expect(() => state('test')).toThrow(NoAdapterError);
-		expect(() => state(true)).toThrow(NoAdapterError);
-	});
-
-	it('should not throw when adapter is provided as parameter', () => {
-		const adapter = createMockAdapter();
-		expect(() => state(0, adapter)).not.toThrow();
-	});
-
-	it('should not throw when default adapter is set', () => {
-		const adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
-		expect(() => state(0)).not.toThrow();
-	});
-
 	it('should throw TypeError for unsupported types', () => {
 		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
 		const unsupportedValue = () => {};
 
-		expect(() => state(unsupportedValue as any, adapter)).toThrow(TypeError);
-		expect(() => state(unsupportedValue as any, adapter)).toThrow(
+		expect(() => state(unsupportedValue as any)).toThrow(TypeError);
+		expect(() => state(unsupportedValue as any)).toThrow(
 			'Unsupported value type: function',
 		);
 	});
 
 	it('should accept function objects when explicitly passed as objects', () => {
 		const adapter = createMockAdapter();
+		const state = withAdapter(adapter);
 		const fn = () => {};
 		// Functions are objects, so they should be accepted
-		expect(() => state({fn}, adapter)).not.toThrow();
-	});
-});
-
-describe('ref error handling', () => {
-	beforeEach(() => {
-		setDefaultAdapter(undefined as any);
-	});
-
-	it('should throw NoAdapterError when no adapter is available', () => {
-		expect(() => ref(0)).toThrow(NoAdapterError);
-	});
-
-	it('should not throw when adapter is provided', () => {
-		const adapter = createMockAdapter();
-		expect(() => ref(0, adapter)).not.toThrow();
-	});
-
-	it('should not throw when default adapter is set', () => {
-		const adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
-		expect(() => ref(0)).not.toThrow();
+		expect(() => state({fn})).not.toThrow();
 	});
 });
 
 describe('state', () => {
 	let adapter: ReturnType<typeof createMockAdapter>;
+	let state: ReturnType<typeof withAdapter>;
 
 	beforeEach(() => {
 		adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		state = withAdapter(adapter);
 	});
 
 	it('should return a deeply proxied object', () => {
@@ -187,16 +215,6 @@ describe('state', () => {
 		expect(notifyCalls.length).toBeGreaterThan(0);
 	});
 
-	it('should work with explicit adapter parameter', () => {
-		setDefaultAdapter(undefined as any);
-		const explicitAdapter = createMockAdapter();
-
-		const obj = state({value: 1}, explicitAdapter);
-		const _ = obj.value;
-
-		expect(explicitAdapter.deps.length).toBeGreaterThan(0);
-	});
-
 	it('should not track when out of scope', () => {
 		adapter.setInScope(false);
 		const obj = state({value: 1});
@@ -213,10 +231,11 @@ describe('state', () => {
 
 describe('state with primitives', () => {
 	let adapter: ReturnType<typeof createMockAdapter>;
+	let state: ReturnType<typeof withAdapter>;
 
 	beforeEach(() => {
 		adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		state = withAdapter(adapter);
 	});
 
 	it('should wrap number in a Ref', () => {
@@ -297,10 +316,11 @@ describe('state with primitives', () => {
 
 describe('ref', () => {
 	let adapter: ReturnType<typeof createMockAdapter>;
+	let ref: ReturnType<typeof withAdapterRef>;
 
 	beforeEach(() => {
 		adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		ref = withAdapterRef(adapter);
 	});
 
 	it('should create a ref with value property', () => {
@@ -327,29 +347,14 @@ describe('ref', () => {
 		);
 		expect(notifyCalls.length).toBeGreaterThan(0);
 	});
-
-	it('should work with different types', () => {
-		const str = ref('hello');
-		const bool = ref(true);
-		const arr = ref([1, 2, 3]);
-
-		expect(str.value).toBe('hello');
-		expect(bool.value).toBe(true);
-		expect(arr.value).toEqual([1, 2, 3]);
-	});
-
-	it('should work with objects', () => {
-		const obj = ref({name: 'Alice', score: 100});
-		expect(obj.value).toEqual({name: 'Alice', score: 100});
-	});
 });
 
 describe('isRef', () => {
 	it('should return true for ref objects', () => {
 		const adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		const state = withAdapter(adapter);
 
-		const count = ref(0);
+		const count = state(0);
 		expect(isRef(count)).toBe(true);
 	});
 
@@ -371,9 +376,9 @@ describe('isRef', () => {
 
 	it('should work with type narrowing', () => {
 		const adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		const state = withAdapter(adapter);
 
-		const count = ref(0);
+		const count = state(0);
 		if (isRef(count)) {
 			// TypeScript should know count.value is a number
 			expect(typeof count.value).toBe('number');
@@ -383,10 +388,11 @@ describe('isRef', () => {
 
 describe('state with complex objects', () => {
 	let adapter: ReturnType<typeof createMockAdapter>;
+	let state: ReturnType<typeof withAdapter>;
 
 	beforeEach(() => {
 		adapter = createMockAdapter();
-		setDefaultAdapter(adapter);
+		state = withAdapter(adapter);
 	});
 
 	it('should handle arrays', () => {

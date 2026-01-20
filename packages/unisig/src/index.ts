@@ -3,7 +3,7 @@ export type {Dependency, ReactivityAdapter} from './types';
 export {createReactivityAdapter} from './types';
 
 // Errors
-export {NoAdapterError} from './runes';
+export {NoAdapterError} from './standalone';
 
 // Emitter
 export {Emitter} from './Emitter';
@@ -17,10 +17,8 @@ export {Reactive, reactive} from './Reactive';
 
 // Standalone reactive state (rune-like API)
 export {
-	state,
-	ref,
-	setDefaultAdapter,
-	getDefaultAdapter,
+	withAdapter,
+	withAdapterRef,
 	isRef,
-} from './runes';
-export type {Ref, UnwrapRef} from './runes';
+} from './standalone';
+export type {Ref, UnwrapRef} from './standalone';

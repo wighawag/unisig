@@ -47,7 +47,7 @@ unisig/
 │       │   ├── Emitter.ts         # Event emitter implementation
 │       │   ├── Scope.ts           # Signal scope implementation
 │       │   ├── Reactive.ts        # Combined Reactive class
-│       │   ├── runes.ts           # Standalone state/ref functions
+│       │   ├── standalone.ts      # Standalone state/ref functions
 │       │   └── *.spec.ts          # Test files
 │       ├── package.json
 │       ├── tsconfig.json
