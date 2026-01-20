@@ -360,11 +360,13 @@ tracker.emit("user:added", { id: "1", name: "Alice" });
 ```
 
 **Error Handler Benefits:**
+
 - 🛡️ **Resilience** - All listeners execute even if one fails
 - 📊 **Observability** - Centralized error logging and tracking
 - 🔧 **Production-ready** - Easy integration with error services (Sentry, LogRocket, etc.)
 
 **Performance Impact:**
+
 - **No error handler:** Zero overhead (default, best for development)
 - **With error handler:** ~2-3x slower on emit calls (acceptable for production)
 
@@ -496,7 +498,7 @@ const doubled = $derived.by(() => count.value * 2); // Svelte
 
 ## Adapters
 
-unisig uses the same adapter pattern as [signaldb](https://github.com/MaxGraey/signaldb). You can use any adapter from the signaldb ecosystem:
+unisig uses the same adapter pattern as [signaldb](https://github.com/maxnowack/signaldb). You can use any adapter from the signaldb ecosystem:
 
 - `@signaldb/solid` for Solid.js
 - `@signaldb/preact` for Preact
@@ -692,9 +694,9 @@ When designing your store API, you have an important choice between returning re
 
 ### Performance Comparison
 
-| Approach | Performance | Speedup |
-|----------|-------------|---------|
-| Proxied getters (deep proxy) | ~100K ops/sec | 1x (baseline) |
+| Approach                           | Performance      | Speedup         |
+| ---------------------------------- | ---------------- | --------------- |
+| Proxied getters (deep proxy)       | ~100K ops/sec    | 1x (baseline)   |
 | **Read-only getters (raw object)** | **~16M ops/sec** | **160x faster** |
 
 ### Recommendation: Use Read-Only Getters by Default
@@ -703,26 +705,30 @@ Return raw objects with `Readonly<T>` type annotation for most use cases:
 
 ```typescript
 class PlayerStore {
-  private $ = new Tracker<PlayerEvents>()
-  private players = new Map<string, Player>()
+  private $ = new Tracker<PlayerEvents>();
+  private players = new Map<string, Player>();
 
   // ✅ Fast: Returns raw object with tracking
   get(id: string): Readonly<Player> | undefined {
-    this.$.trackItem('players', id)
-    return this.players.get(id)  // No proxy!
+    this.$.trackItem("players", id);
+    return this.players.get(id); // No proxy!
   }
 
   // Update methods trigger reactivity
   updateScore(id: string, score: number): void {
-    const player = this.players.get(id)
-    if (!player) return
-    player.score = score
-    this.$.triggerItemProp('players', id, 'score', 'player:scored', { id, score })
+    const player = this.players.get(id);
+    if (!player) return;
+    player.score = score;
+    this.$.triggerItemProp("players", id, "score", "player:scored", {
+      id,
+      score,
+    });
   }
 }
 ```
 
 **Why this works:**
+
 - `trackItem()` registers the dependency, so components re-render when the item changes
 - Direct property access is 160x faster than through a proxy
 - `Readonly<T>` prevents accidental mutations at compile time
@@ -742,6 +748,7 @@ getLive(id: string): Player | undefined {
 ```
 
 **Use cases for proxies:**
+
 - Component has expensive rendering logic
 - You need to avoid full re-renders
 - Different properties update at different times
@@ -755,13 +762,13 @@ For fine-grained tracking without proxy overhead:
 class PlayerStore {
   // Fast property-level tracking (no proxy overhead)
   getScore(id: string): number | undefined {
-    this.$.trackItemProp('players', id, 'score')
-    return this.players.get(id)?.score
+    this.$.trackItemProp("players", id, "score");
+    return this.players.get(id)?.score;
   }
 
   getName(id: string): string | undefined {
-    this.$.trackItemProp('players', id, 'name')
-    return this.players.get(id)?.name
+    this.$.trackItemProp("players", id, "name");
+    return this.players.get(id)?.name;
   }
 }
 ```
@@ -770,11 +777,11 @@ class PlayerStore {
 
 ### Summary
 
-| Use Case | Recommended Approach | Performance |
-|----------|---------------------|-------------|
-| Simple list display | `get()` / `getAll()` (read-only) | ⚡ ~16M ops/sec |
-| Property display | `getName()` / `getScore()` (property getters) | ⚡ ~16M ops/sec |
-| Complex component | `getLive()` / `getAllLive()` (live/proxied) | 🐢 ~100K ops/sec |
+| Use Case            | Recommended Approach                          | Performance      |
+| ------------------- | --------------------------------------------- | ---------------- |
+| Simple list display | `get()` / `getAll()` (read-only)              | ⚡ ~16M ops/sec  |
+| Property display    | `getName()` / `getScore()` (property getters) | ⚡ ~16M ops/sec  |
+| Complex component   | `getLive()` / `getAllLive()` (live/proxied)   | 🐢 ~100K ops/sec |
 
 **Key insight:** Start with read-only getters. They're 160x faster and work great for most use cases. Only use live objects when you have a proven performance problem that property-level tracking can solve.
 
