@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest';
-import {createReactivityAdapter} from './types';
-import type {Dependency, ReactivityAdapter} from './types';
+import {createReactivityAdapter} from '../src/types.js';
+import type {Dependency, ReactivityAdapter} from '../src/types.js';
 
 describe('types', () => {
 	describe('createReactivityAdapter()', () => {

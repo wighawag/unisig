@@ -1,5 +1,5 @@
-import {Scope} from './Scope';
-import type {ReactivityAdapter} from './types';
+import {Scope} from './Scope.js';
+import type {ReactivityAdapter} from './types.js';
 
 /**
  * Error thrown when no reactivity adapter is available but one is required.

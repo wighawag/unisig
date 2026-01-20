@@ -1,5 +1,5 @@
 import {describe, bench} from 'vitest';
-import {Emitter} from './Emitter';
+import {Emitter} from '../src/Emitter';
 
 type TestEvents = {
 	'item:added': {id: string; value: number};

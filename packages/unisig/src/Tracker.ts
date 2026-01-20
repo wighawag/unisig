@@ -1,6 +1,11 @@
-import type {ReactivityAdapter, Dependency} from './types';
-import {Emitter, type Listener, type Unsubscribe, type EmitterOptions} from './Emitter';
-import {Scope} from './Scope';
+import type {ReactivityAdapter, Dependency} from './types.js';
+import {
+	Emitter,
+	type Listener,
+	type Unsubscribe,
+	type EmitterOptions,
+} from './Emitter.js';
+import {Scope} from './Scope.js';
 
 /**
  * Options for configuring Tracker behavior
@@ -142,25 +147,25 @@ export class Tracker<
 	}
 
 	/**
-		* Set or change the reactivity adapter.
-		* Existing dependencies are not affected.
-		*
-		* @param adapter - The reactivity adapter to use
-		*/
+	 * Set or change the reactivity adapter.
+	 * Existing dependencies are not affected.
+	 *
+	 * @param adapter - The reactivity adapter to use
+	 */
 	setAdapter(adapter: ReactivityAdapter): void {
 		this.scope.setAdapter(adapter);
 	}
 
 	/**
-		* Get the current adapter, if any.
-		*/
+	 * Get the current adapter, if any.
+	 */
 	getAdapter(): ReactivityAdapter | undefined {
 		return this.scope.getAdapter();
 	}
 
 	/**
-		* Check if currently inside a reactive scope.
-		*/
+	 * Check if currently inside a reactive scope.
+	 */
 	isInScope(): boolean {
 		return this.scope.isInScope();
 	}

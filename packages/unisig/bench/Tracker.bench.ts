@@ -1,12 +1,12 @@
 import {describe, bench} from 'vitest';
-import {Tracker} from './Tracker';
-import {createReactivityAdapter} from './types';
+import {Tracker} from '../src/Tracker';
+import {createReactivityAdapter} from '../src/types';
 
 type TestEvents = {
 	'user:added': {id: string; name: string};
 	'user:updated': {id: string; changes: Partial<{name: string}>};
 	'user:removed': string;
-	'cleared': void;
+	cleared: void;
 };
 
 // Simple mock adapter for benchmarking
@@ -201,11 +201,11 @@ describe('Tracker Performance Benchmarks', () => {
 		bench('simple read pattern (track)', () => {
 			const tracker = new Tracker<TestEvents>(mockAdapter);
 			const users = new Map<string, {id: string; name: string}>();
-			
+
 			for (let i = 0; i < 100; i++) {
 				users.set(`user-${i}`, {id: `user-${i}`, name: `User ${i}`});
 			}
-			
+
 			mockAdapter.create().depend();
 			tracker.track('users');
 			[...users.values()];
@@ -214,11 +214,11 @@ describe('Tracker Performance Benchmarks', () => {
 		bench('item-level read pattern (trackItem)', () => {
 			const tracker = new Tracker<TestEvents>(mockAdapter);
 			const users = new Map<string, {id: string; name: string}>();
-			
+
 			for (let i = 0; i < 100; i++) {
 				users.set(`user-${i}`, {id: `user-${i}`, name: `User ${i}`});
 			}
-			
+
 			for (let i = 0; i < 100; i++) {
 				mockAdapter.create().depend();
 				tracker.trackItem('users', `user-${i}`);
@@ -230,7 +230,7 @@ describe('Tracker Performance Benchmarks', () => {
 			const tracker = new Tracker<TestEvents>(mockAdapter);
 			tracker.on('user:added', () => {});
 			const users = new Map<string, {id: string; name: string}>();
-			
+
 			for (let i = 0; i < 100; i++) {
 				const user = {id: `user-${i}`, name: `User ${i}`};
 				users.set(user.id, user);
@@ -241,11 +241,11 @@ describe('Tracker Performance Benchmarks', () => {
 		bench('update item pattern (triggerItem)', () => {
 			const tracker = new Tracker<TestEvents>(mockAdapter);
 			const users = new Map<string, {id: string; name: string}>();
-			
+
 			for (let i = 0; i < 100; i++) {
 				users.set(`user-${i}`, {id: `user-${i}`, name: `User ${i}`});
 			}
-			
+
 			for (let i = 0; i < 100; i++) {
 				const user = users.get(`user-${i}`)!;
 				user.name = `Updated ${i}`;
@@ -257,14 +257,19 @@ describe('Tracker Performance Benchmarks', () => {
 			const tracker = new Tracker<TestEvents>(mockAdapter);
 			tracker.on('user:removed', () => {});
 			const users = new Map<string, {id: string; name: string}>();
-			
+
 			for (let i = 0; i < 100; i++) {
 				users.set(`user-${i}`, {id: `user-${i}`, name: `User ${i}`});
 			}
-			
+
 			for (let i = 0; i < 100; i++) {
 				users.delete(`user-${i}`);
-				tracker.triggerRemove('users', `user-${i}`, 'user:removed', `user-${i}`);
+				tracker.triggerRemove(
+					'users',
+					`user-${i}`,
+					'user:removed',
+					`user-${i}`,
+				);
 			}
 		});
 	});

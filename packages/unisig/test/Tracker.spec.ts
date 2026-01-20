@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, tracker} from './Tracker';
-import type {ReactivityAdapter} from './types';
+import {Tracker, tracker} from '../src/Tracker.js';
+import type {ReactivityAdapter} from '../src/types.js';
 
 // Mock adapter
 function createMockAdapter() {
@@ -201,21 +201,21 @@ describe('Tracker', () => {
 			it('should notify list signal', () => {
 				const adapter = createMockAdapter();
 				const r = new Tracker<TestEvents>(adapter);
-	
+
 				r.dep('items');
 				r.triggerList('items');
-	
+
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-	
+
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
 				const r = new Tracker<TestEvents>(adapter);
 				const listener = vi.fn();
-	
+
 				r.on('list:cleared', listener);
 				r.triggerList('items', 'list:cleared', undefined as void);
-	
+
 				expect(listener).toHaveBeenCalledTimes(1);
 			});
 		});

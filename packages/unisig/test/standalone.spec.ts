@@ -5,8 +5,8 @@ import {
 	isRef,
 	NoAdapterError,
 	type Ref,
-} from './standalone';
-import type {ReactivityAdapter, Dependency} from './types';
+} from '../src/standalone.js';
+import type {ReactivityAdapter, Dependency} from '../src/types.js';
 
 // Simple mock adapter that tracks depend/notify calls
 function createMockAdapter() {

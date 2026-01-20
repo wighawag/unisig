@@ -1,4 +1,4 @@
-import type {Dependency, ReactivityAdapter} from './types';
+import type {Dependency, ReactivityAdapter} from './types.js';
 
 /**
  * Manages reactive dependencies for a class or object.

@@ -1,6 +1,6 @@
 import {describe, bench, beforeEach} from 'vitest';
-import {Scope} from './Scope';
-import {createReactivityAdapter} from './types';
+import {Scope} from '../src/Scope';
+import {createReactivityAdapter} from '../src/types';
 
 // Simple mock adapter for benchmarking
 const mockAdapter = createReactivityAdapter({

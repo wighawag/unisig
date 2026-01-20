@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import {Emitter} from './Emitter';
+import {Emitter} from '../src/Emitter.js';
 
 type TestEvents = {
 	'item:added': {id: string; name: string};
@@ -382,7 +382,9 @@ describe('Emitter', () => {
 			emitter.on('item:added', listener1);
 			emitter.on('item:added', listener2);
 
-			expect(() => emitter.emit('item:added', {id: '1', name: 'Test'})).toThrow();
+			expect(() =>
+				emitter.emit('item:added', {id: '1', name: 'Test'}),
+			).toThrow();
 
 			expect(listener1).toHaveBeenCalledTimes(1);
 			expect(listener2).not.toHaveBeenCalled();

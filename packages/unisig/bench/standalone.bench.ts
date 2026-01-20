@@ -1,6 +1,6 @@
 import {describe, bench} from 'vitest';
-import {withAdapter, withAdapterRef, isRef} from './standalone';
-import {createReactivityAdapter} from './types';
+import {withAdapter, withAdapterRef, isRef} from '../src/standalone';
+import {createReactivityAdapter} from '../src/types';
 
 // Simple mock adapter for benchmarking
 const mockAdapter = createReactivityAdapter({
@@ -124,9 +124,11 @@ describe('Standalone State Performance Benchmarks', () => {
 
 		bench('modify 100 properties on object state', () => {
 			const state = withAdapter(mockAdapter);
-			const obj = state(Object.fromEntries(
-				Array.from({length: 100}, (_, i) => [`prop${i}`, i])
-			));
+			const obj = state(
+				Object.fromEntries(
+					Array.from({length: 100}, (_, i) => [`prop${i}`, i]),
+				),
+			);
 			for (let i = 0; i < 100; i++) {
 				obj[`prop${i}`] = i * 2;
 			}
@@ -280,15 +282,13 @@ describe('Standalone State Performance Benchmarks', () => {
 
 		bench('todo list state pattern', () => {
 			const state = withAdapter(mockAdapter);
-			const todos = state<
-				Array<{id: string; text: string; done: boolean}>
-			>([]);
-			
+			const todos = state<Array<{id: string; text: string; done: boolean}>>([]);
+
 			// Add todos
 			for (let i = 0; i < 10; i++) {
 				todos.push({id: `${i}`, text: `Todo ${i}`, done: false});
 			}
-			
+
 			// Toggle todos
 			for (let i = 0; i < 10; i++) {
 				todos[i]!.done = !todos[i]!.done;
@@ -306,13 +306,13 @@ describe('Standalone State Performance Benchmarks', () => {
 					language: 'en',
 				},
 			});
-			
+
 			// Read nested properties
 			mockAdapter.create().depend();
 			user.name;
 			user.email;
 			user.settings.theme;
-			
+
 			// Modify settings
 			user.settings.notifications = false;
 			user.settings.language = 'fr';
@@ -329,14 +329,14 @@ describe('Standalone State Performance Benchmarks', () => {
 				})),
 				total: 0,
 			});
-			
+
 			// Calculate total (read pattern)
 			mockAdapter.create().depend();
 			let total = 0;
 			for (const item of cart.items) {
 				total += item.price * item.quantity;
 			}
-			
+
 			// Update quantity (write pattern)
 			cart.items[0]!.quantity = 2;
 			cart.items[1]!.quantity = 3;
@@ -379,11 +379,11 @@ describe('Standalone State Performance Benchmarks', () => {
 					})),
 				})),
 			});
-			
+
 			// Read deeply nested
 			mockAdapter.create().depend();
 			data.users[0]!.posts[0]!.title;
-			
+
 			// Write deeply nested
 			data.users[0]!.name = 'Updated';
 			data.users[0]!.posts[0]!.title = 'Updated';
@@ -391,16 +391,18 @@ describe('Standalone State Performance Benchmarks', () => {
 
 		bench('large object state with many properties', () => {
 			const state = withAdapter(mockAdapter);
-			const config = state(Object.fromEntries(
-				Array.from({length: 100}, (_, i) => [`setting${i}`, `value${i}`])
-			));
-			
+			const config = state(
+				Object.fromEntries(
+					Array.from({length: 100}, (_, i) => [`setting${i}`, `value${i}`]),
+				),
+			);
+
 			// Read many properties
 			for (let i = 0; i < 100; i++) {
 				mockAdapter.create().depend();
 				config[`setting${i}`];
 			}
-			
+
 			// Write many properties
 			for (let i = 0; i < 100; i++) {
 				config[`setting${i}`] = `updated${i}`;

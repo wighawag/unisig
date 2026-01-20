@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, tracker} from './Tracker';
-import type {ReactivityAdapter} from './types';
+import {Tracker, tracker} from '../src/Tracker.js';
+import type {ReactivityAdapter} from '../src/types.js';
 
 // Mock adapter
 function createMockAdapter() {
@@ -550,9 +550,7 @@ describe('Tracker - Edge Cases', () => {
 				throw error;
 			});
 
-			expect(() => r.emit('item:added', {id: '1', value: 42})).toThrow(
-				error,
-			);
+			expect(() => r.emit('item:added', {id: '1', value: 42})).toThrow(error);
 		});
 
 		it('should call error handler when configured in Tracker', () => {

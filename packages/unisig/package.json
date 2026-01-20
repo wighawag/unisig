@@ -30,7 +30,8 @@
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src"
 	],
 	"devDependencies": {
 		"prettier": "^3.8.0",

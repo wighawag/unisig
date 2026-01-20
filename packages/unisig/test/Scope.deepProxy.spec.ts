@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest';
-import {Scope} from './Scope';
-import type {ReactivityAdapter, Dependency} from './types';
+import {Scope} from '../src/Scope.js';
+import type {ReactivityAdapter, Dependency} from '../src/types.js';
 
 // Mock adapter that tracks all calls
 function createMockAdapter() {
@@ -309,7 +309,10 @@ describe('Scope - Deep Proxies', () => {
 			const scope = new Scope(adapter);
 
 			const obj = {
-				matrix: [[1, 2], [3, 4]],
+				matrix: [
+					[1, 2],
+					[3, 4],
+				],
 			};
 
 			const proxied = scope.deepProxy(obj, 'config');
