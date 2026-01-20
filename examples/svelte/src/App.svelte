@@ -33,6 +33,13 @@
 	// Get player IDs for selection
 	const playerIds = $derived.by(() => playerStore.getIds());
 
+	// Auto-reset selection when selected player is removed
+	$effect(() => {
+		if (selectedPlayerId && !playerStore.get(selectedPlayerId)) {
+			selectedPlayerId = null;
+		}
+	});
+
 	// Add new player
 	let newPlayerName = $state('');
 	function addPlayer() {
