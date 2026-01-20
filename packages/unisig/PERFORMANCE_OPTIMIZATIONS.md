@@ -2,69 +2,356 @@
 
 This document outlines potential performance improvements for unisig based on benchmark results and best practices from other signal libraries (Solid.js, Preact signals, Vue, MobX, etc.).
 
-## Critical Performance Issues
+## Design Decision: Keep Proxy-Based Approach
 
-### 1. Proxy Overhead (HIGHEST PRIORITY)
+**Decision:** Stay with proxy-based reactivity (like Vue 3 and MobX 5)
 
-**Current Performance:**
-- Direct property access: ~16M ops/sec
-- Proxy access: ~100K ops/sec
-- **Slowdown: 160x** 😱
+**Rationale:**
+- Industry standard: Modern reactive systems (Vue 3, MobX 5, Solid) use proxies
+- Better developer experience: Just works, no special methods needed
+- Fewer edge cases: Handles dynamic properties, array operations, Map/Set naturally
+- No build tools required: Pure runtime solution
+- Aligns with JavaScript ecosystem trends
 
-**Root Cause:**
-- Runtime proxies have inherent overhead
-- Every property access goes through proxy traps
-- Deep proxy compounds this with nested proxies
+**Trade-offs:**
+- **Accept:** 160x slower than direct property access (but still fast enough for most use cases)
+- **Avoid:** Complexity of compile-time transformations
+- **Avoid:** Limitations of getter/setter pattern (can't track new properties, array index assignments)
 
-**Solutions:**
+**Performance Goal:** Achieve 2-3x improvement through runtime optimizations while maintaining the proxy API.
 
-#### Option A: Compile-Time Transformations (Best)
-Like Solid.js, use a compile-time approach:
-- Transform `obj.prop` to `obj.get('prop')` at build time
-- No runtime overhead for property access
-- Requires Babel plugin or similar
+## Practical Proxy Optimizations (No Build Tools Required)
 
-#### Option B: Getter/Setter Pattern (Medium)
-Like Vue 2 and older MobX:
-- Use Object.defineProperty to create reactive getters/setters
-- Faster than proxies (no trap overhead)
-- Still has some overhead but much less than proxies
+### Phase 1: Quick Wins (Easy, Immediate)
 
-#### Option C: Selective Proxy Usage (Quick Win)
-- Only proxy objects that are explicitly requested
-- Provide a non-proxied fast path for read-heavy operations
-- Add `track()` calls manually in critical paths
+#### 1. Symbol-Based Internal Keys
 
-#### Option D: Proxy Caching Optimization
-- Cache proxy instances more aggressively
-- Use symbol-based cache keys for faster lookup
-- Implement proxy pooling for frequently created objects
+**Problem:** String comparisons for every property access
 
-### 2. Tracking Operation Overhead
+**Solution:** Use symbols for internal properties
 
-**Current Performance:**
-- `track()` operations: ~6-7M ops/sec
-- `isInScope()` called on every track
-
-**Optimization:**
 ```typescript
-// Instead of:
-track(key) {
-  if (this.isInScope()) {  // Function call overhead
-    this.dep(key)?.depend();
-  }
-}
+const TRACK_KEY = Symbol('track');
+const TRIGGER_KEY = Symbol('trigger');
 
-// Use inline check (like Solid.js):
-track(key) {
-  const dep = this.deps.get(key);  // Direct Map access
-  if (dep && this.adapter?.isInScope?.() !== false) {
-    dep.depend();
+get(target, prop, receiver) {
+  // Fast path for internal properties
+  if (prop === TRACK_KEY) return this.trackFn;
+  if (prop === TRIGGER_KEY) return this.triggerFn;
+  
+  // Rest of logic
+  if (typeof prop === 'string') {
+    scope.trackProp(key, prop);
+  }
+  return Reflect.get(target, prop, receiver);
+}
+```
+
+**Expected improvement:** 5-10% faster property access
+
+#### 2. Optimized Property Checks with Set
+
+**Problem:** Repeated `typeof` and string comparisons
+
+**Solution:** Pre-define properties to skip
+
+```typescript
+const SKIP_PROPS = new Set([
+  'toString', 'valueOf', 'hasOwnProperty',
+  'isPrototypeOf', 'propertyIsEnumerable',
+  '__proto__', 'constructor',
+  'then', 'catch', 'finally', // Promise-like
+  'toJSON', 'inspect', // Node.js
+]);
+
+get(target, prop, receiver) {
+  if (typeof prop === 'symbol' || SKIP_PROPS.has(prop)) {
+    return Reflect.get(target, prop, receiver);
+  }
+  // Tracking logic
+}
+```
+
+**Expected improvement:** 10-15% faster for non-tracked properties
+
+#### 3. Shallow Proxy Mode
+
+**Problem:** Deep proxies create many nested proxies
+
+**Solution:** Add option for shallow proxying
+
+```typescript
+deepProxy<T extends object>(
+  target: T, 
+  key: string, 
+  options?: { shallow?: boolean }
+): T {
+  if (options?.shallow) {
+    return this.proxy(target, key); // Only shallow, no nested proxies
+  }
+  return this.createDeepProxy(target, key, '', new WeakMap());
+}
+```
+
+**Usage:**
+```typescript
+// Fast for flat objects
+const config = scope.deepProxy({ name: 'Alice', age: 30 }, 'config', { shallow: true });
+
+// Full reactivity for nested
+const user = scope.deepProxy({ name: 'Alice', stats: { health: 100 } }, 'user');
+```
+
+**Expected improvement:** 5-8x faster for simple objects (from ~100K to ~500-800K ops/sec)
+
+### Phase 2: Medium Effort (1-2 days)
+
+#### 4. Lazy Proxy Creation
+
+**Problem:** Creates proxies for all objects upfront
+
+**Solution:** Only create proxy on first access
+
+```typescript
+get(target, prop, receiver) {
+  const value = Reflect.get(target, prop, receiver);
+  
+  // Don't create proxy for non-object values
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  
+  // Check cache first
+  const cached = this.proxyCache.get(value);
+  if (cached) return cached;
+  
+  // Create and cache on first access
+  const proxy = this.createProxy(value);
+  this.proxyCache.set(value, proxy);
+  return proxy;
+}
+```
+
+**Expected improvement:** 20-30% faster initialization, 10-15% faster access
+
+#### 5. Read-Only Proxy Mode
+
+**Problem:** Set handler overhead for read-heavy data
+
+**Solution:** Optimize for read-only operations
+
+```typescript
+readOnlyProxy<T extends object>(target: T, key: string): T {
+  const scope = this;
+  return new Proxy(target, {
+    get(obj, prop, receiver) {
+      if (typeof prop === 'string') {
+        scope.trackProp(key, prop);
+      }
+      return Reflect.get(obj, prop, receiver);
+    },
+    // No set handler - faster
+  });
+}
+```
+
+**Expected improvement:** 20-30% faster for read-mostly data
+
+#### 6. Optimized Array Mutation Methods
+
+**Problem:** Array method wrapping creates new functions
+
+**Solution:** Pre-bind mutation methods
+
+```typescript
+const ARRAY_MUTATION_METHODS = new Set([
+  'push', 'pop', 'shift', 'unshift', 'splice',
+  'sort', 'reverse', 'fill', 'copyWithin'
+]);
+
+get(target, prop, receiver) {
+  if (Array.isArray(target) && ARRAY_MUTATION_METHODS.has(prop)) {
+    const original = target[prop as keyof Array<unknown>];
+    const scope = this.scope;
+    
+    // Return wrapped method (cached per proxy instance)
+    return function(this: unknown[], ...args: unknown[]) {
+      const result = original.apply(target, args);
+      scope.triggerProp(key, prop as string);
+      return result;
+    };
+  }
+  // ... rest
+}
+```
+
+**Expected improvement:** 15-20% faster array mutations
+
+### Phase 3: Advanced Optimizations (Next sprint)
+
+#### 7. Proxy Pooling
+
+**Problem:** Creating new proxies is expensive
+
+**Solution:** Reuse proxy instances
+
+```typescript
+class ProxyPool {
+  private pool = new Map<object, object>();
+  private maxPoolSize = 100;
+  
+  get(target: object): object | undefined {
+    return this.pool.get(target);
+  }
+  
+  set(target: object, proxy: object) {
+    if (this.pool.size >= this.maxPoolSize) {
+      this.pool.clear();
+    }
+    this.pool.set(target, proxy);
   }
 }
 ```
 
-### 3. Event Emission Performance
+**Expected improvement:** 20-30% faster for frequently accessed objects
+
+#### 8. Selective Tracking (Escape Hatch)
+
+**Problem:** Sometimes you need maximum performance
+
+**Solution:** Allow opting out of tracking
+
+```typescript
+const SKIP_TRACK = Symbol('skipTrack');
+
+get(target, prop, receiver) {
+  if (prop === SKIP_TRACK) {
+    return Reflect.get(target, prop, receiver);
+  }
+  
+  if (typeof prop === 'string') {
+    scope.trackProp(key, prop);
+  }
+  // ...
+}
+```
+
+**Usage:**
+```typescript
+// In performance-critical code
+const value = obj[SKIP_TRACK].hotProperty; // No tracking
+scope.trackProp('key', 'hotProperty'); // Manual tracking
+```
+
+**Expected improvement:** Direct access speed when needed
+
+#### 9. Batch Property Tracking
+
+**Problem:** Multiple track calls for same object
+
+**Solution:** Track multiple properties at once
+
+```typescript
+trackProps(key: string, props: string[]) {
+  if (!this.isInScope()) return;
+  const dep = this.dep(key);
+  if (dep) dep.depend();
+  
+  // Track all properties in one operation
+  for (const prop of props) {
+    this.propDep(key, prop)?.depend();
+  }
+}
+```
+
+**Expected improvement:** 20-30% faster for multiple property access
+
+## Performance Targets
+
+### Current Performance (from benchmarks)
+- Proxy read: ~80-100K ops/sec
+- Proxy write: ~1.5-1.8M ops/sec
+- Direct access: ~16M ops/sec (baseline)
+- **Slowdown: 160x**
+
+### Target Performance with Optimizations
+- **Phase 1 complete:** 150-200K ops/sec (2x improvement)
+- **Phase 2 complete:** 250-300K ops/sec (3x improvement)
+- **Phase 3 complete:** 300-400K ops/sec (4x improvement)
+- **Shallow proxy mode:** 500-800K ops/sec (5-8x improvement)
+
+### Real-World Impact
+Even with 4x improvement, proxies will still be slower than direct access. However:
+- For application code: 4x improvement is significant
+- For hot paths: Use shallow proxy or read-only mode
+- For computed values: Cache them to avoid repeated proxy access
+- For rendering: Most frameworks already optimize this
+
+## Why Not Getter/Setter Pattern?
+
+### Issues with Getter/Setter (Why Vue 2 and MobX 4 Switched Away)
+
+1. **Cannot detect new properties**
+   ```javascript
+   const obj = makeReactive({ name: 'Alice' });
+   obj.age = 30;  // Not reactive! No setter defined.
+   ```
+
+2. **Array index assignment**
+   ```javascript
+   const arr = makeReactive([1, 2, 3]);
+   arr[0] = 10;  // Not reactive! Need custom array wrapper.
+   ```
+
+3. **Property deletion**
+   ```javascript
+   const obj = makeReactive({ name: 'Alice' });
+   delete obj.name;  // Not reactive!
+   ```
+
+4. **Dynamic property additions**
+   - Must use helper methods: `Vue.set()`, `extendObservable()`
+   - Cannot use spread operator: `obj = {...obj, newProp: value}`
+   - Cannot use `Object.assign()`
+
+5. **Prototype chain complexity**
+   - Hard to make inherited properties reactive
+   - Class instances problematic
+
+6. **Memory overhead**
+   - Each property needs its own closure
+   - Deep objects create many nested closures
+
+### Why MobX 5 and Vue 3 Chose Proxies
+- Better developer experience
+- Handles all edge cases naturally
+- Works with modern JavaScript patterns
+- No special methods needed
+- ES6 standard feature
+- V8 and other engines have optimized proxies
+
+## Implementation Priority
+
+### Phase 1 (Immediate - Today)
+1. ✅ Use symbol-based internal keys
+2. ✅ Optimize string property checks with Set
+3. ✅ Add shallow proxy option
+
+### Phase 2 (This Week)
+1. Implement lazy proxy creation
+2. Add read-only proxy mode
+3. Optimize array methods
+4. Improve WeakMap caching strategy
+
+### Phase 3 (Next Sprint)
+1. Add proxy pooling
+2. Implement selective tracking
+3. Add batch tracking
+4. Add performance profiling hooks
+
+## Other Optimizations
+
+### Event Emission Performance
 
 **Current Performance:**
 - `forEach` for emission: ~1.4M ops/sec (1000 listeners)
@@ -92,11 +379,35 @@ emit(event, data) {
 }
 ```
 
-### 4. Dependency Management
+**Expected improvement:** 10-20% faster
+
+### Tracking Operation Overhead
 
 **Current Performance:**
-- Map-based dependency storage
-- Multiple nested Maps for granular tracking
+- `track()` operations: ~6-7M ops/sec
+- `isInScope()` called on every track
+
+**Optimization:**
+```typescript
+// Instead of:
+track(key) {
+  if (this.isInScope()) {  // Function call overhead
+    this.dep(key)?.depend();
+  }
+}
+
+// Use inline check:
+track(key) {
+  const dep = this.deps.get(key);  // Direct Map access
+  if (dep && this.adapter?.isInScope?.() !== false) {
+    dep.depend();
+  }
+}
+```
+
+**Expected improvement:** 10-15% faster
+
+### Dependency Management
 
 **Optimizations:**
 
@@ -115,12 +426,16 @@ itemPropDeps: Map<string, Map<string | number, Map<string, Dependency>>>
 propDeps: Map<string, Dependency>  // Key: "collection_id_prop"
 ```
 
-#### C. Lazy dependency creation
-Only create dependencies when actually tracked (already done, but can be optimized)
+#### C. String key caching
+```typescript
+// Cache compound keys to avoid repeated string concatenation
+const key = compoundKeyCache.get(collection, id, prop) 
+  ?? compoundKeyCache.set(collection, id, prop, `${collection}_${id}_${prop}`);
+```
 
 ## Medium Priority Optimizations
 
-### 5. Batch Triggering
+### Batch Triggering
 
 **Concept:**
 Like MobX's `runInAction` or Vue's `batch`:
@@ -147,92 +462,15 @@ batch(callback: () => void) {
 }
 ```
 
-### 6. Track-Once Pattern
-
-**Concept:**
-Like Solid.js createMemo:
-- Track dependencies once
-- Re-run only when they change
-- Avoid repeated tracking overhead
-
-**Implementation:**
-```typescript
-memo<T>(fn: () => T): () => T {
-  let value: T;
-  let deps: Dependency[] = [];
-  const tracker = new Tracker();
-  
-  const effect = () => {
-    // Clear old deps
-    deps.forEach(dep => {
-      // Need to track this somehow
-    });
-    deps = [];
-    
-    // Run with tracking
-    value = fn();
-  };
-  
-  return () => {
-    effect();
-    return value;
-  };
-}
-```
-
-### 7. Optimized Array Operations
-
-**Current Performance:**
-- Array mutations through proxy: ~500K ops/sec
-- Array iterations: ~500-700K ops/sec
-
-**Optimizations:**
-
-#### A. Specialized Array Proxy
-```typescript
-// Use more optimized array methods
-const optimizedArrayMethods = {
-  push: function(...items) {
-    const result = Array.prototype.push.apply(this, items);
-    trigger();
-    return result;
-  },
-  // Other methods...
-};
-```
-
-#### B. Avoid proxy for arrays when possible
-- Provide non-proxied array methods
-- Use native array methods when safe
-
-### 8. String Key Optimization
-
-**Concept:**
-Avoid string concatenation for compound keys:
-- Use template strings sparingly
-- Cache compound keys
-- Use symbols or numbers where possible
-
-**Implementation:**
-```typescript
-// Instead of:
-const key = `${collection}_${id}_${prop}`;
-
-// Use:
-const key = compoundKeyCache.get(collection, id, prop) 
-  ?? compoundKeyCache.set(collection, id, prop, `${collection}_${id}_${prop}`);
-```
-
-## Low Priority Optimizations
-
-### 9. Memory Management
+### Memory Management
 
 **Optimizations:**
 - Implement proper cleanup for removed items
 - Use WeakMap where possible for garbage collection
 - Provide explicit dispose methods
+- Add WeakMap cleanup scheduling
 
-### 10. Development vs Production Builds
+## Development vs Production Builds
 
 **Concept:**
 Like React and Vue:
@@ -254,49 +492,12 @@ export class Scope {
 }
 ```
 
-## Benchmark-Driven Optimization Priorities
-
-Based on benchmark results:
-
-1. **PROXY OVERHEAD** - 160x slowdown (CRITICAL)
-   - Implement compile-time transformations or getter/setter pattern
-   - Expected improvement: 50-100x faster
-
-2. **Array Operations** - 3-5x slower than direct
-   - Optimize array proxy methods
-   - Expected improvement: 2-3x faster
-
-3. **Event Emission** - Good but can improve
-   - Replace forEach with for...of
-   - Expected improvement: 10-20% faster
-
-4. **Tracking Operations** - Already good (7M ops/sec)
-   - Minor optimizations possible
-   - Expected improvement: 10-15% faster
-
-## Implementation Strategy
-
-### Phase 1: Quick Wins (1-2 days)
-1. Replace `forEach` with `for...of` in emitter
-2. Optimize `isInScope()` checks
-3. Add proxy caching improvements
-
-### Phase 2: Medium Effort (1 week)
-1. Implement batching API
-2. Optimize array proxy methods
-3. Add compound key caching
-
-### Phase 3: Major Overhaul (2-3 weeks)
-1. Implement getter/setter pattern as alternative to proxies
-2. Add compile-time transformation support
-3. Create production/development builds
-
 ## Comparison with Other Libraries
 
 ### Solid.js
 - **Strengths**: Compile-time, zero overhead
 - **Trade-offs**: Requires build step, steeper learning curve
-- **Lessons**: Compile-time transformations are fastest
+- **Lessons**: Compile-time transformations are fastest but not for us
 
 ### Preact Signals
 - **Strengths**: Simple API, good performance
@@ -306,43 +507,49 @@ Based on benchmark results:
 ### Vue 3
 - **Strengths**: Granular tracking, good DX
 - **Trade-offs**: Proxy overhead
-- **Lessons**: Proxies are convenient but slow
+- **Lessons:** Proxies are the right choice for modern JavaScript
+- **Decision:** Follow Vue 3's approach
 
 ### MobX
 - **Strengths**: Action batching, automatic tracking
 - **Trade-offs**: Complex API, more magic
-- **Lessons**: Batching is important for performance
+- **Lessons:** Batching is important for performance
+- **Decision:** MobX 5's proxy approach is our model
 
 ## Recommendations
 
-### For Maximum Performance:
-1. **Implement compile-time transformations** (like Solid.js)
-2. **Provide alternative API** without proxies for hot paths
-3. **Add production build** that strips dev features
+### For Maximum Performance (Without Build Tools):
+1. ✅ **Keep proxy API** (industry standard)
+2. ✅ **Implement Phase 1 optimizations** (symbol keys, shallow mode)
+3. ✅ **Add Phase 2 optimizations** (lazy creation, read-only mode)
+4. ✅ **Provide escape hatches** for manual tracking in hot paths
 
 ### For Balance of Performance and DX:
 1. **Keep proxy API** but optimize it
 2. **Add batching** for multiple updates
-3. **Provide escape hatches** for manual tracking
+3. **Provide shallow/read-only modes** for common use cases
+4. **Add selective tracking** for performance-critical code
 
-### For Quick Improvements:
-1. Replace `forEach` with `for...of`
-2. Optimize `isInScope()` checks
-3. Add compound key caching
-4. Improve proxy caching
+### For Quick Improvements (Today):
+1. ✅ Symbol-based internal keys
+2. ✅ Optimized property checks with Set
+3. ✅ Shallow proxy option
+4. Replace `forEach` with `for...of` in emitter
+5. Optimize `isInScope()` checks
 
 ## Next Steps
 
-1. Profile actual application usage to identify hot paths
-2. Implement Phase 1 optimizations
-3. Add benchmarks for each optimization
-4. Measure real-world impact
-5. Decide on Phase 2 based on results
+1. ✅ **Phase 1 optimizations** (implement today)
+2. **Benchmark each optimization** to measure impact
+3. **Profile real applications** to identify hot paths
+4. **Implement Phase 2** based on Phase 1 results
+5. **Consider Phase 3** if needed based on real-world usage
 
 ## References
 
 - [Solid.js Compiler](https://github.com/solidjs/solid/tree/main/packages/compiler)
 - [Preact Signals](https://preactjs.com/guide/v10/signals/)
 - [Vue 3 Reactivity](https://github.com/vuejs/core/tree/main/packages/reactivity)
-- [MobX](https://mobx.js.org/)
+- [MobX 5](https://mobx.js.org/)
 - [Optimizing JavaScript V8](https://v8.dev/blog/elements-kinds)
+- [MDN Proxy Documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)
