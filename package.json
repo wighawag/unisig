@@ -1,45 +1,14 @@
 {
-  "name": "unisig",
-  "version": "0.1.0",
-  "description": "Universal signals - add reactivity to any data with pluggable signal adapters and built-in events",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
+  "name": "unisig-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Universal signals monorepo",
   "scripts": {
-    "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm --filter svelte dev"
   },
-  "keywords": [
-    "unisig",
-    "signals",
-    "reactivity",
-    "events",
-    "reactive",
-    "state",
-    "solid",
-    "preact",
-    "vue",
-    "svelte",
-    "mobx",
-    "framework-agnostic",
-    "universal"
-  ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.3.0",
-    "vitest": "^2.0.0"
+    "typescript": "^5.3.0"
   }
 }
