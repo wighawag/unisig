@@ -12,7 +12,7 @@ export type {Listener, Unsubscribe, EmitterOptions} from './Emitter.js';
 // Scope
 export {Scope} from './Scope.js';
 
-// Tracker (main export)
+// Tracker
 export {Tracker, tracker} from './Tracker.js';
 export type {TrackerOptions} from './Tracker.js';
 
