@@ -97,7 +97,7 @@ export class Tracker<
 	private scope: Scope;
 	private emitter: Emitter<Events>;
 	private batching = false;
-	private pendingTriggers = new Set<string>();
+	private pendingTriggers = new Map<string, () => void>();
 
 	/**
 	 * Create a new Tracker instance.
@@ -296,7 +296,8 @@ export class Tracker<
 	trigger<K extends keyof Events>(key: string, event: K, data: Events[K]): void;
 	trigger(key: string, event?: unknown, data?: unknown): void {
 		if (this.batching) {
-			this.pendingTriggers.add(key);
+			const triggerKey = `key:${key}`;
+			this.pendingTriggers.set(triggerKey, () => this.scope.trigger(key));
 		} else {
 			this.scope.trigger(key);
 		}
@@ -328,7 +329,12 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		this.scope.triggerItem(collection, id);
+		if (this.batching) {
+			const key = `item:${collection}:${id}`;
+			this.pendingTriggers.set(key, () => this.scope.triggerItem(collection, id));
+		} else {
+			this.scope.triggerItem(collection, id);
+		}
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -356,7 +362,12 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		this.scope.triggerProp(key, prop);
+		if (this.batching) {
+			const triggerKey = `prop:${key}:${prop}`;
+			this.pendingTriggers.set(triggerKey, () => this.scope.triggerProp(key, prop));
+		} else {
+			this.scope.triggerProp(key, prop);
+		}
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -387,7 +398,12 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		this.scope.triggerItemProp(collection, id, prop);
+		if (this.batching) {
+			const key = `itemProp:${collection}:${id}:${prop}`;
+			this.pendingTriggers.set(key, () => this.scope.triggerItemProp(collection, id, prop));
+		} else {
+			this.scope.triggerItemProp(collection, id, prop);
+		}
 		if (arguments.length === 5) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -407,7 +423,12 @@ export class Tracker<
 		data: Events[K],
 	): void;
 	triggerList(collection: string, event?: unknown, data?: unknown): void {
-		this.scope.triggerList(collection);
+		if (this.batching) {
+			const key = `list:${collection}`;
+			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
+		} else {
+			this.scope.triggerList(collection);
+		}
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -435,7 +456,12 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		this.scope.triggerRemove(collection, id);
+		if (this.batching) {
+			const key = `remove:${collection}:${id}`;
+			this.pendingTriggers.set(key, () => this.scope.triggerRemove(collection, id));
+		} else {
+			this.scope.triggerRemove(collection, id);
+		}
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -455,7 +481,12 @@ export class Tracker<
 		data: Events[K],
 	): void;
 	triggerAdd(collection: string, event?: unknown, data?: unknown): void {
-		this.scope.triggerList(collection);
+		if (this.batching) {
+			const key = `add:${collection}`;
+			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
+		} else {
+			this.scope.triggerList(collection);
+		}
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -615,17 +646,24 @@ export class Tracker<
 	batch(fn: () => void): void {
 		const wasBatching = this.batching;
 		this.batching = true;
-		this.pendingTriggers.clear();
+		
+		if (!wasBatching) {
+			this.pendingTriggers.clear();
+		}
 		
 		try {
 			fn();
-			// Trigger all pending notifications once
-			for (const key of this.pendingTriggers) {
-				this.scope.trigger(key);
+			// Execute all pending triggers once (only if this is the outermost batch)
+			if (!wasBatching) {
+				for (const triggerFn of this.pendingTriggers.values()) {
+					triggerFn();
+				}
 			}
 		} finally {
 			this.batching = wasBatching;
-			this.pendingTriggers.clear();
+			if (!wasBatching) {
+				this.pendingTriggers.clear();
+			}
 		}
 	}
 
