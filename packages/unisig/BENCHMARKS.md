@@ -9,10 +9,74 @@ This directory contains comprehensive performance benchmarks for the unisig libr
 pnpm bench
 ```
 
+### Run benchmarks with baseline comparison
+```bash
+pnpm bench:compare
+```
+
+### Generate a new baseline
+```bash
+pnpm bench:baseline
+```
+
 ### Run benchmarks with JSON output (for CI/CD)
 ```bash
 pnpm bench:report
 ```
+
+## CI/CD Integration
+
+### GitHub Actions Workflow
+
+The repository includes automated benchmark workflows that run on every push to `main` and on pull requests.
+
+#### How it works:
+
+1. **On Pull Requests**:
+   - Benchmarks are run and compared against the baseline from `main`
+   - Results are posted as a comment on the PR, showing performance changes
+   - This helps reviewers easily identify performance improvements or regressions
+
+2. **On Push to Main**:
+   - Benchmarks are run and a new baseline is generated
+   - The baseline is automatically committed to the repository
+   - This ensures the baseline always reflects the `main` branch performance
+
+#### Baseline Management
+
+The `baseline.json` file is stored in the repository and managed by GitHub Actions:
+
+- **DO NOT** generate the baseline locally - it should be created by CI for consistency
+- The baseline is automatically updated when changes are merged to `main`
+- PRs compare against this baseline to show relative performance changes
+
+#### Viewing PR Benchmark Results
+
+When you open a PR, the benchmark workflow will:
+1. Run all benchmarks
+2. Compare against the baseline
+3. Post a comment with detailed results showing:
+   - Operations per second (hz)
+   - Relative performance changes
+   - Comparison summaries
+
+**Example PR comment:**
+```
+## 📊 Benchmark Results
+
+Comparing PR benchmarks against baseline from `main` branch.
+
+🟢 Faster - Performance improved
+🔴 Slower - Performance regressed
+⚪ Similar - No significant change
+```
+
+#### Artifacts
+
+Benchmark results are also saved as GitHub Actions artifacts for:
+- Debugging benchmark issues
+- Historical analysis
+- Detailed benchmark data
 
 ## Benchmark Files
 
