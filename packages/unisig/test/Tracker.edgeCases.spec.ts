@@ -44,7 +44,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
@@ -66,7 +66,7 @@ describe('Tracker - Edge Cases', () => {
 		it('should replace existing adapter', () => {
 			const adapter1 = createMockAdapter();
 			const adapter2 = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter1);
+			const r = new Tracker<TestEvents>({adapter: adapter1});
 
 			r.setAdapter(adapter2);
 			expect(r.getAdapter()).toBe(adapter2);
@@ -83,13 +83,13 @@ describe('Tracker - Edge Cases', () => {
 			const adapter: ReactivityAdapter = {
 				create: () => ({depend: vi.fn(), notify: vi.fn()}),
 			};
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			expect(r.isInScope()).toBe(true);
 		});
 
 		it('should delegate to adapter.isInScope', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			adapter.inScope = true;
 			expect(r.isInScope()).toBe(true);
@@ -178,7 +178,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return same dependency for same key', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.dep('test');
 			const dep2 = r.dep('test');
@@ -189,7 +189,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different keys', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.dep('key1');
 			const dep2 = r.dep('key2');
@@ -207,7 +207,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return same dependency for same collection and id', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '1');
@@ -217,7 +217,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '2');
@@ -227,7 +227,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different collections', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('posts', '1');
@@ -237,7 +237,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should support numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemDep('items', 1);
 			const dep2 = r.itemDep('items', 2);
@@ -254,7 +254,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return same dependency for same key and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'theme');
@@ -264,7 +264,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'language');
@@ -281,7 +281,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return same dependency for same collection, id, and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'score');
@@ -291,7 +291,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'name');
@@ -303,7 +303,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('trigger() edge cases', () => {
 		it('should create dep if not exists', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			r.trigger('test');
 
@@ -313,7 +313,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should work without event', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			r.trigger('items');
 
@@ -324,7 +324,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('triggerRemove() edge cases', () => {
 		it('should clean up item deps after removal', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			r.itemDep('users', '1');
 			r.dep('users');
@@ -372,7 +372,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('clear() edge cases', () => {
 		it('should clear all dependencies', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 
 			r.dep('key1');
 			r.dep('key2');
@@ -389,7 +389,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should not affect events', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -414,7 +414,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle symbol properties', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const sym = Symbol('test');
 			const obj = {theme: 'dark', [sym]: 'value'};
 
@@ -426,7 +426,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should maintain original object behavior', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const obj = {
 				get value() {
 					return 42;
@@ -452,7 +452,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const item = {id: 1, value: 42};
 
 			const proxied = r.itemProxy(item, 'items', 1);
@@ -474,7 +474,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle deeply nested objects', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const obj = {
 				level1: {
 					level2: {
@@ -505,7 +505,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const item = {id: 1, nested: {value: 42}};
 
 			const proxied = r.deepItemProxy(item, 'items', 1);
@@ -517,7 +517,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('Integration with events and signals', () => {
 		it('should emit event when triggering with event', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const listener = vi.fn();
 
 			r.on('item:added', listener);
@@ -529,7 +529,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should only emit event without signal when using emit()', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>(adapter);
+			const r = new Tracker<TestEvents>({adapter});
 			const listener = vi.fn();
 
 			r.on('item:added', listener);

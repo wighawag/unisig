@@ -1,5 +1,5 @@
 // Types
-export type {Dependency, ReactivityAdapter, Listener, ErrorHandler} from './types.js';
+export type {Dependency, ReactivityAdapter, Listener, ErrorHandler, EventMap} from './types.js';
 export {createReactivityAdapter} from './types.js';
 
 // Errors
@@ -13,7 +13,7 @@ export type {Unsubscribe, EmitterOptions} from './Emitter.js';
 export {Scope} from './Scope.js';
 
 // Tracker
-export {Tracker, tracker} from './Tracker.js';
+export {Tracker, tracker, createTracker} from './Tracker.js';
 export type {TrackerOptions} from './Tracker.js';
 
 // Standalone reactive state (rune-like API)

@@ -29,6 +29,24 @@ export type ErrorHandler<Events> = (
 ) => void;
 
 /**
+ * Event map type for type-safe event handling.
+ *
+ * Use this type to define your event contracts explicitly.
+ * It ensures all keys are strings and values can be any type.
+ *
+ * @example
+ * ```ts
+ * type MyEvents = EventMap<{
+ *   'user:added': { id: string; name: string };
+ *   'user:removed': string;
+ *   'data:loaded': number[];
+ *   'error': Error;
+ * }>;
+ * ```
+ */
+export type EventMap<T extends Record<string, unknown> = Record<string, unknown>> = T;
+
+/**
  * Core dependency interface - the minimal abstraction every signal library can implement.
  *
  * This is the "lowest common denominator" of reactive systems:

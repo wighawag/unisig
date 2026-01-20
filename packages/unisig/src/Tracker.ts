@@ -1,9 +1,10 @@
-import type {ReactivityAdapter, Dependency, ErrorHandler, Listener} from './types.js';
-import {
-	Emitter,
-	type Unsubscribe,
-	type EmitterOptions,
-} from './Emitter.js';
+import type {
+	ReactivityAdapter,
+	Dependency,
+	ErrorHandler,
+	Listener,
+} from './types.js';
+import {Emitter, type Unsubscribe, type EmitterOptions} from './Emitter.js';
 import {Scope} from './Scope.js';
 
 /**
@@ -99,12 +100,12 @@ export class Tracker<
 	/**
 	 * Create a new Tracker instance.
 	 *
-	 * @param adapterOrOptions - Optional reactivity adapter, or options object with adapter and error handler
+	 * @param options - Optional configuration including adapter and error handler
 	 *
 	 * @example
 	 * ```ts
-	 * // With adapter only (backward compatible)
-	 * const tracker = new Tracker<MyEvents>(adapter);
+	 * // With adapter
+	 * const tracker = new Tracker<MyEvents>({ adapter: myAdapter });
 	 *
 	 * // With error handler
 	 * const tracker = new Tracker<MyEvents>({
@@ -122,19 +123,8 @@ export class Tracker<
 	 * });
 	 * ```
 	 */
-	constructor(adapterOrOptions?: ReactivityAdapter | TrackerOptions<Events>) {
-		const isOptions =
-			typeof adapterOrOptions === 'object' &&
-			adapterOrOptions !== null &&
-			!('create' in adapterOrOptions); // Check if it's an adapter (has create method)
-
-		const adapter = isOptions
-			? (adapterOrOptions as TrackerOptions<Events>).adapter
-			: adapterOrOptions;
-		const errorHandler = isOptions
-			? (adapterOrOptions as TrackerOptions<Events>).errorHandler
-			: undefined;
-
+	constructor(options?: TrackerOptions<Events>) {
+		const { adapter, errorHandler } = options || {};
 		this.scope = new Scope(adapter);
 		this.emitter = new Emitter<Events>(
 			errorHandler ? {errorHandler} : undefined,
@@ -299,11 +289,7 @@ export class Tracker<
 	 * @param data - Event data (required when event is provided)
 	 */
 	trigger(key: string): void;
-	trigger<K extends keyof Events>(
-		key: string,
-		event: K,
-		data: Events[K],
-	): void;
+	trigger<K extends keyof Events>(key: string, event: K, data: Events[K]): void;
 	trigger(key: string, event?: unknown, data?: unknown): void {
 		this.scope.trigger(key);
 		if (arguments.length === 3) {
@@ -356,7 +342,12 @@ export class Tracker<
 		event: K,
 		data: Events[K],
 	): void;
-	triggerProp(key: string, prop: string, event?: unknown, data?: unknown): void {
+	triggerProp(
+		key: string,
+		prop: string,
+		event?: unknown,
+		data?: unknown,
+	): void {
 		this.scope.triggerProp(key, prop);
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
@@ -596,26 +587,37 @@ export class Tracker<
  * Create a new Tracker instance.
  * Convenience function alternative to `new Tracker()`.
  *
- * @param adapterOrOptions - Optional reactivity adapter, or options object with adapter and error handler
+ * @param options - Optional configuration including adapter and error handler
  *
  * @example
  * ```ts
- * // With adapter only
- * const tracker = tracker<MyEvents>(adapter);
+ * // With adapter
+ * const tracker = createTracker<MyEvents>({ adapter: myAdapter });
  *
  * // With error handler
- * const tracker = tracker<MyEvents>({
+ * const tracker = createTracker<MyEvents>({
  *   adapter: myAdapter,
+ *   errorHandler: (event, error, listener) => {
+ *     console.error(`Error in ${String(event)}:`, error);
+ *   },
+ * });
+ *
+ * // With error handler only (no adapter)
+ * const tracker = createTracker<MyEvents>({
  *   errorHandler: (event, error, listener) => {
  *     console.error(`Error in ${String(event)}:`, error);
  *   },
  * });
  * ```
  */
-export function tracker<
+export function createTracker<
 	Events extends Record<string, unknown> = Record<string, unknown>,
->(
-	adapterOrOptions?: ReactivityAdapter | TrackerOptions<Events>,
-): Tracker<Events> {
-	return new Tracker<Events>(adapterOrOptions);
+>(options?: TrackerOptions<Events>): Tracker<Events> {
+	return new Tracker<Events>(options);
 }
+
+/**
+ * Alias for createTracker - provides a shorter name.
+ * Use this if you prefer a more concise API.
+ */
+export const tracker = createTracker;

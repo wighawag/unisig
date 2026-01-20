@@ -31,7 +31,7 @@ class PlayerStore {
 	private $: Tracker<PlayerEvents>;
 
 	constructor(adapter?: ReactivityAdapter) {
-		this.$ = new Tracker<PlayerEvents>(adapter);
+		this.$ = new Tracker<PlayerEvents>({adapter});
 	}
 	private players = new Map<string, Player>();
 
