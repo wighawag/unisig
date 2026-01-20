@@ -61,8 +61,7 @@ export class Emitter<
 			this._listeners.set(event, new Set());
 		}
 		this._listeners.get(event)!.add(listener as Listener<unknown>);
-		return () =>
-			this._listeners.get(event)?.delete(listener as Listener<unknown>);
+		return () => this._listeners.get(event)?.delete(listener as Listener<unknown>);
 	}
 
 	/**
@@ -105,7 +104,7 @@ export class Emitter<
 	 * this.emit('item:added', { id: '1', name: 'Test' })
 	 * ```
 	 */
-	protected emit<K extends keyof Events>(event: K, data: Events[K]): void {
+	emit<K extends keyof Events>(event: K, data: Events[K]): void {
 		this._listeners.get(event)?.forEach((fn) => fn(data));
 	}
 
@@ -116,7 +115,7 @@ export class Emitter<
 	 * @param event - The event name to check
 	 * @returns true if there are listeners
 	 */
-	protected hasListeners<K extends keyof Events>(event: K): boolean {
+	hasListeners<K extends keyof Events>(event: K): boolean {
 		const listeners = this._listeners.get(event);
 		return listeners !== undefined && listeners.size > 0;
 	}
@@ -127,7 +126,7 @@ export class Emitter<
 	 * @param event - The event name to check
 	 * @returns Number of listeners
 	 */
-	protected listenerCount<K extends keyof Events>(event: K): number {
+	listenerCount<K extends keyof Events>(event: K): number {
 		return this._listeners.get(event)?.size ?? 0;
 	}
 
@@ -136,7 +135,7 @@ export class Emitter<
 	 *
 	 * @param event - Optional event name. If omitted, removes all listeners.
 	 */
-	protected removeAllListeners<K extends keyof Events>(event?: K): void {
+	removeAllListeners<K extends keyof Events>(event?: K): void {
 		if (event !== undefined) {
 			this._listeners.delete(event);
 		} else {

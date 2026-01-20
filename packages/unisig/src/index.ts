@@ -2,6 +2,9 @@
 export type {Dependency, ReactivityAdapter} from './types';
 export {createReactivityAdapter} from './types';
 
+// Errors
+export {NoAdapterError} from './runes';
+
 // Emitter
 export {Emitter} from './Emitter';
 export type {Listener, Unsubscribe} from './Emitter';

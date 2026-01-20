@@ -4,6 +4,23 @@
 
 **Zero dependencies.** Works with any signal library (Solid.js, Preact Signals, Vue, MobX, Svelte, etc.) or just events.
 
+## Features
+
+- 🎯 **Framework-agnostic** - Works with any signal library
+- ⚡ **Zero dependencies** - Lightweight and fast
+- 📦 **Granular reactivity** - Track at collection, item, or property level
+- 🎪 **Event system** - Built-in event emitter for non-reactive contexts
+- 🔌 **Pluggable adapters** - Works with signaldb adapters
+- 🔄 **Deep proxies** - Automatic tracking of nested properties
+- 📝 **Type-safe** - Full TypeScript support
+- 🧪 **Well-tested** - Comprehensive test coverage
+
+## Installation
+
+```bash
+npm install unisig
+```
+
 ## How Signals Work (Beginner's Guide)
 
 If you're new to signals or find them confusing, this section is for you.
@@ -79,52 +96,58 @@ Every signal library works the same way internally:
 - **depend()**: "Remember that this effect needs me"
 - **notify()**: "Tell all effects that need me to re-run"
 
-### How Does count Know Which Effect Is Running?
-
-This is the clever trick: **there's a global "current effect" variable**.
-
-```typescript
-// Simplified internals of any signal library:
-
-let currentEffect: Function | null = null; // ← Global tracker!
-
-function effect(fn) {
-  currentEffect = fn; // Step 1: Set "I'm the current effect"
-  fn(); // Step 2: Run the function (which reads signals)
-  currentEffect = null; // Step 3: Clear it
-}
-
-function createSignal(initial) {
-  let value = initial;
-  const subscribers = new Set(); // Effects that depend on this signal
-
-  return {
-    get value() {
-      // When READ: record whoever is currently running
-      if (currentEffect) {
-        subscribers.add(currentEffect); // ← This is depend()!
-      }
-      return value;
-    },
-    set value(newVal) {
-      value = newVal;
-      // When WRITTEN: re-run all recorded effects
-      subscribers.forEach((fn) => fn()); // ← This is notify()!
-    },
-  };
-}
-```
-
-**The flow:**
-
-```
-1. effect(() => { ... })     →  Sets currentEffect = thisEffect
-2.   count.value             →  count sees currentEffect, adds it to subscribers
-3. effect ends               →  Sets currentEffect = null
-4. count.value = 5           →  count loops through subscribers, calls each one
-```
-
-This is why signals only work inside effects/computeds — outside of them, `currentEffect` is `null`, so nothing gets tracked.
+> **How Does count Know Which Effect Is Running?**
+>
+> This is the clever trick: **there's a global "current effect" variable**.
+>
+> ```typescript
+> // Simplified internals of any signal library:
+>
+> let currentEffect: Function | null = null; // ← Global tracker!
+>
+> function effect(fn) {
+>   currentEffect = fn; // Step 1: Set "I'm the current effect"
+>   fn(); // Step 2: Run the function (which reads signals)
+>   currentEffect = null; // Step 3: Clear it
+> }
+>
+> function createSignal(initial) {
+>   let value = initial;
+>   const subscribers = new Set(); // Effects that depend > on this signal
+>
+>   return {
+>     get value() {
+>       // When READ: record whoever is currently running
+>       if (currentEffect) {
+>         subscribers.add(currentEffect); // ← This is depend()!
+>       }
+>       return value;
+>     },
+>     set value(newVal) {
+>       value = newVal;
+>       // When WRITTEN: re-run all recorded effects
+>       subscribers.forEach((fn) => fn()); // ← This is notify()!
+>     },
+>   };
+> }
+> ```
+>
+> **The flow:**
+>
+> ```
+>
+> 1. effect(() => { ... }) → Sets currentEffect = thisEffect
+> 2. count.value → count sees currentEffect, adds it to subscribers
+> 3. effect ends → Sets currentEffect = null
+> 4. count.value = 5 → count loops through subscribers, calls each one
+>
+> ```
+>
+> This is why signals only work inside effects/computeds — outside of them, `currentEffect` is `null`, so nothing gets tracked.
+>
+> ```
+>
+> ```
 
 ### Why Adapters Work
 
@@ -151,20 +174,7 @@ const solidAdapter = {
     };
   },
 };
-
-// Preact adapter
-const preactAdapter = {
-  create: () => {
-    const sig = signal(0);
-    return {
-      depend: () => sig.value, // Reading = depend
-      notify: () => sig.value++, // Writing = notify
-    };
-  },
-};
 ```
-
-**The adapter is just a translator** between this library's generic `depend()`/`notify()` and your signal library's specific API.
 
 ### Why This Library Also Supports Events
 
@@ -197,13 +207,9 @@ store.on("user:added", (user) => {
 
 This library gives you **both** — events for reliability, signals for power.
 
-## Installation
-
-```bash
-npm install unisig
-```
-
 ## Quick Start
+
+### Basic Usage with Events
 
 ```typescript
 import { Reactive } from "unisig";
@@ -215,17 +221,11 @@ type MyEvents = {
 };
 
 class UserStore {
-  // Add reactivity with one line
   private $ = new Reactive<MyEvents>();
   private users = new Map<string, { id: string; name: string }>();
 
   // Expose event subscription
   on: typeof this.$.on = (e, l) => this.$.on(e, l);
-
-  // Optional: enable signal-based reactivity
-  setReactivityAdapter(adapter: ReactivityAdapter) {
-    this.$.setAdapter(adapter);
-  }
 
   // READ methods: call track()
   getAll() {
@@ -233,141 +233,28 @@ class UserStore {
     return [...this.users.values()];
   }
 
-  get(id: string) {
-    this.$.trackItem("users", id);
-    return this.users.get(id);
-  }
-
   // WRITE methods: call trigger() with optional event
   add(user: { id: string; name: string }) {
     this.users.set(user.id, user);
-    this.$.triggerAdd("users", "user:added", user);
-  }
-
-  remove(id: string) {
-    this.users.delete(id);
-    this.$.triggerRemove("users", id, "user:removed", id);
-  }
-}
-```
-
-### Example with Arrays
-
-The library works with any data structure. Here's an example using arrays:
-
-```typescript
-type TodoEvents = {
-  "todo:added": { id: string; text: string };
-  "todo:toggled": { id: string; done: boolean };
-  "todo:removed": string;
-};
-
-class TodoStore {
-  private $ = new Reactive<TodoEvents>();
-  private todos: Array<{ id: string; text: string; done: boolean }> = [];
-
-  on: typeof this.$.on = (e, l) => this.$.on(e, l);
-  setReactivityAdapter(a: ReactivityAdapter) {
-    this.$.setAdapter(a);
-  }
-
-  // Get all todos
-  getAll() {
-    this.$.track("todos");
-    return this.todos;
-  }
-
-  // Get single todo by ID (granular tracking)
-  getById(id: string) {
-    this.$.trackItem("todos", id);
-    return this.todos.find((t) => t.id === id);
-  }
-
-  // Get by index - tracks BOTH list (for reordering) and item (for changes)
-  // Note: This re-runs on ANY list change, not just this index
-  getByIndex(index: number) {
-    this.$.track("todos"); // Track list - index meaning changes with list
-    const todo = this.todos[index];
-    if (todo) {
-      this.$.trackItem("todos", todo.id); // Also track the specific item
-    }
-    return todo;
-  }
-
-  // Get filtered todos
-  getActive() {
-    this.$.track("todos"); // Any todo change affects this
-    return this.todos.filter((t) => !t.done);
-  }
-
-  add(text: string) {
-    const todo = { id: crypto.randomUUID(), text, done: false };
-    this.todos.push(todo);
-    this.$.triggerAdd("todos", "todo:added", { id: todo.id, text });
-  }
-
-  toggle(id: string) {
-    const todo = this.todos.find((t) => t.id === id);
-    if (!todo) return;
-    todo.done = !todo.done;
-    // Notify both the specific item AND the list (for filtered views)
-    this.$.triggerItem("todos", id, "todo:toggled", { id, done: todo.done });
-    this.$.triggerList("todos"); // getActive() needs to re-run too
-  }
-
-  remove(id: string) {
-    const index = this.todos.findIndex((t) => t.id === id);
-    if (index === -1) return;
-    this.todos.splice(index, 1);
-    this.$.triggerRemove("todos", id, "todo:removed", id);
+    this.$.trigger("users", "user:added", user);
   }
 }
 
-// Usage:
-const todos = new TodoStore();
-
-// Events work anywhere
-todos.on("todo:added", ({ text }) => console.log("New todo:", text));
-
-// With a signal library (e.g., in Solid.js):
-createEffect(() => {
-  console.log("Active todos:", todos.getActive()); // Re-runs on any change
-});
-
-createEffect(() => {
-  // getById - ONLY re-runs when todo with id='abc' changes
-  // Even works if item doesn't exist yet (will re-run when added)
-  console.log("Specific todo:", todos.getById("abc"));
-});
-
-createEffect(() => {
-  // getByIndex - Re-runs on ANY list change (less granular)
-  // Because "item at index 0" changes meaning when list changes
-  console.log("First todo:", todos.getByIndex(0));
-});
-```
-
-### Use with Events (always works)
-
-```typescript
+// Usage
 const store = new UserStore();
 
+// Events work anywhere
 store.on("user:added", (user) => {
   console.log("Added:", user.name);
 });
 
-store.on("user:removed", (id) => {
-  console.log("Removed:", id);
-});
-
 store.add({ id: "1", name: "Alice" }); // Logs: "Added: Alice"
-store.remove("1"); // Logs: "Removed: 1"
 ```
 
-### Use with Signals (Solid.js example)
+### Using with Signals
 
 ```typescript
-import { createSignal, getOwner, onCleanup, createEffect } from "solid-js";
+import { createSignal, getOwner, onCleanup } from "solid-js";
 
 // Create adapter for your signal library
 const solidAdapter = {
@@ -379,18 +266,16 @@ const solidAdapter = {
   onDispose: (cb) => onCleanup(cb),
 };
 
-const store = new UserStore();
-store.setReactivityAdapter(solidAdapter);
+// Use with Reactive
+const $ = new Reactive<UserEvents>(solidAdapter);
 
-// Now reads are automatically tracked!
+// In a reactive context:
 createEffect(() => {
-  console.log("Users:", store.getAll()); // Re-runs when users change
+  const users = $.getAll(); // Automatically tracked
 });
-
-store.add({ id: "1", name: "Alice" }); // Effect re-runs
 ```
 
-## API
+## API Reference
 
 ### `Reactive<Events>`
 
@@ -409,6 +294,8 @@ $.on(event, listener)      // Subscribe to event
 $.off(event, listener)     // Unsubscribe
 $.once(event, listener)    // Subscribe once
 $.emit(event, data)        // Emit event only (no signal)
+$.hasListeners(event)      // Check if event has listeners
+$.removeAllListeners(event?) // Remove listeners
 
 // Tracking (for reads)
 $.track(key)               // Track dependency by key
@@ -425,6 +312,13 @@ $.triggerRemove(collection, id, event?, data?) // Notify item + list + cleanup
 $.triggerProp(key, prop, event?, data?)       // Notify property only
 $.triggerItemProp(collection, id, prop, event?, data?) // Notify item property only
 
+// Direct access
+$.dep(key)                 // Get/create dependency
+$.itemDep(collection, id)  // Get/create item dependency
+$.propDep(key, prop)       // Get/create property dependency
+$.itemPropDep(collection, id, prop) // Get/create item property dependency
+$.clear()                  // Clear all dependencies
+
 // Auto-tracking proxies (shallow - first level only)
 $.proxy(target, key)       // Create auto-tracking proxy for an object
 $.itemProxy(target, collection, id) // Create auto-tracking proxy for a collection item
@@ -432,13 +326,6 @@ $.itemProxy(target, collection, id) // Create auto-tracking proxy for a collecti
 // Deep auto-tracking proxies (any nesting level)
 $.deepProxy(target, key)   // Deep proxy with dot notation paths
 $.deepItemProxy(target, collection, id) // Deep proxy for collection items
-
-// Direct access
-$.dep(key)                 // Get/create dependency
-$.itemDep(collection, id)  // Get/create item dependency
-$.propDep(key, prop)       // Get/create property dependency
-$.itemPropDep(collection, id, prop) // Get/create item property dependency
-$.clear()                  // Clear all dependencies
 ```
 
 ### `Emitter<Events>`
@@ -466,374 +353,174 @@ scope.track("key");
 scope.trigger("key");
 ```
 
-### Creating Adapters
+
+## Adapters
+
+unisig uses the same adapter pattern as [signaldb](https://github.com/MaxGraey/signaldb). You can use any adapter from the signaldb ecosystem:
+
+- `@signaldb/reactivity/solid` for Solid.js
+- `@signaldb/reactivity/preact` for Preact
+- `@signaldb/reactivity/vue` for Vue
+- `@signaldb/reactivity/mobx` for MobX
+- `@signaldb/reactivity/svelte` for Svelte
+
+Example with Solid.js:
 
 ```typescript
-import { createReactivityAdapter } from "unisig";
+import { solidReactivityAdapter } from '@signaldb/reactivity/solid';
+import { Reactive } from 'unisig';
 
-// Preact Signals
-import { signal } from "@preact/signals-core";
+const $ = new Reactive<UserEvents>(solidReactivityAdapter);
+```
 
-const preactAdapter = createReactivityAdapter({
+Or create your own adapter by implementing the `ReactivityAdapter` interface:
+
+```typescript
+import { createSignal, getOwner, onCleanup } from "solid-js";
+import type { ReactivityAdapter } from "unisig";
+
+const solidAdapter: ReactivityAdapter = {
   create: () => {
-    const s = signal(0);
-    return {
-      depend: () => {
-        s.value;
-      },
-      notify: () => {
-        s.value++;
-      },
-    };
+    const [track, trigger] = createSignal(undefined, { equals: false });
+    return { depend: () => track(), notify: () => trigger(undefined) };
   },
-});
-
-// Vue
-import { shallowRef, triggerRef } from "vue";
-
-const vueAdapter = createReactivityAdapter({
-  create: () => {
-    const r = shallowRef(0);
-    return {
-      depend: () => {
-        r.value;
-      },
-      notify: () => triggerRef(r),
-    };
-  },
-});
-
-// MobX
-import { observable, runInAction } from "mobx";
-
-const mobxAdapter = createReactivityAdapter({
-  create: () => {
-    const o = observable({ v: 0 });
-    return {
-      depend: () => {
-        o.v;
-      },
-      notify: () =>
-        runInAction(() => {
-          o.v++;
-        }),
-    };
-  },
-});
-
-// Svelte 5 (with runes)
-import { createSubscriber } from "svelte/reactivity";
-
-class SvelteDependency {
-  #subscribe: () => void;
-  #update: (() => void) | undefined;
-
-  constructor() {
-    this.#subscribe = createSubscriber((update) => {
-      this.#update = update;
-      return () => {};
-    });
-  }
-
-  depend() {
-    this.#subscribe();
-  }
-
-  notify() {
-    this.#update?.();
-  }
-}
-
-const svelteAdapter = createReactivityAdapter({
-  create: () => new SvelteDependency(),
-  isInScope: () => $effect.tracking(),
-});
+  isInScope: () => !!getOwner(),
+  onDispose: (cb) => onCleanup(cb),
+};
 ```
 
 ## Granular Reactivity
 
-Use `trackItem()` and `triggerItem()` for per-item updates:
+### Collection Level
+
+Track the entire collection:
 
 ```typescript
-class PlayerStore {
-  private $ = new Reactive<PlayerEvents>();
+class UserStore {
+  private $ = new Reactive<UserEvents>();
 
-  // Only re-renders when THIS player changes
-  getPlayer(id: string) {
-    this.$.trackItem("players", id);
-    return this.players.get(id);
+  getAll() {
+    this.$.track("users");
+    return [...this.users.values()];
   }
 
-  // Only notifies watchers of THIS player
-  updateScore(id: string, score: number) {
-    this.players.get(id)!.score = score;
-    this.$.triggerItem("players", id, "player:scored", { id, score });
+  add(user) {
+    this.users.set(user.id, user);
+    this.$.triggerList("users");
   }
 }
-
-// In Solid.js:
-createEffect(() => {
-  console.log("Player 1:", store.getPlayer("1")); // Only player 1
-});
-
-createEffect(() => {
-  console.log("Player 2:", store.getPlayer("2")); // Only player 2
-});
-
-store.updateScore("1", 100); // Only first effect runs!
 ```
 
-## Property-Level Reactivity
+### Item Level
 
-For even finer control, track individual properties of items:
+Track specific items:
 
 ```typescript
-class PlayerStore {
-  private $ = new Reactive<PlayerEvents>();
-  private players = new Map<string, { id: string; name: string; score: number }>();
+class UserStore {
+  private $ = new Reactive<UserEvents>();
 
-  // Only re-runs when THIS player's score changes
-  getScore(id: string) {
-    this.$.trackItemProp("players", id, "score");
-    return this.players.get(id)?.score;
+  getUser(id) {
+    this.$.trackItem("users", id);
+    return this.users.get(id);
   }
 
-  // Only re-runs when THIS player's name changes
-  getName(id: string) {
-    this.$.trackItemProp("players", id, "name");
-    return this.players.get(id)?.name;
-  }
-
-  // Only notifies score watchers, not name watchers
-  updateScore(id: string, score: number) {
-    const player = this.players.get(id);
-    if (!player) return;
-    player.score = score;
-    this.$.triggerItemProp("players", id, "score", "player:scored", { id, score });
-  }
-
-  // Only notifies name watchers, not score watchers
-  updateName(id: string, name: string) {
-    const player = this.players.get(id);
-    if (!player) return;
-    player.name = name;
-    this.$.triggerItemProp("players", id, "name");
+  updateUser(id, changes) {
+    Object.assign(this.users.get(id), changes);
+    this.$.triggerItem("users", id);
   }
 }
+```
 
-// In Solid.js:
-createEffect(() => {
-  console.log("Score:", store.getScore("1")); // Only re-runs on score change
-});
+### Property Level
 
-createEffect(() => {
-  console.log("Name:", store.getName("1")); // Only re-runs on name change
-});
+Track specific properties:
 
-store.updateScore("1", 100); // Only first effect runs!
-store.updateName("1", "Bob"); // Only second effect runs!
+```typescript
+class UserStore {
+  private $ = new Reactive<UserEvents>();
+
+  getScore(id) {
+    this.$.trackItemProp("users", id, "score");
+    return this.users.get(id)?.score;
+  }
+
+  updateScore(id, score) {
+    this.users.get(id).score = score;
+    this.$.triggerItemProp("users", id, "score");
+  }
+}
 ```
 
 ## Auto-Tracking with Proxies
 
-For automatic property tracking without manual `trackProp`/`triggerProp` calls, use the proxy helpers:
+### Shallow Proxies
 
 ```typescript
-class PlayerStore {
-  private $ = new Reactive<PlayerEvents>();
-  private players = new Map<string, { id: string; name: string; score: number }>();
+class UserStore {
+  private $ = new Reactive<UserEvents>();
 
-  setAdapter(adapter: ReactivityAdapter) {
-    this.$.setAdapter(adapter);
+  getUser(id) {
+    this.$.trackItem("users", id);
+    const user = this.users.get(id);
+    return user ? this.$.itemProxy(user, "users", id) : undefined;
   }
 
-  // Returns a proxy that auto-tracks property reads
-  getPlayer(id: string) {
+  add(user) {
+    this.users.set(user.id, user);
+    this.$.triggerList("users");
+  }
+}
+
+// Usage
+createEffect(() => {
+  const user = store.getUser("1");
+  console.log(user?.score); // Auto-tracks 'users:1:score'
+});
+
+// Can modify through proxy
+const user = store.getUser("1");
+if (user) {
+  user.score = 100; // Auto-triggers 'users:1:score'
+}
+```
+
+### Deep Proxies
+
+For nested objects, use deep proxies:
+
+```typescript
+class GameStore {
+  private $ = new Reactive<GameEvents>();
+  private players = new Map<string, Player>();
+
+  getPlayer(id) {
     this.$.trackItem("players", id);
     const player = this.players.get(id);
-    return player ? this.$.itemProxy(player, "players", id) : undefined;
-  }
-
-  add(player: { id: string; name: string; score: number }) {
-    this.players.set(player.id, player);
-    this.$.triggerList("players");
+    return player ? this.$.deepItemProxy(player, "players", id) : undefined;
   }
 }
 
-// Usage in Solid.js:
+// Usage
 createEffect(() => {
   const player = store.getPlayer("1");
-  console.log("Score:", player?.score); // Auto-tracks 'players:1:score'
+  // Nested access is automatically tracked:
+  console.log(player?.stats.health); // Tracks 'stats.health'
+  console.log(player?.inventory[0]); // Tracks 'inventory.0'
 });
-
-createEffect(() => {
-  const player = store.getPlayer("1");
-  console.log("Name:", player?.name); // Auto-tracks 'players:1:name'
-});
-
-// Can even modify through the proxy:
-const player = store.getPlayer("1");
-if (player) {
-  player.score = 100; // Auto-triggers 'players:1:score'
-}
 ```
-
-### How Proxies Work
-
-The proxy intercepts property access:
-
-- **Read**: When you read `player.score`, it calls `trackItemProp('players', '1', 'score')`
-- **Write**: When you write `player.score = 100`, it calls `triggerItemProp('players', '1', 'score')`
-
-This gives you automatic fine-grained reactivity without manual tracking calls.
-
-### Proxy for Non-Collection Objects
-
-Use `proxy()` for single objects (not in collections):
-
-```typescript
-class ConfigStore {
-  private $ = new Reactive<ConfigEvents>();
-  private config = { theme: "dark", language: "en", fontSize: 14 };
-
-  setAdapter(adapter: ReactivityAdapter) {
-    this.$.setAdapter(adapter);
-  }
-
-  // Returns a proxy that auto-tracks property reads
-  getConfig() {
-    this.$.track("config");
-    return this.$.proxy(this.config, "config");
-  }
-}
-
-// Usage:
-createEffect(() => {
-  const config = store.getConfig();
-  console.log("Theme:", config.theme); // Only re-runs when theme changes
-});
-
-createEffect(() => {
-  const config = store.getConfig();
-  console.log("Font:", config.fontSize); // Only re-runs when fontSize changes
-});
-
-// Modify through proxy:
-store.getConfig().theme = "light"; // Only first effect re-runs
-```
-
-## Deep Auto-Tracking Proxies
-
-For objects with nested properties, use `deepProxy()` and `deepItemProxy()`. These recursively wrap nested objects and track property access at any depth using dot notation paths.
-
-```typescript
-interface Player {
-  id: string
-  name: string
-  stats: {
-    health: number
-    mana: number
-  }
-  inventory: string[]
-}
-
-class GameStore {
-  private $ = new Reactive<GameEvents>()
-  private players = new Map<string, Player>()
-  
-  setAdapter(adapter: ReactivityAdapter) {
-    this.$.setAdapter(adapter)
-  }
-  
-  // Returns a deep proxy - nested access is tracked
-  getPlayer(id: string) {
-    this.$.trackItem('players', id)
-    const player = this.players.get(id)
-    return player ? this.$.deepItemProxy(player, 'players', id) : undefined
-  }
-  
-  // Raw access without tracking
-  getPlayerRaw(id: string) {
-    return this.players.get(id)
-  }
-}
-
-// Usage in Solid.js:
-createEffect(() => {
-  const player = store.getPlayer('1')
-  // Nested access is automatically tracked with dot notation:
-  console.log(player?.stats.health)  // Tracks 'stats.health'
-  console.log(player?.stats.mana)    // Tracks 'stats.mana'
-  console.log(player?.inventory[0])  // Tracks 'inventory.0'
-})
-```
-
-### Deep vs Shallow Proxies
-
-| Method | Nesting | Path Format | Use Case |
-|--------|---------|-------------|----------|
-| `proxy()` | First level only | `'theme'` | Flat objects |
-| `itemProxy()` | First level only | `'score'` | Flat items |
-| `deepProxy()` | Any depth | `'stats.health'` | Nested objects |
-| `deepItemProxy()` | Any depth | `'stats.health'` | Nested items |
 
 ### What Gets Proxied
 
 Deep proxies recursively wrap:
+
 - Plain objects `{}`
 - Arrays `[]` (with index tracking and mutation method support)
 
 Deep proxies do **not** proxy:
+
 - `Date`, `RegExp`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Error`
 - Promise-like objects
 - Primitives (strings, numbers, booleans, null, undefined)
-
-### Array Support
-
-Arrays are proxied with full support for:
-
-```typescript
-createEffect(() => {
-  const player = store.getPlayer('1')
-  
-  // Index access - tracks 'inventory.0'
-  console.log(player?.inventory[0])
-  
-  // Length - tracks 'inventory.length'
-  console.log(player?.inventory.length)
-  
-  // Mutation methods trigger the array path
-  player?.inventory.push('sword')  // Triggers 'inventory'
-})
-```
-
-### Proxy Identity
-
-Deep proxies maintain identity via WeakMap caching:
-
-```typescript
-const player = store.getPlayer('1')
-player.stats === player.stats  // true (same proxy instance)
-```
-
-### Best Practices
-
-1. **Use deep proxy for nested data** - When your items have nested objects
-2. **Use shallow proxy for flat data** - When your items are simple (id, name, score)
-3. **Use `getRaw()` for snapshots** - When you need the actual data without reactivity
-4. **Prefer `getIds()` for iteration** - Return IDs and let consumers call `get(id)` for each
-
-```typescript
-// ✓ Good - each item gets its own reactive scope
-const ids = store.getIds()
-for (const id of ids) {
-  const player = store.get(id)  // Deep proxy, auto-tracked
-}
-
-// ✗ Less ideal - getAll() creates proxies but may not track properly
-// depending on where property access happens
-const players = store.getAll()
-```
 
 ## TypeScript
 
@@ -858,6 +545,20 @@ $.on("item:added", (item) => {
 $.emit("item:added", { id: "1", value: 42 }); // ✓
 $.emit("item:added", { id: "1" }); // ✗ Error: missing value
 ```
+
+## Patterns and Best Practices
+
+See [PATTERNS.md](./PATTERNS.md) for:
+
+- Pre-indexing for O(1) lookups
+- Lazy caching strategies
+- Cross-store dependencies
+- Event-based subscriptions
+- Hybrid patterns
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## License
 

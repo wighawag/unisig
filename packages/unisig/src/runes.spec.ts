@@ -5,6 +5,7 @@ import {
 	setDefaultAdapter,
 	getDefaultAdapter,
 	isRef,
+	NoAdapterError,
 	type Ref,
 } from './runes';
 import type {ReactivityAdapter, Dependency} from './types';
@@ -55,17 +56,92 @@ describe('setDefaultAdapter / getDefaultAdapter', () => {
 	});
 });
 
+describe('NoAdapterError', () => {
+	it('should be a proper Error subclass', () => {
+		const error = new NoAdapterError();
+		expect(error).toBeInstanceOf(Error);
+		expect(error).toBeInstanceOf(NoAdapterError);
+		expect(error.name).toBe('NoAdapterError');
+	});
+
+	it('should have a descriptive message', () => {
+		const error = new NoAdapterError();
+		expect(error.message).toContain('No adapter provided');
+		expect(error.message).toContain('setDefaultAdapter');
+	});
+});
+
+describe('state error handling', () => {
+	beforeEach(() => {
+		setDefaultAdapter(undefined as any);
+	});
+
+	it('should throw NoAdapterError when no adapter is available', () => {
+		expect(() => state({value: 1})).toThrow(NoAdapterError);
+	});
+
+	it('should throw NoAdapterError with primitive when no adapter is available', () => {
+		expect(() => state(0)).toThrow(NoAdapterError);
+		expect(() => state('test')).toThrow(NoAdapterError);
+		expect(() => state(true)).toThrow(NoAdapterError);
+	});
+
+	it('should not throw when adapter is provided as parameter', () => {
+		const adapter = createMockAdapter();
+		expect(() => state(0, adapter)).not.toThrow();
+	});
+
+	it('should not throw when default adapter is set', () => {
+		const adapter = createMockAdapter();
+		setDefaultAdapter(adapter);
+		expect(() => state(0)).not.toThrow();
+	});
+
+	it('should throw TypeError for unsupported types', () => {
+		const adapter = createMockAdapter();
+		const unsupportedValue = () => {};
+
+		expect(() => state(unsupportedValue as any, adapter)).toThrow(TypeError);
+		expect(() => state(unsupportedValue as any, adapter)).toThrow(
+			'Unsupported value type: function',
+		);
+	});
+
+	it('should accept function objects when explicitly passed as objects', () => {
+		const adapter = createMockAdapter();
+		const fn = () => {};
+		// Functions are objects, so they should be accepted
+		expect(() => state({fn}, adapter)).not.toThrow();
+	});
+});
+
+describe('ref error handling', () => {
+	beforeEach(() => {
+		setDefaultAdapter(undefined as any);
+	});
+
+	it('should throw NoAdapterError when no adapter is available', () => {
+		expect(() => ref(0)).toThrow(NoAdapterError);
+	});
+
+	it('should not throw when adapter is provided', () => {
+		const adapter = createMockAdapter();
+		expect(() => ref(0, adapter)).not.toThrow();
+	});
+
+	it('should not throw when default adapter is set', () => {
+		const adapter = createMockAdapter();
+		setDefaultAdapter(adapter);
+		expect(() => ref(0)).not.toThrow();
+	});
+});
+
 describe('state', () => {
 	let adapter: ReturnType<typeof createMockAdapter>;
 
 	beforeEach(() => {
 		adapter = createMockAdapter();
 		setDefaultAdapter(adapter);
-	});
-
-	it('should throw when no adapter is available', () => {
-		setDefaultAdapter(undefined as any);
-		expect(() => state({value: 1})).toThrow('No adapter provided');
 	});
 
 	it('should return a deeply proxied object', () => {
@@ -185,7 +261,7 @@ describe('state with primitives', () => {
 		const count = state(0);
 		const _ = count.value; // Read first
 
-		count.value = 5;
+		count.value = 5 as any;
 
 		const notifyCalls = adapter.deps.filter(
 			(d) => (d.notify as any).mock.calls.length > 0,
@@ -214,7 +290,7 @@ describe('state with primitives', () => {
 
 	it('should support boolean toggle', () => {
 		const active = state(true);
-		active.value = !active.value;
+		active.value = !active.value as any;
 		expect(active.value).toBe(false);
 	});
 });
@@ -261,6 +337,11 @@ describe('ref', () => {
 		expect(bool.value).toBe(true);
 		expect(arr.value).toEqual([1, 2, 3]);
 	});
+
+	it('should work with objects', () => {
+		const obj = ref({name: 'Alice', score: 100});
+		expect(obj.value).toEqual({name: 'Alice', score: 100});
+	});
 });
 
 describe('isRef', () => {
@@ -286,6 +367,17 @@ describe('isRef', () => {
 
 	it('should return true for manual ref-like objects', () => {
 		expect(isRef({value: 'anything'})).toBe(true);
+	});
+
+	it('should work with type narrowing', () => {
+		const adapter = createMockAdapter();
+		setDefaultAdapter(adapter);
+
+		const count = ref(0);
+		if (isRef(count)) {
+			// TypeScript should know count.value is a number
+			expect(typeof count.value).toBe('number');
+		}
 	});
 });
 
@@ -338,5 +430,25 @@ describe('state with complex objects', () => {
 		// Both accesses should return proxied versions
 		expect(player1.name).toBe('Alice');
 		expect(player2.name).toBe('Alice');
+	});
+
+	it('should handle deeply nested objects', () => {
+		const obj = state({
+			level1: {
+				level2: {
+					level3: {
+						value: 42,
+					},
+				},
+			},
+		});
+
+		// Access deeply nested value
+		const value = obj.level1.level2.level3.value;
+		expect(value).toBe(42);
+
+		// Mutate deeply nested value
+		obj.level1.level2.level3.value = 100;
+		expect(obj.level1.level2.level3.value).toBe(100);
 	});
 });

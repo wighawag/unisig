@@ -201,21 +201,21 @@ describe('Reactive', () => {
 			it('should notify list signal', () => {
 				const adapter = createMockAdapter();
 				const r = new Reactive<TestEvents>(adapter);
-
+	
 				r.dep('items');
 				r.triggerList('items');
-
+	
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
+	
 			it('should emit event if provided', () => {
 				const adapter = createMockAdapter();
 				const r = new Reactive<TestEvents>(adapter);
 				const listener = vi.fn();
-
+	
 				r.on('list:cleared', listener);
 				r.triggerList('items', 'list:cleared', undefined as void);
-
+	
 				expect(listener).toHaveBeenCalledTimes(1);
 			});
 		});

@@ -8,17 +8,10 @@ type TestEvents = {
 	cleared: void;
 };
 
-// Create a test emitter that exposes emit
-class TestEmitter extends Emitter<TestEvents> {
-	public emit<K extends keyof TestEvents>(event: K, data: TestEvents[K]): void {
-		super.emit(event, data);
-	}
-}
-
 describe('Emitter', () => {
 	describe('on()', () => {
 		it('should subscribe to events', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			emitter.on('item:added', listener);
@@ -29,7 +22,7 @@ describe('Emitter', () => {
 		});
 
 		it('should return an unsubscribe function', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			const unsub = emitter.on('item:added', listener);
@@ -40,7 +33,7 @@ describe('Emitter', () => {
 		});
 
 		it('should allow multiple listeners for the same event', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener1 = vi.fn();
 			const listener2 = vi.fn();
 
@@ -53,7 +46,7 @@ describe('Emitter', () => {
 		});
 
 		it('should handle events with different types', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const stringListener = vi.fn();
 			const numberListener = vi.fn();
 
@@ -68,7 +61,7 @@ describe('Emitter', () => {
 		});
 
 		it('should handle void events', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			emitter.on('cleared', listener);
@@ -80,7 +73,7 @@ describe('Emitter', () => {
 
 	describe('off()', () => {
 		it('should unsubscribe a specific listener', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener1 = vi.fn();
 			const listener2 = vi.fn();
 
@@ -94,7 +87,7 @@ describe('Emitter', () => {
 		});
 
 		it('should do nothing if listener not found', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			// Should not throw
@@ -105,7 +98,7 @@ describe('Emitter', () => {
 
 	describe('once()', () => {
 		it('should only fire once', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			emitter.once('item:added', listener);
@@ -117,7 +110,7 @@ describe('Emitter', () => {
 		});
 
 		it('should return an unsubscribe function that works before emission', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const listener = vi.fn();
 
 			const unsub = emitter.once('item:added', listener);
@@ -130,7 +123,7 @@ describe('Emitter', () => {
 
 	describe('emit()', () => {
 		it('should do nothing if no listeners', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 
 			// Should not throw
 			emitter.emit('item:added', {id: '1', name: 'Test'});
@@ -138,7 +131,7 @@ describe('Emitter', () => {
 		});
 
 		it('should call listeners in order of subscription', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 			const order: number[] = [];
 
 			emitter.on('item:added', () => order.push(1));
@@ -150,9 +143,96 @@ describe('Emitter', () => {
 		});
 	});
 
+	describe('hasListeners()', () => {
+		it('should return true when listeners exist', () => {
+			const emitter = new Emitter<TestEvents>();
+			const listener = vi.fn();
+
+			emitter.on('item:added', listener);
+			expect(emitter.hasListeners('item:added')).toBe(true);
+		});
+
+		it('should return false when no listeners exist', () => {
+			const emitter = new Emitter<TestEvents>();
+			expect(emitter.hasListeners('item:added')).toBe(false);
+		});
+
+		it('should return false after unsubscribing all listeners', () => {
+			const emitter = new Emitter<TestEvents>();
+			const listener = vi.fn();
+
+			emitter.on('item:added', listener);
+			emitter.off('item:added', listener);
+			expect(emitter.hasListeners('item:added')).toBe(false);
+		});
+	});
+
+	describe('listenerCount()', () => {
+		it('should return the number of listeners', () => {
+			const emitter = new Emitter<TestEvents>();
+
+			expect(emitter.listenerCount('item:added')).toBe(0);
+
+			emitter.on('item:added', vi.fn());
+			expect(emitter.listenerCount('item:added')).toBe(1);
+
+			emitter.on('item:added', vi.fn());
+			emitter.on('item:added', vi.fn());
+			expect(emitter.listenerCount('item:added')).toBe(3);
+		});
+
+		it('should return 0 for events with no listeners', () => {
+			const emitter = new Emitter<TestEvents>();
+			expect(emitter.listenerCount('nonexistent' as any)).toBe(0);
+		});
+	});
+
+	describe('removeAllListeners()', () => {
+		it('should remove all listeners for a specific event', () => {
+			const emitter = new Emitter<TestEvents>();
+			const listener1 = vi.fn();
+			const listener2 = vi.fn();
+			const listener3 = vi.fn();
+
+			emitter.on('item:added', listener1);
+			emitter.on('item:added', listener2);
+			emitter.on('item:removed', listener3);
+
+			emitter.removeAllListeners('item:added');
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+			emitter.emit('item:removed', 'id-123');
+
+			expect(listener1).not.toHaveBeenCalled();
+			expect(listener2).not.toHaveBeenCalled();
+			expect(listener3).toHaveBeenCalledTimes(1);
+		});
+
+		it('should remove all listeners when no event specified', () => {
+			const emitter = new Emitter<TestEvents>();
+			const listener1 = vi.fn();
+			const listener2 = vi.fn();
+			const listener3 = vi.fn();
+
+			emitter.on('item:added', listener1);
+			emitter.on('item:removed', listener2);
+			emitter.on('cleared', listener3);
+
+			emitter.removeAllListeners();
+
+			emitter.emit('item:added', {id: '1', name: 'Test'});
+			emitter.emit('item:removed', 'id-123');
+			emitter.emit('cleared', undefined as void);
+
+			expect(listener1).not.toHaveBeenCalled();
+			expect(listener2).not.toHaveBeenCalled();
+			expect(listener3).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('type safety', () => {
 		it('should enforce event types at compile time', () => {
-			const emitter = new TestEmitter();
+			const emitter = new Emitter<TestEvents>();
 
 			// These should compile
 			emitter.on('item:added', (item) => {

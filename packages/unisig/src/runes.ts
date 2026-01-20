@@ -2,6 +2,19 @@ import {Scope} from './Scope';
 import type {ReactivityAdapter} from './types';
 
 /**
+ * Error thrown when no reactivity adapter is available but one is required.
+ */
+export class NoAdapterError extends Error {
+	constructor() {
+		super(
+			'No adapter provided and no default adapter set. ' +
+				'Call setDefaultAdapter() first or pass an adapter to state()/ref().',
+		);
+		this.name = 'NoAdapterError';
+	}
+}
+
+/**
  * Global default adapter for standalone state/ref usage.
  * Set this once at app initialization.
  */
@@ -43,14 +56,12 @@ export interface Ref<T> {
 
 /**
  * Helper to resolve adapter
+ * @throws {NoAdapterError} When no adapter is available
  */
 function resolveAdapter(adapter?: ReactivityAdapter): ReactivityAdapter {
 	const resolved = adapter ?? defaultAdapter;
 	if (!resolved) {
-		throw new Error(
-			'No adapter provided and no default adapter set. ' +
-				'Call setDefaultAdapter() first or pass an adapter.',
-		);
+		throw new NoAdapterError();
 	}
 	return resolved;
 }
@@ -67,6 +78,18 @@ function isPrimitive(value: unknown): boolean {
 		typeof value === 'boolean' ||
 		typeof value === 'symbol' ||
 		typeof value === 'bigint'
+	);
+}
+
+/**
+ * Validate that the value is of a supported type
+ */
+function validateValue(value: unknown): void {
+	if (value === null || value === undefined) return;
+	if (typeof value === 'object') return;
+	if (isPrimitive(value)) return;
+	throw new TypeError(
+		`Unsupported value type: ${typeof value}. Only primitives and objects are supported.`,
 	);
 }
 
@@ -92,10 +115,7 @@ export function state<T extends number | string | boolean | null | undefined | s
  * @param adapter - Optional adapter (uses default if not provided)
  * @returns A deeply proxied reactive object
  */
-export function state<T extends object>(
-	initial: T,
-	adapter?: ReactivityAdapter,
-): T;
+export function state<T extends object>(initial: T, adapter?: ReactivityAdapter): T;
 
 /**
  * Create reactive state.
@@ -128,11 +148,15 @@ export function state<T extends object>(
  * // Derived values use framework primitives:
  * const doubled = $derived.by(() => count.value * 2);  // Svelte
  * ```
+ *
+ * @throws {NoAdapterError} When no adapter is available
+ * @throws {TypeError} When the value type is not supported
  */
 export function state<T>(
 	initial: T,
 	adapter?: ReactivityAdapter,
 ): T extends object ? T : Ref<T> {
+	validateValue(initial);
 	const resolvedAdapter = resolveAdapter(adapter);
 	const scope = new Scope(resolvedAdapter);
 	const key = `state_${++keyCounter}`;
@@ -172,6 +196,8 @@ export function state<T>(
  * // Derived values use framework primitives:
  * const doubled = $derived.by(() => count.value * 2);  // Svelte
  * ```
+ *
+ * @throws {NoAdapterError} When no adapter is available
  */
 export function ref<T>(initial: T, adapter?: ReactivityAdapter): Ref<T> {
 	const resolvedAdapter = resolveAdapter(adapter);
@@ -188,6 +214,22 @@ export type UnwrapRef<T> = T extends Ref<infer V> ? V : T;
 
 /**
  * Check if a value is a Ref.
+ * A value is considered a Ref if it's an object with exactly one property named 'value'.
+ *
+ * @param value - The value to check
+ * @returns true if the value is a Ref
+ *
+ * @example
+ * ```ts
+ * const count = ref(0);
+ * isRef(count)  // true
+ *
+ * const obj = { value: 1, other: 2 };
+ * isRef(obj)    // false (has more than one property)
+ *
+ * isRef(null)   // false
+ * isRef(42)     // false
+ * ```
  */
 export function isRef<T>(value: unknown): value is Ref<T> {
 	return (

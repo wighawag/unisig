@@ -1,47 +1,225 @@
-# Svelte + TS + Vite
+# unisig Svelte Example
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+A demonstration of unisig's fine-grained reactivity with Svelte 5 runes.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- 🔬 **Property-level reactivity** - Each property has its own signal
+- 📊 **Collection tracking** - Efficient list-level updates
+- 🎪 **Event subscriptions** - Listen to changes outside reactive contexts
+- 🔄 **Deep proxies** - Automatic nested property tracking
+- 💎 **Type-safe** - Full TypeScript support
 
-## Need an official Svelte framework?
+## Getting Started
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+### Installation
 
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import {writable} from 'svelte/store';
-export default writable(0);
+```bash
+cd examples/svelte
+pnpm install
 ```
+
+### Running the Example
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) to see the demo.
+
+## What You'll See
+
+The demo showcases a player management system with:
+
+1. **Player List** - Collection-level reactivity (updates when players are added/removed)
+2. **Player Cards** - Property-level reactivity (only updates when specific properties change)
+3. **Render Counts** - Visual indicators showing which components re-render
+4. **Event Logs** - Browser console shows all emitted events
+
+## Key Demonstrations
+
+### 1. Fine-Grained Reactivity
+
+Watch the render counts carefully:
+- Click **+10** on Score → Only Score component re-renders
+- Click **Level Up** → Only Level component re-renders
+- Edit **Name** → Only Name component re-renders
+- Add/Remove player → Only Player List re-renders
+
+This is achieved using granular tracking:
+
+```typescript
+// Track only score property
+getScore(id: string): number | undefined {
+  this.$.trackItemProp('players', id, 'score');
+  return this.players.get(id)?.score;
+}
+
+// Trigger only score property
+updateScore(id: string, score: number): void {
+  this.players.get(id).score = score;
+  this.$.triggerItemProp('players', id, 'score', 'player:scored', { id, score });
+}
+```
+
+### 2. Event Subscriptions
+
+The browser console shows events as they happen:
+
+```
+🎮 Player added: Alice
+🎯 Score updated: p1 -> 110
+⬆️ Level up: p1 -> 6
+```
+
+Events work anywhere, even outside reactive contexts:
+
+```typescript
+playerStore.on('player:added', (player) => {
+  console.log('Player added:', player.name);
+});
+```
+
+### 3. Deep Proxies
+
+Accessing nested properties automatically tracks them:
+
+```typescript
+get(id: string): Player | undefined {
+  this.$.trackItem('players', id);
+  // Deep proxy automatically tracks nested properties
+  return this.$.deepItemProxy(this.players.get(id), 'players', id);
+}
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           Svelte Component              │
+│  (uses $state, $derived, $effect)       │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│           PlayerStore                   │
+│  ┌─────────────────────────────────┐   │
+│  │  Reactive<PlayerEvents>        │   │
+│  │  - track()                     │   │
+│  │  - trackItem()                 │   │
+│  │  - trackItemProp()             │   │
+│  │  - trigger()                   │   │
+│  │  - triggerItemProp()           │   │
+│  └─────────────────────────────────┘   │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│        Svelte Adapter                   │
+│  (bridges unisig to Svelte 5 runes)    │
+└─────────────────────────────────────────┘
+```
+
+## Learn More
+
+- 📖 **[EXAMPLE_GUIDE.md](./EXAMPLE_GUIDE.md)** - Comprehensive implementation guide
+- 📘 **[PATTERNS.md](../../PATTERNS.md)** - Common usage patterns
+- 📗 **[README.md](../../README.md)** - Main unisig documentation
+
+## Code Structure
+
+```
+src/
+├── lib/
+│   ├── playerStore.ts         # Main store implementation
+│   ├── svelteAdapter.svelte.ts # Svelte 5 adapter
+│   ├── PlayerList.svelte      # List component (collection tracking)
+│   ├── PlayerCard.svelte      # Card component (property tracking)
+│   ├── PlayerName.svelte      # Name component (granular tracking)
+│   ├── PlayerScore.svelte     # Score component (granular tracking)
+│   └── PlayerLevel.svelte     # Level component (granular tracking)
+└── App.svelte                 # Main application
+```
+
+## Key Concepts
+
+### Tracking vs Triggering
+
+**Tracking** (for reads):
+```typescript
+this.$.trackItemProp('players', id, 'score');
+```
+- Call in getter methods
+- Creates a dependency
+- Registers with signal library
+
+**Triggering** (for writes):
+```typescript
+this.$.triggerItemProp('players', id, 'score');
+```
+- Call in setter methods
+- Notifies dependencies
+- Triggers re-renders
+
+### Granularity Levels
+
+| Level | Method | When to Use |
+|-------|--------|-------------|
+| Collection | `track()` | Lists, counts, computed over all items |
+| Item | `trackItem()` | Single item display |
+| Property | `trackProp()` | High-frequency properties |
+| Item Property | `trackItemProp()` | Item properties in collections |
+
+### Deep Proxies
+
+```typescript
+// Shallow proxy (first level only)
+this.$.itemProxy(item, 'players', id)
+
+// Deep proxy (any nesting level)
+this.$.deepItemProxy(item, 'players', id)
+```
+
+Deep proxies use dot notation for tracking:
+- `player.name` → Tracks `'name'`
+- `player.stats.health` → Tracks `'stats.health'`
+- `player.inventory[0]` → Tracks `'inventory.0'`
+
+## Performance Tips
+
+1. **Use granular tracking** - Track only what you need
+2. **Avoid deep proxies for simple data** - Use shallow proxies instead
+3. **Prefer property-level tracking** - For high-frequency updates
+4. **Use events for side effects** - API calls, logging, etc.
+
+## Troubleshooting
+
+### Components Not Updating
+
+Check that:
+1. Adapter is configured: `store.setAdapter(adapter)`
+2. Tracking is called in getters: `this.$.trackItem('players', id)`
+3. Triggering is called in setters: `this.$.triggerItem('players', id)`
+4. Access is in reactive context: `$derived.by(() => store.get(id))`
+
+### All Components Re-rendering
+
+You might be tracking at too high a level:
+```typescript
+// ❌ BAD: Tracks entire collection
+this.$.track('users');
+
+// ✅ GOOD: Tracks only the specific item
+this.$.trackItem('users', id);
+```
+
+### Events Not Firing
+
+Check that:
+1. Event is emitted: `this.$.emit('event', data)`
+2. Event name matches exactly (case-sensitive)
+3. Listener is still subscribed (not unsubscribed)
+
+## License
+
+MIT

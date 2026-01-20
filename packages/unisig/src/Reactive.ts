@@ -67,15 +67,7 @@ export class Reactive<
 	 */
 	constructor(adapter?: ReactivityAdapter) {
 		this.scope = new Scope(adapter);
-		this.emitter = new (class extends Emitter<Events> {
-			// Expose emit as public for Reactive to use
-			public emit<K extends keyof Events>(event: K, data: Events[K]): void {
-				super.emit(event, data);
-			}
-			public hasListeners<K extends keyof Events>(event: K): boolean {
-				return super.hasListeners(event);
-			}
-		})();
+		this.emitter = new Emitter<Events>();
 	}
 
 	/**
@@ -242,7 +234,7 @@ export class Reactive<
 	): void {
 		this.scope.trigger(key);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -264,7 +256,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerItem(collection, id);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -285,7 +277,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerProp(key, prop);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -308,7 +300,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerItemProp(collection, id, prop);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -326,7 +318,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerList(collection);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -347,7 +339,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerRemove(collection, id);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -365,7 +357,7 @@ export class Reactive<
 	): void {
 		this.scope.triggerList(collection);
 		if (event !== undefined) {
-			(this.emitter as any).emit(event, data);
+			this.emitter.emit(event, data!);
 		}
 	}
 
@@ -379,7 +371,7 @@ export class Reactive<
 	 * @param data - Event data
 	 */
 	emit<K extends keyof Events>(event: K, data: Events[K]): void {
-		(this.emitter as any).emit(event, data);
+		this.emitter.emit(event, data);
 	}
 
 	// ============ AUTO-TRACKING PROXIES ============
