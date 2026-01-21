@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {Tracker} from '@unisig/tracker';
-import {createReactivityAdapter} from 'unisig';
+import type {ScopeAdapter} from '@unisig/scope';
 
 /**
  * Integration tests for Tracker + Scope proxies.
@@ -8,12 +8,12 @@ import {createReactivityAdapter} from 'unisig';
  */
 
 // Simple mock adapter for testing
-const mockAdapter = createReactivityAdapter({
+const mockAdapter: ScopeAdapter = {
 	create: () => ({
 		depend: () => {},
 		notify: () => {},
 	}),
-});
+};
 
 describe('Tracker Proxy Integration', () => {
 	describe('Simple Proxy (Shallow)', () => {

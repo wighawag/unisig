@@ -46,12 +46,15 @@
 	"peerDependencies": {
 		"svelte": "^5.7.0"
 	},
+	"dependencies": {
+		"unisig": "workspace:*",
+		"@unisig/scope": "workspace:*"
+	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"prettier": "^3.8.0",
 		"svelte": "^5.28.0",
 		"typescript": "^5.3.0",
-		"unisig": "workspace:*",
 		"vitest": "^2.0.0"
 	},
 	"scripts": {

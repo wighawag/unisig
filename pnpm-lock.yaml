@@ -55,7 +55,30 @@ importers:
         specifier: ^7.2.4
         version: 7.3.1(@types/node@24.10.9)
 
+  packages/scope:
+    dependencies:
+      unisig:
+        specifier: workspace:*
+        version: link:../unisig
+    devDependencies:
+      prettier:
+        specifier: ^3.8.0
+        version: 3.8.0
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@24.10.9)
+
   packages/svelte:
+    dependencies:
+      '@unisig/scope':
+        specifier: workspace:*
+        version: link:../scope
+      unisig:
+        specifier: workspace:*
+        version: link:../unisig
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^6.2.1
@@ -69,18 +92,15 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
-      unisig:
-        specifier: workspace:*
-        version: link:../unisig
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@24.10.9)
 
   packages/tracker:
     dependencies:
-      unisig:
+      '@unisig/scope':
         specifier: workspace:*
-        version: link:../unisig
+        version: link:../scope
     devDependencies:
       prettier:
         specifier: ^3.8.0

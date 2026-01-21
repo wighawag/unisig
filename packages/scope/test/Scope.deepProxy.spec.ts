@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest';
 import {Scope} from '../src/Scope.js';
-import type {ReactivityAdapter, Dependency} from '../src/types.js';
+import type {ScopeAdapter, Dependency} from '../src/types.js';
 
 // Mock adapter that tracks all calls
 function createMockAdapter() {
@@ -9,7 +9,7 @@ function createMockAdapter() {
 		notify: ReturnType<typeof vi.fn>;
 	}> = [];
 
-	const adapter: ReactivityAdapter & {deps: typeof deps; inScope: boolean} = {
+	const adapter: ScopeAdapter & {deps: typeof deps; inScope: boolean} = {
 		deps,
 		inScope: true,
 		create() {

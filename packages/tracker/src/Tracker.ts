@@ -1,20 +1,18 @@
 import type {
-	ReactivityAdapter,
+	ScopeAdapter,
 	Dependency,
-	ErrorHandler,
-	Listener,
-} from 'unisig';
-import {Scope} from 'unisig';
-import {Emitter, type Unsubscribe, type EmitterOptions} from './Emitter.js';
+} from '@unisig/scope';
+import {Scope} from '@unisig/scope';
+import {Emitter, type Unsubscribe, type EmitterOptions, type Listener, type ErrorHandler} from './Emitter.js';
 
 /**
  * Options for configuring Tracker behavior
  */
 export interface TrackerOptions<Events> {
 	/**
-	 * Optional reactivity adapter to use immediately
+	 * Optional scope adapter to use immediately
 	 */
-	adapter?: ReactivityAdapter;
+	adapter?: ScopeAdapter;
 
 	/**
 	 * Optional error handler for event listener errors.
@@ -129,7 +127,7 @@ export class Tracker<
 	/**
 	 * Get the current adapter, if any.
 	 */
-	getAdapter(): ReactivityAdapter | undefined {
+	getAdapter(): ScopeAdapter | undefined {
 		return this.scope.getAdapter();
 	}
 
@@ -810,7 +808,7 @@ export type TrackerFactoryOptions<Events> = Omit<
  * ```
  */
 export function createTrackerFactory(
-	adapter: ReactivityAdapter,
+	adapter: ScopeAdapter,
 ): <Events extends Record<string, unknown> = Record<string, unknown>>(
 	options?: TrackerFactoryOptions<Events>,
 ) => Tracker<Events> {

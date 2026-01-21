@@ -1,10 +1,9 @@
 import {createTrackerFactory} from '@unisig/tracker';
 import svelteAdapter from '@unisig/svelte';
-import {createReactivityBundle} from 'unisig';
+import {unisig} from 'unisig';
 
-export type {Tracker, Unsubscribe} from '@unisig/tracker';
-export type {ReactivityAdapter, Listener} from 'unisig';
+export type {Tracker, Unsubscribe, Listener} from '@unisig/tracker';
 
-export const {effect} = createReactivityBundle(svelteAdapter);
+export const {effect} = unisig(svelteAdapter);
 
 export const createTracker = createTrackerFactory(svelteAdapter);

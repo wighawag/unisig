@@ -1,6 +1,6 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {Scope} from '../src/Scope.js';
-import type {ReactivityAdapter, Dependency} from 'unisig';
+import type {ScopeAdapter, Dependency} from '../src/types.js';
 
 // Mock adapter that tracks all calls
 function createMockAdapter() {
@@ -9,7 +9,7 @@ function createMockAdapter() {
 		notify: ReturnType<typeof vi.fn>;
 	}> = [];
 
-	const adapter: ReactivityAdapter & {deps: typeof deps; inScope: boolean} = {
+	const adapter: ScopeAdapter & {deps: typeof deps; inScope: boolean} = {
 		deps,
 		inScope: true,
 		create() {
@@ -49,7 +49,7 @@ describe('Scope', () => {
 		});
 
 		it('should return true if adapter has no isInScope', () => {
-			const adapter: ReactivityAdapter = {
+			const adapter: ScopeAdapter = {
 				create: () => ({depend: vi.fn(), notify: vi.fn()}),
 			};
 			const scope = new Scope(adapter);

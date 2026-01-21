@@ -1,14 +1,14 @@
 import {describe, bench} from 'vitest';
-import {Scope, Tracker} from '../src/index';
-import {createReactivityAdapter} from '../src/types';
+import {Tracker} from '../src/index.js';
+import {type ReactivityAdapter, Scope} from '@unisig/scope';
 
 // Simple mock adapter for benchmarking
-const mockAdapter = createReactivityAdapter({
+const mockAdapter = {
 	create: () => ({
 		depend: () => {},
 		notify: () => {},
 	}),
-});
+} as ReactivityAdapter;
 
 describe('Proxy Performance Benchmarks', () => {
 	describe('Simple Proxy (Shallow)', () => {
@@ -248,19 +248,19 @@ describe('Proxy Performance Benchmarks', () => {
 
 	describe('Tracker Proxy Methods', () => {
 		bench('Tracker.proxy()', () => {
-			const tracker = new Tracker(mockAdapter);
+			const tracker = new Tracker({adapter: mockAdapter});
 			const obj = {name: 'Alice', score: 100};
 			tracker.proxy(obj, 'config');
 		});
 
 		bench('Tracker.itemProxy()', () => {
-			const tracker = new Tracker(mockAdapter);
+			const tracker = new Tracker({adapter: mockAdapter});
 			const user = {id: '1', name: 'Alice', score: 100};
 			tracker.itemProxy(user, 'users', '1');
 		});
 
 		bench('Tracker.deepProxy()', () => {
-			const tracker = new Tracker(mockAdapter);
+			const tracker = new Tracker({adapter: mockAdapter});
 			const obj = {
 				name: 'Alice',
 				stats: {health: 100},
@@ -269,7 +269,7 @@ describe('Proxy Performance Benchmarks', () => {
 		});
 
 		bench('Tracker.deepItemProxy()', () => {
-			const tracker = new Tracker(mockAdapter);
+			const tracker = new Tracker({adapter: mockAdapter});
 			const user = {
 				id: '1',
 				name: 'Alice',

@@ -11,6 +11,8 @@
  */
 
 import {createSubscriber} from 'svelte/reactivity';
+import type {BasicReactivityAdapter, Signal} from 'unisig';
+import type {ReactivityAdapter} from '@unisig/scope';
 
 /**
  * Svelte dependency implementation using createSubscriber.
@@ -70,6 +72,7 @@ export class SvelteDependency {
  * Svelte 5 reactivity adapter for unisig.
  *
  * Provides full integration with Svelte's reactive system:
+ * - Uses `$state` for deep reactive state
  * - Uses `createSubscriber` for dependency tracking
  * - Uses `$effect.tracking()` to detect reactive scope
  * - Supports cleanup via `onDispose`
@@ -78,31 +81,15 @@ export class SvelteDependency {
  * @example
  * ```ts
  * import { svelteAdapter } from '@unisig/svelte';
+ * import { unisig } from 'unisig';
  * import { Tracker } from '@unisig/tracker';
- * import { createReactivityBundle } from 'unisig';
  *
- * const bundle = createReactivityBundle(svelteAdapter);
+ * const { state, signal, effect } = unisig(svelteAdapter);
  * const tracker = new Tracker({ adapter: svelteAdapter });
- * const { effect } = bundle;
  * ```
  */
-export const svelteAdapter = {
-	/**
-	 * Create a new dependency tracker using SvelteDependency.
-	 */
-	create: () => new SvelteDependency(),
-
-	/**
-	 * Check if currently inside a reactive scope ($effect, etc.)
-	 */
-	isInScope: () => $effect.tracking(),
-
-	/**
-	 * Register a cleanup callback for when the reactive scope ends.
-	 */
-	onDispose(callback: () => void, svelteDependency: SvelteDependency) {
-		svelteDependency.onDispose(callback);
-	},
+export const svelteAdapter: ReactivityAdapter = {
+	// ============ BasicReactivityAdapter methods ============
 
 	/**
 	 * Create a reactive effect that re-runs when tracked dependencies change.
@@ -117,10 +104,10 @@ export const svelteAdapter = {
 	 * @example
 	 * ```ts
 	 * // setup.svelte.ts
-	 * import { createReactivityBundle } from 'unisig';
+	 * import { unisig } from 'unisig';
 	 * import { svelteAdapter } from '@unisig/svelte';
 	 *
-	 * export const { effect } = createReactivityBundle(svelteAdapter);
+	 * export const { effect } = unisig(svelteAdapter);
 	 *
 	 * // myStore.ts (plain TypeScript)
 	 * import { effect } from './setup.svelte';
@@ -155,6 +142,73 @@ export const svelteAdapter = {
 			userCleanup?.();
 			rootCleanup();
 		};
+	},
+
+	/**
+	 * Create a deep reactive object using Svelte's $state.
+	 *
+	 * Returns the object directly with property access/assignment that
+	 * automatically tracks and triggers reactivity.
+	 *
+	 * @param initial - Initial value (objects are deeply reactive)
+	 * @returns Reactive version of the value (same shape as input)
+	 *
+	 * @example
+	 * ```ts
+	 * const { state } = unisig(svelteAdapter);
+	 *
+	 * const user = state({ name: 'Alice', age: 30 });
+	 * user.name = 'Bob';  // Triggers reactivity
+	 * user.age = 31;      // Triggers reactivity
+	 * ```
+	 */
+	state<T>(initial: T): T {
+		return $state(initial) as T;
+	},
+
+	/**
+	 * Create a shallow reactive signal with get/set interface.
+	 *
+	 * Wraps Svelte's $state in a get/set interface for consistency
+	 * across different signal runtimes.
+	 *
+	 * @param initial - Initial value
+	 * @returns Signal with get/set methods
+	 *
+	 * @example
+	 * ```ts
+	 * const { signal } = unisig(svelteAdapter);
+	 *
+	 * const count = signal(0);
+	 * console.log(count.get());  // 0
+	 * count.set(1);              // Triggers reactivity
+	 * ```
+	 */
+	signal<T>(initial: T): Signal<T> {
+		const s = $state({value: initial});
+		return {
+			get: () => s.value,
+			set: (v: T) => (s.value = v),
+		};
+	},
+
+	// ============ ReactivityAdapter methods (for Scope/Tracker) ============
+
+	/**
+	 * Create a new dependency tracker using SvelteDependency.
+	 */
+	create: () => new SvelteDependency(),
+
+	/**
+	 * Check if currently inside a reactive scope ($effect, etc.)
+	 */
+	isInScope: () => $effect.tracking(),
+
+	/**
+	 * Register a cleanup callback for when the reactive scope ends.
+	 */
+	onDispose(callback: () => void, svelteDependency: SvelteDependency) {
+		svelteDependency.onDispose(callback);
 	},
 };
 

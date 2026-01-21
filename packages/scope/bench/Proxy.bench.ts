@@ -1,14 +1,13 @@
 import {describe, bench} from 'vitest';
 import {Scope} from '../src/Scope.js';
-import {createReactivityAdapter} from '../src/types.js';
 
 // Simple mock adapter for benchmarking
-const mockAdapter = createReactivityAdapter({
+const mockAdapter = {
 	create: () => ({
 		depend: () => {},
 		notify: () => {},
 	}),
-});
+};
 
 describe('Proxy Performance Benchmarks', () => {
 	describe('Simple Proxy (Shallow)', () => {

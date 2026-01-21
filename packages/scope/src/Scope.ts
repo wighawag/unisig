@@ -1,4 +1,4 @@
-import type {Dependency, ReactivityAdapter} from './types.js';
+import type {Dependency, ScopeAdapter} from './types.js';
 
 /**
  * Manages reactive dependencies for a class or object.
@@ -25,7 +25,7 @@ import type {Dependency, ReactivityAdapter} from './types.js';
  * ```
  */
 export class Scope {
-	private adapter?: ReactivityAdapter;
+	private adapter?: ScopeAdapter;
 	private deps = new Map<string, Dependency>();
 	private itemDeps = new Map<string, Map<string | number, Dependency>>();
 	private propDeps = new Map<string, Map<string, Dependency>>();
@@ -39,14 +39,14 @@ export class Scope {
 	 *
 	 * @param adapter - Optional reactivity adapter to use
 	 */
-	constructor(adapter?: ReactivityAdapter) {
+	constructor(adapter?: ScopeAdapter) {
 		this.adapter = adapter;
 	}
 
 	/**
 	 * Get the current adapter, if any.
 	 */
-	getAdapter(): ReactivityAdapter | undefined {
+	getAdapter(): ScopeAdapter | undefined {
 		return this.adapter;
 	}
 

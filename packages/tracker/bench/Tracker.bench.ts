@@ -1,6 +1,5 @@
 import {describe, bench} from 'vitest';
 import {Tracker} from '../src/Tracker.js';
-import {createReactivityAdapter} from 'unisig';
 
 type TestEvents = {
 	'user:added': {id: string; name: string};
@@ -10,12 +9,12 @@ type TestEvents = {
 };
 
 // Simple mock adapter for benchmarking
-const mockAdapter = createReactivityAdapter({
+const mockAdapter = {
 	create: () => ({
 		depend: () => {},
 		notify: () => {},
 	}),
-});
+};
 
 describe('Tracker Performance Benchmarks', () => {
 	describe('Instantiation', () => {
@@ -262,12 +261,7 @@ describe('Tracker Performance Benchmarks', () => {
 
 			for (let i = 0; i < 100; i++) {
 				users.delete(`user-${i}`);
-				tracker.triggerItemRemoved(
-					'users',
-					`user-${i}`,
-					'user:removed',
-					`user-${i}`,
-				);
+				tracker.triggerItemRemoved('users', `user-${i}`, 'user:removed', `user-${i}`);
 			}
 		});
 	});

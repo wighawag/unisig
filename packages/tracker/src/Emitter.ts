@@ -1,4 +1,50 @@
-import type {Listener, ErrorHandler} from 'unisig';
+/**
+ * Generic event listener type
+ */
+export type Listener<T = unknown> = (data: T) => void;
+
+/**
+ * Error handler type for managing errors in event listeners.
+ *
+ * Used by both Emitter and Tracker to provide custom error handling
+ * when listeners throw exceptions.
+ *
+ * @param event - The event being emitted
+ * @param error - The error that occurred
+ * @param listener - The listener function that threw the error
+ *
+ * @example
+ * ```ts
+ * const errorHandler: ErrorHandler<MyEvents> = (event, error, listener) => {
+ *   console.error(`Error in ${String(event)}:`, error);
+ *   // Send to error tracking service
+ *   Sentry.captureException(error);
+ * };
+ * ```
+ */
+export type ErrorHandler<Events> = (
+	event: keyof Events,
+	error: Error,
+	listener: Listener<unknown>,
+) => void;
+
+/**
+ * Event map type for type-safe event handling.
+ *
+ * Use this type to define your event contracts explicitly.
+ * It ensures all keys are strings and values can be any type.
+ *
+ * @example
+ * ```ts
+ * type MyEvents = EventMap<{
+ *   'user:added': { id: string; name: string };
+ *   'user:removed': string;
+ *   'data:loaded': number[];
+ *   'error': Error;
+ * }>;
+ * ```
+ */
+export type EventMap<T extends Record<string, unknown> = Record<string, unknown>> = T;
 
 /**
  * Unsubscribe function returned by `on()`
@@ -65,9 +111,7 @@ export interface EmitterOptions<Events> {
  * });
  * ```
  */
-export class Emitter<
-	Events extends Record<string, unknown> = Record<string, unknown>,
-> {
+export class Emitter<Events extends Record<string, unknown> = Record<string, unknown>> {
 	private _listeners = new Map<keyof Events, Set<Listener<unknown>>>();
 	private _errorHandler?: EmitterOptions<Events>['errorHandler'];
 
@@ -97,16 +141,12 @@ export class Emitter<
 	 * unsub()
 	 * ```
 	 */
-	on<K extends keyof Events>(
-		event: K,
-		listener: Listener<Events[K]>,
-	): Unsubscribe {
+	on<K extends keyof Events>(event: K, listener: Listener<Events[K]>): Unsubscribe {
 		if (!this._listeners.has(event)) {
 			this._listeners.set(event, new Set());
 		}
 		this._listeners.get(event)!.add(listener as Listener<unknown>);
-		return () =>
-			this._listeners.get(event)?.delete(listener as Listener<unknown>);
+		return () => this._listeners.get(event)?.delete(listener as Listener<unknown>);
 	}
 
 	/**
@@ -127,10 +167,7 @@ export class Emitter<
 	 * @param listener - Callback function to invoke once
 	 * @returns Unsubscribe function to remove the listener before it fires
 	 */
-	once<K extends keyof Events>(
-		event: K,
-		listener: Listener<Events[K]>,
-	): Unsubscribe {
+	once<K extends keyof Events>(event: K, listener: Listener<Events[K]>): Unsubscribe {
 		const onceListener: Listener<Events[K]> = (data) => {
 			this.off(event, onceListener);
 			listener(data);

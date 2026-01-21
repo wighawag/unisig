@@ -1,4 +1,4 @@
-import type {Dependency, ReactivityAdapter} from 'unisig';
+import type {Dependency, ScopeAdapter} from '@unisig/scope';
 
 /**
  * A composite dependency that wraps multiple underlying dependencies.
@@ -100,8 +100,8 @@ export class CompositeDependency implements Dependency {
  * reaction(() => count(), (value) => console.log(value)) // Runs when count changes
  * ```
  */
-export class MultiAdapter implements ReactivityAdapter {
-	private readonly adapters: ReactivityAdapter[];
+export class MultiAdapter implements ScopeAdapter {
+	private readonly adapters: ScopeAdapter[];
 
 	/**
 	 * Create a multi-adapter from an array of adapters.
@@ -116,7 +116,7 @@ export class MultiAdapter implements ReactivityAdapter {
 	 * ])
 	 * ```
 	 */
-	constructor(adapters: ReactivityAdapter[]) {
+	constructor(adapters: ScopeAdapter[]) {
 		if (!Array.isArray(adapters)) {
 			throw new TypeError('MultiAdapter requires an array of adapters');
 		}
@@ -186,28 +186,28 @@ export class MultiAdapter implements ReactivityAdapter {
 	/**
 	 * Get the underlying adapters (for testing/debugging).
 	 */
-	getAdapters(): readonly ReactivityAdapter[] {
+	getAdapters(): readonly ScopeAdapter[] {
 		return this.adapters;
 	}
 }
 
 /**
- * Helper function to create a MultiAdapter with a more concise API.
- *
- * @param adapters - Array of reactivity adapters to combine
- * @returns A new MultiAdapter instance
- *
- * @example
- * ```ts
- * import { createMultiAdapter } from 'unisig'
- * import { solidAdapter } from '@signaldb/solid'
- * import { preactAdapter } from '@signaldb/preact'
- *
- * const multiAdapter = createMultiAdapter(solidAdapter, preactAdapter)
- * ```
- */
+	* Helper function to create a MultiAdapter with a more concise API.
+	*
+	* @param adapters - Array of scope adapters to combine
+	* @returns A new MultiAdapter instance
+	*
+	* @example
+	* ```ts
+	* import { createMultiAdapter } from '@unisig/tracker'
+	* import { solidAdapter } from '@signaldb/solid'
+	* import { preactAdapter } from '@signaldb/preact'
+	*
+	* const multiAdapter = createMultiAdapter(solidAdapter, preactAdapter)
+	* ```
+	*/
 export function createMultiAdapter(
-	...adapters: ReactivityAdapter[]
+	...adapters: ScopeAdapter[]
 ): MultiAdapter {
 	return new MultiAdapter(adapters);
 }
