@@ -3,6 +3,7 @@
 	import {playerStore} from './lib/playerStore';
 	import PlayerList from './lib/PlayerList.svelte';
 	import PlayerCard from './lib/PlayerCard.svelte';
+	import ScoreTrackerPanel from './lib/ScoreTrackerPanel.svelte';
 
 	// Track selected player
 	let selectedPlayerId = $state<string | null>(null);
@@ -63,6 +64,9 @@
 
 	<div class="layout">
 		<div class="sidebar">
+			<!-- ScoreTracker uses effect() in a plain .ts file! -->
+			<ScoreTrackerPanel />
+
 			<PlayerList />
 
 			<div class="add-player">
