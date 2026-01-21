@@ -96,8 +96,6 @@ export class Tracker<
 > {
 	private scope: Scope;
 	private emitter: Emitter<Events>;
-	private batching = false;
-	private pendingTriggers = new Map<string, () => void>();
 
 	/**
 	 * Create a new Tracker instance.
@@ -331,8 +329,6 @@ export class Tracker<
 	/**
 	 * Trigger a change notification and optionally emit an event.
 	 *
-	 * When inside a batch() operation, triggers are queued and executed once at the end.
-	 *
 	 * @param key - The dependency key that changed
 	 * @param event - Event to emit (must provide data with this)
 	 * @param data - Event data (required when event is provided)
@@ -340,12 +336,7 @@ export class Tracker<
 	trigger(key: string): void;
 	trigger<K extends keyof Events>(key: string, event: K, data: Events[K]): void;
 	trigger(key: string, event?: unknown, data?: unknown): void {
-		if (this.batching) {
-			const triggerKey = `key:${key}`;
-			this.pendingTriggers.set(triggerKey, () => this.scope.trigger(key));
-		} else {
-			this.scope.trigger(key);
-		}
+		this.scope.trigger(key);
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -374,12 +365,7 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		if (this.batching) {
-			const key = `item:${collection}:${id}`;
-			this.pendingTriggers.set(key, () => this.scope.triggerItem(collection, id));
-		} else {
-			this.scope.triggerItem(collection, id);
-		}
+		this.scope.triggerItem(collection, id);
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -407,12 +393,7 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		if (this.batching) {
-			const triggerKey = `prop:${key}:${prop}`;
-			this.pendingTriggers.set(triggerKey, () => this.scope.triggerProp(key, prop));
-		} else {
-			this.scope.triggerProp(key, prop);
-		}
+		this.scope.triggerProp(key, prop);
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -443,12 +424,7 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		if (this.batching) {
-			const key = `itemProp:${collection}:${id}:${prop}`;
-			this.pendingTriggers.set(key, () => this.scope.triggerItemProp(collection, id, prop));
-		} else {
-			this.scope.triggerItemProp(collection, id, prop);
-		}
+		this.scope.triggerItemProp(collection, id, prop);
 		if (arguments.length === 5) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -468,12 +444,7 @@ export class Tracker<
 		data: Events[K],
 	): void;
 	triggerCollection(collection: string, event?: unknown, data?: unknown): void {
-		if (this.batching) {
-			const key = `collection:${collection}`;
-			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
-		} else {
-			this.scope.triggerList(collection);
-		}
+		this.scope.triggerList(collection);
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -501,12 +472,7 @@ export class Tracker<
 		event?: unknown,
 		data?: unknown,
 	): void {
-		if (this.batching) {
-			const key = `itemRemoved:${collection}:${id}`;
-			this.pendingTriggers.set(key, () => this.scope.triggerRemove(collection, id));
-		} else {
-			this.scope.triggerRemove(collection, id);
-		}
+		this.scope.triggerRemove(collection, id);
 		if (arguments.length === 4) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -526,12 +492,7 @@ export class Tracker<
 		data: Events[K],
 	): void;
 	triggerItemAdded(collection: string, event?: unknown, data?: unknown): void {
-		if (this.batching) {
-			const key = `itemAdded:${collection}`;
-			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
-		} else {
-			this.scope.triggerList(collection);
-		}
+		this.scope.triggerList(collection);
 		if (arguments.length === 3) {
 			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
 		}
@@ -776,60 +737,6 @@ export class Tracker<
 	}
 
 	// ============ CLEANUP ============
-
-	/**
-	 * Batch multiple trigger operations into a single notification.
-	 * Reduces reactivity overhead when making multiple changes.
-	 *
-	 * All trigger calls inside the batch function are queued and executed once at the end.
-	 * Event emissions still happen immediately.
-	 *
-	 * @param fn - Function containing multiple trigger operations
-	 *
-	 * @example
-	 * ```ts
-	 * // Without batch - triggers each change separately
-	 * updateMultipleUsers(updates) {
-	 *   for (const update of updates) {
-	 *     this.users.set(update.id, update.data)
-	 *     this.$.triggerItem('users', update.id) // Triggers for each update
-	 *   }
-	 * }
-	 *
-	 * // With batch - triggers once at the end
-	 * updateMultipleUsers(updates) {
-	 *   this.$.batch(() => {
-	 *     for (const update of updates) {
-	 *       this.users.set(update.id, update.data)
-	 *       this.$.triggerItem('users', update.id) // Queued, not triggered yet
-	 *     }
-	 *   }) // All triggers execute once here
-	 * }
-	 * ```
-	 */
-	batch(fn: () => void): void {
-		const wasBatching = this.batching;
-		this.batching = true;
-		
-		if (!wasBatching) {
-			this.pendingTriggers.clear();
-		}
-		
-		try {
-			fn();
-			// Execute all pending triggers once (only if this is the outermost batch)
-			if (!wasBatching) {
-				for (const triggerFn of this.pendingTriggers.values()) {
-					triggerFn();
-				}
-			}
-		} finally {
-			this.batching = wasBatching;
-			if (!wasBatching) {
-				this.pendingTriggers.clear();
-			}
-		}
-	}
 
 	/**
 	 * Clear all dependencies.
