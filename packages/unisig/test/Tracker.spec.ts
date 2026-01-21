@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, createTracker} from '../src/Tracker.js';
+import {Tracker, createTracker, createTrackerFactory} from '../src/Tracker.js';
 import type {ReactivityAdapter} from '../src/types.js';
 
 // Mock adapter
@@ -813,6 +813,80 @@ describe('Tracker', () => {
 				error,
 				expect.any(Function),
 			);
+		});
+	});
+
+	describe('createTrackerFactory()', () => {
+		it('should create a factory that returns Tracker instances with configured adapter', () => {
+			const adapter = createMockAdapter();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker = createTracker<TestEvents>();
+
+			expect(tracker).toBeInstanceOf(Tracker);
+			expect(tracker.getAdapter()).toBe(adapter);
+		});
+
+		it('should create multiple Trackers with the same adapter', () => {
+			const adapter = createMockAdapter();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker1 = createTracker<TestEvents>();
+			const tracker2 = createTracker<TestEvents>();
+
+			expect(tracker1.getAdapter()).toBe(adapter);
+			expect(tracker2.getAdapter()).toBe(adapter);
+			expect(tracker1).not.toBe(tracker2); // Different instances
+		});
+
+		it('should allow creating Trackers with different event types', () => {
+			type Events1 = {'event1': string};
+			type Events2 = {'event2': number};
+
+			const adapter = createMockAdapter();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker1 = createTracker<Events1>();
+			const tracker2 = createTracker<Events2>();
+
+			expect(tracker1).toBeInstanceOf(Tracker);
+			expect(tracker2).toBeInstanceOf(Tracker);
+		});
+
+		it('should accept additional options like errorHandler', () => {
+			const adapter = createMockAdapter();
+			const errorHandler = vi.fn();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker = createTracker<TestEvents>({errorHandler});
+
+			expect(tracker.getAdapter()).toBe(adapter);
+			tracker.emit('item:added', {id: '1', value: 42});
+			expect(errorHandler).not.toHaveBeenCalled(); // No error, so no call
+		});
+
+		it('should work with signal tracking', () => {
+			const adapter = createMockAdapter();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker = createTracker<TestEvents>();
+			tracker.track('items');
+
+			expect(adapter.deps).toHaveLength(1);
+			expect(adapter.deps[0].depend).toHaveBeenCalledTimes(1);
+		});
+
+		it('should work with events', () => {
+			const adapter = createMockAdapter();
+			const createTracker = createTrackerFactory(adapter);
+
+			const tracker = createTracker<TestEvents>();
+			const listener = vi.fn();
+
+			tracker.on('item:added', listener);
+			tracker.emit('item:added', {id: '1', value: 42});
+
+			expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
 		});
 	});
 });

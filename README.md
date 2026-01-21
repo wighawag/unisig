@@ -277,6 +277,43 @@ createEffect(() => {
 
 ## API Reference
 
+### `createTrackerFactory(adapter)`
+
+Create a factory function for creating Tracker instances with a pre-configured adapter. This is useful when you have multiple stores that all use the same adapter - create the factory once and reuse it throughout your application.
+
+```typescript
+import { createTrackerFactory } from "unisig";
+import solidAdapter from "@signaldb/solid";
+
+// Create the factory with your adapter
+const createTracker = createTrackerFactory(solidAdapter);
+
+// Use the factory to create typed Tracker instances
+type PlayerEvents = {
+  'player:added': Player;
+  'player:removed': string;
+};
+
+type GameEvents = {
+  'game:started': void;
+  'game:ended': { winner: string };
+};
+
+const playerTracker = createTracker<PlayerEvents>();
+const gameTracker = createTracker<GameEvents>();
+
+// You can still pass additional options like errorHandler
+const trackerWithErrorHandling = createTracker<PlayerEvents>({
+  errorHandler: (event, error) => console.error(`Error in ${String(event)}:`, error),
+});
+```
+
+**Benefits:**
+- **Single adapter source** - Ensures all stores use the same adapter
+- **Type-safe** - Each Tracker can have its own event types
+- **Cleaner code** - No need to repeat `{ adapter }` on every instantiation
+- **Better for testing** - Easy to create factories with mock adapters
+
 ### `Tracker<Events>`
 
 Main class combining signals and events.
