@@ -8,9 +8,6 @@ export type {
 } from './types.js';
 export {createReactivityAdapter} from './types.js';
 
-// Errors
-export {NoAdapterError} from './standalone.js';
-
 // Emitter
 export {Emitter} from './Emitter.js';
 export type {Unsubscribe, EmitterOptions} from './Emitter.js';
@@ -30,5 +27,15 @@ export {
 } from './MultiAdapter.js';
 
 // Standalone reactive state (rune-like API)
-export {withAdapter, withAdapterRef, isRef} from './standalone.js';
+export {withAdapter, withAdapterRef, isRef, NoAdapterError} from './standalone.js';
 export type {Ref, UnwrapRef} from './standalone.js';
+
+// Adapter Bundle (createTracker, effect, state, ref in one bundle)
+export {createAdapterBundle, NoEffectSupportError} from './bundle.js';
+export type {
+	AdapterBundle,
+	EffectFn,
+	StateFn,
+	RefFn,
+	CreateTrackerFn,
+} from './bundle.js';

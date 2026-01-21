@@ -100,6 +100,50 @@ export interface ReactivityAdapter {
 	 * @param dep - The dependency this cleanup is associated with
 	 */
 	onDispose?(callback: () => void, dep: Dependency): void;
+
+	/**
+	 * Optional: Create a reactive effect that re-runs when tracked dependencies change.
+	 *
+	 * This enables framework-agnostic effects - code that runs in response to
+	 * reactive state changes, regardless of which signal library is used.
+	 *
+	 * The effect function can optionally return a cleanup function that will be
+	 * called before each re-run and when the effect is disposed.
+	 *
+	 * @param fn - The effect function to run. May return a cleanup function.
+	 * @returns A cleanup function that stops the effect when called.
+	 *
+	 * @example
+	 * ```ts
+	 * // Svelte implementation using $effect.root
+	 * effect: (fn) => {
+	 *   let cleanup: (() => void) | undefined;
+	 *   const rootCleanup = $effect.root(() => {
+	 *     $effect(() => {
+	 *       cleanup?.();
+	 *       const result = fn();
+	 *       cleanup = typeof result === 'function' ? result : undefined;
+	 *     });
+	 *   });
+	 *   return () => { cleanup?.(); rootCleanup(); };
+	 * }
+	 *
+	 * // Solid.js implementation
+	 * effect: (fn) => {
+	 *   let cleanup: (() => void) | undefined;
+	 *   const dispose = createRoot((dispose) => {
+	 *     createEffect(() => {
+	 *       cleanup?.();
+	 *       const result = fn();
+	 *       cleanup = typeof result === 'function' ? result : undefined;
+	 *     });
+	 *     return dispose;
+	 *   });
+	 *   return () => { cleanup?.(); dispose(); };
+	 * }
+	 * ```
+	 */
+	effect?(fn: () => void | (() => void)): () => void;
 }
 
 /**
