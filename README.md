@@ -551,7 +551,11 @@ const multiAdapter = new MultiAdapter([
 ]);
 
 // Or using the helper function
-const multiAdapter = createMultiAdapter(solidAdapter, preactAdapter, mobxAdapter);
+const multiAdapter = createMultiAdapter(
+  solidAdapter,
+  preactAdapter,
+  mobxAdapter,
+);
 
 // Create a Tracker that works with all three runtimes
 const $ = new Tracker<UserEvents>({ adapter: multiAdapter });
@@ -630,12 +634,12 @@ function PreactComponent() {
 import { MultiAdapter } from "unisig";
 
 class MultiAdapter implements ReactivityAdapter {
-  constructor(adapters: ReactivityAdapter[])
-  
-  create(): Dependency
-  isInScope(): boolean
-  onDispose(callback: () => void, dep: Dependency): void
-  getAdapters(): readonly ReactivityAdapter[]
+  constructor(adapters: ReactivityAdapter[]);
+
+  create(): Dependency;
+  isInScope(): boolean;
+  onDispose(callback: () => void, dep: Dependency): void;
+  getAdapters(): readonly ReactivityAdapter[];
 }
 ```
 
@@ -644,9 +648,7 @@ class MultiAdapter implements ReactivityAdapter {
 ```typescript
 import { createMultiAdapter } from "unisig";
 
-function createMultiAdapter(
-  ...adapters: ReactivityAdapter[]
-): MultiAdapter
+function createMultiAdapter(...adapters: ReactivityAdapter[]): MultiAdapter;
 ```
 
 #### `CompositeDependency`
@@ -655,11 +657,11 @@ The internal dependency wrapper (usually you don't need to use this directly):
 
 ```typescript
 class CompositeDependency implements Dependency {
-  constructor(dependencies: Dependency[])
-  
-  depend(): void
-  notify(): void
-  getDependencies(): readonly Dependency[]
+  constructor(dependencies: Dependency[]);
+
+  depend(): void;
+  notify(): void;
+  getDependencies(): readonly Dependency[];
 }
 ```
 
@@ -939,9 +941,9 @@ See [PATTERNS.md](./PATTERNS.md) for:
 - Event-based subscriptions
 - Hybrid patterns
 
-## Contributing
+## Inspiration
 
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+This project was inspired by the reactivity adapter pattern from [signaldb](https://github.com/maxnowack/signaldb). The adapter interface used by unisig is compatible with signaldb adapters, allowing you to use any adapter from the signaldb ecosystem (`@signaldb/solid`, `@signaldb/preact`, `@signaldb/vue`, `@signaldb/mobx`, `@signaldb/svelte`, etc.) directly with unisig.
 
 ## License
 
