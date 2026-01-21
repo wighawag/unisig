@@ -20,7 +20,7 @@
 	},
 	"scripts": {
 		"format": "prettier --write .",
-		"format:check": "prettier .",
+		"format:check": "prettier --check .",
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",

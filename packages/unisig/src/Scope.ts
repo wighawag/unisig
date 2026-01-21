@@ -834,26 +834,26 @@ export class Scope {
 	// ============ READONLY PROXIES ============
 
 	/**
-		* Create a read-only proxy that tracks property reads but throws on writes.
-		*
-		* @param target - The object to wrap
-		* @param key - The dependency key for this object
-		* @returns A read-only proxy that tracks but doesn't trigger
-		*
-		* @example
-		* ```ts
-		* getReadonlyConfig() {
-		*   this.scope.track('config')
-		*   return this.scope.readonlyProxy(this.config, 'config')
-		* }
-		*
-		* // Usage in effect:
-		* createEffect(() => {
-		*   console.log(store.getReadonlyConfig().theme) // Only re-runs when theme changes
-		*   store.getReadonlyConfig().theme = 'dark' // Throws: Cannot modify read-only proxy
-		* })
-		* ```
-		*/
+	 * Create a read-only proxy that tracks property reads but throws on writes.
+	 *
+	 * @param target - The object to wrap
+	 * @param key - The dependency key for this object
+	 * @returns A read-only proxy that tracks but doesn't trigger
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyConfig() {
+	 *   this.scope.track('config')
+	 *   return this.scope.readonlyProxy(this.config, 'config')
+	 * }
+	 *
+	 * // Usage in effect:
+	 * createEffect(() => {
+	 *   console.log(store.getReadonlyConfig().theme) // Only re-runs when theme changes
+	 *   store.getReadonlyConfig().theme = 'dark' // Throws: Cannot modify read-only proxy
+	 * })
+	 * ```
+	 */
 	readonlyProxy<T extends object>(target: T, key: string): Readonly<T> {
 		const scope = this;
 		return new Proxy(target, {
@@ -877,30 +877,30 @@ export class Scope {
 	}
 
 	/**
-		* Create a read-only proxy for a collection item that tracks property reads
-		* but throws on writes.
-		*
-		* @param target - The object to wrap
-		* @param collection - The collection name
-		* @param id - The item id
-		* @returns A read-only proxy that tracks but doesn't trigger
-		*
-		* @example
-		* ```ts
-		* getReadonlyUser(id: string) {
-		*   this.scope.trackItem('users', id)
-		*   const user = this.users.get(id)
-		*   return user ? this.scope.readonlyItemProxy(user, 'users', id) : undefined
-		* }
-		*
-		* // Usage in effect:
-		* createEffect(() => {
-		*   const user = store.getReadonlyUser('1')
-		*   console.log(user?.score) // Only re-runs when score changes
-		*   user?.score = 100 // Throws: Cannot modify read-only proxy
-		* })
-		* ```
-		*/
+	 * Create a read-only proxy for a collection item that tracks property reads
+	 * but throws on writes.
+	 *
+	 * @param target - The object to wrap
+	 * @param collection - The collection name
+	 * @param id - The item id
+	 * @returns A read-only proxy that tracks but doesn't trigger
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyUser(id: string) {
+	 *   this.scope.trackItem('users', id)
+	 *   const user = this.users.get(id)
+	 *   return user ? this.scope.readonlyItemProxy(user, 'users', id) : undefined
+	 * }
+	 *
+	 * // Usage in effect:
+	 * createEffect(() => {
+	 *   const user = store.getReadonlyUser('1')
+	 *   console.log(user?.score) // Only re-runs when score changes
+	 *   user?.score = 100 // Throws: Cannot modify read-only proxy
+	 * })
+	 * ```
+	 */
 	readonlyItemProxy<T extends object>(
 		target: T,
 		collection: string,
@@ -928,67 +928,73 @@ export class Scope {
 	}
 
 	/**
-		* Create a deep read-only proxy that tracks property reads at any nesting level
-		* but throws on writes. Uses dot notation for nested paths.
-		*
-		* @param target - The object to wrap
-		* @param key - The dependency key for this object
-		* @returns A deeply read-only proxied object
-		*
-		* @example
-		* ```ts
-		* getReadonlyConfig() {
-		*   this.scope.track('config')
-		*   return this.scope.readonlyDeepProxy(this.config, 'config')
-		* }
-		*
-		* // Nested access is tracked:
-		* createEffect(() => {
-		*   console.log(store.getReadonlyConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
-		*   store.getReadonlyConfig().theme.colors.primary = '#ff0000' // Throws
-		* })
-		* ```
-		*/
+	 * Create a deep read-only proxy that tracks property reads at any nesting level
+	 * but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * @param target - The object to wrap
+	 * @param key - The dependency key for this object
+	 * @returns A deeply read-only proxied object
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyConfig() {
+	 *   this.scope.track('config')
+	 *   return this.scope.readonlyDeepProxy(this.config, 'config')
+	 * }
+	 *
+	 * // Nested access is tracked:
+	 * createEffect(() => {
+	 *   console.log(store.getReadonlyConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
+	 *   store.getReadonlyConfig().theme.colors.primary = '#ff0000' // Throws
+	 * })
+	 * ```
+	 */
 	readonlyDeepProxy<T extends object>(target: T, key: string): Readonly<T> {
 		return this.createReadonlyDeepProxy(target, key, '', new WeakMap());
 	}
 
 	/**
-		* Create a deep read-only proxy for a collection item that tracks property reads
-		* at any nesting level but throws on writes. Uses dot notation for nested paths.
-		*
-		* @param target - The object to wrap
-		* @param collection - The collection name
-		* @param id - The item id
-		* @returns A deeply read-only proxied object
-		*
-		* @example
-		* ```ts
-		* getReadonlyUser(id: string) {
-		*   this.scope.trackItem('users', id)
-		*   const user = this.users.get(id)
-		*   return user ? this.scope.readonlyDeepItemProxy(user, 'users', id) : undefined
-		* }
-		*
-		* // Nested access is tracked:
-		* createEffect(() => {
-		*   const user = store.getReadonlyUser('1')
-		*   console.log(user?.stats.health) // Tracks 'stats.health'
-		*   user?.stats.health = 100 // Throws
-		* })
-		* ```
-		*/
+	 * Create a deep read-only proxy for a collection item that tracks property reads
+	 * at any nesting level but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * @param target - The object to wrap
+	 * @param collection - The collection name
+	 * @param id - The item id
+	 * @returns A deeply read-only proxied object
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyUser(id: string) {
+	 *   this.scope.trackItem('users', id)
+	 *   const user = this.users.get(id)
+	 *   return user ? this.scope.readonlyDeepItemProxy(user, 'users', id) : undefined
+	 * }
+	 *
+	 * // Nested access is tracked:
+	 * createEffect(() => {
+	 *   const user = store.getReadonlyUser('1')
+	 *   console.log(user?.stats.health) // Tracks 'stats.health'
+	 *   user?.stats.health = 100 // Throws
+	 * })
+	 * ```
+	 */
 	readonlyDeepItemProxy<T extends object>(
 		target: T,
 		collection: string,
 		id: string | number,
 	): Readonly<T> {
-		return this.createReadonlyDeepItemProxy(target, collection, id, '', new WeakMap());
+		return this.createReadonlyDeepItemProxy(
+			target,
+			collection,
+			id,
+			'',
+			new WeakMap(),
+		);
 	}
 
 	/**
-		* Internal: Create a deep read-only proxy for key-based tracking
-		*/
+	 * Internal: Create a deep read-only proxy for key-based tracking
+	 */
 	private createReadonlyDeepProxy<T extends object>(
 		target: T,
 		key: string,
@@ -1050,8 +1056,8 @@ export class Scope {
 	}
 
 	/**
-		* Internal: Create a deep read-only proxy for item-based tracking
-		*/
+	 * Internal: Create a deep read-only proxy for item-based tracking
+	 */
 	private createReadonlyDeepItemProxy<T extends object>(
 		target: T,
 		collection: string,
@@ -1120,8 +1126,8 @@ export class Scope {
 	}
 
 	/**
-		* Internal: Create a deep read-only proxy for arrays
-		*/
+	 * Internal: Create a deep read-only proxy for arrays
+	 */
 	private createReadonlyDeepArrayProxy<T>(
 		arr: T[],
 		keyOrCollection: string,

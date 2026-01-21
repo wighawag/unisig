@@ -1,5 +1,11 @@
 // Types
-export type {Dependency, ReactivityAdapter, Listener, ErrorHandler, EventMap} from './types.js';
+export type {
+	Dependency,
+	ReactivityAdapter,
+	Listener,
+	ErrorHandler,
+	EventMap,
+} from './types.js';
 export {createReactivityAdapter} from './types.js';
 
 // Errors
@@ -13,11 +19,15 @@ export type {Unsubscribe, EmitterOptions} from './Emitter.js';
 export {Scope} from './Scope.js';
 
 // Tracker
-export {Tracker, tracker, createTracker} from './Tracker.js';
+export {Tracker, createTracker} from './Tracker.js';
 export type {TrackerOptions} from './Tracker.js';
 
 // Multi-Adapter (support multiple signal runtimes)
-export {MultiAdapter, CompositeDependency, createMultiAdapter} from './MultiAdapter.js';
+export {
+	MultiAdapter,
+	CompositeDependency,
+	createMultiAdapter,
+} from './MultiAdapter.js';
 
 // Standalone reactive state (rune-like API)
 export {withAdapter, withAdapterRef, isRef} from './standalone.js';

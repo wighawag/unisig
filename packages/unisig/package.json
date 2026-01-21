@@ -58,7 +58,7 @@
 	"scripts": {
 		"prepublishOnly": "cp ../../README.md .",
 		"format": "prettier --write .",
-		"format:check": "prettier .",
+		"format:check": "prettier --check .",
 		"build": "tsc",
 		"test": "vitest run",
 		"test:watch": "vitest",

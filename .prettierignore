@@ -2,7 +2,7 @@
 # .gitignore
 ##################################
 node_modules/
-dist/
+tmp/
+.direnv/
 ##################################
-package.json
 *.md

@@ -326,7 +326,7 @@ describe('Scope Readonly Proxies', () => {
 			const nestedObj = {value: 123};
 			const obj = {nested: nestedObj};
 			const proxy = scope.readonlyDeepProxy(obj, 'key');
-			
+
 			// Access nested object multiple times through same proxy
 			const nested1 = proxy.nested;
 			const nested2 = proxy.nested;

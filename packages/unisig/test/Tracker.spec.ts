@@ -113,8 +113,11 @@ describe('Tracker', () => {
 			type Events = {'count:changed': number};
 			const r = new Tracker<Events>();
 			const currentValue = 42;
-			
-			const subscribe = r.createSubscription('count:changed', () => currentValue);
+
+			const subscribe = r.createSubscription(
+				'count:changed',
+				() => currentValue,
+			);
 			const listener = vi.fn();
 
 			subscribe(listener);
@@ -127,8 +130,11 @@ describe('Tracker', () => {
 			type Events = {'count:changed': number};
 			const r = new Tracker<Events>();
 			let currentValue = 42;
-			
-			const subscribe = r.createSubscription('count:changed', () => currentValue);
+
+			const subscribe = r.createSubscription(
+				'count:changed',
+				() => currentValue,
+			);
 			const listener = vi.fn();
 
 			subscribe(listener);
@@ -143,14 +149,14 @@ describe('Tracker', () => {
 		it('should return unsubscribe function from subscription', () => {
 			type Events = {'count:changed': number};
 			const r = new Tracker<Events>();
-			
+
 			const subscribe = r.createSubscription('count:changed', () => 42);
 			const listener = vi.fn();
 
 			const unsub = subscribe(listener);
-			
+
 			expect(listener).toHaveBeenCalledTimes(1);
-			
+
 			unsub();
 			r.emit('count:changed', 100);
 
@@ -159,13 +165,16 @@ describe('Tracker', () => {
 
 		it('should work with store pattern for exposing subscription', () => {
 			type StoreEvents = {'state:changed': {value: number}};
-			
+
 			class Store {
 				private $ = new Tracker<StoreEvents>();
 				private state = {value: 42};
 
 				// Expose as public method
-				subscribe = this.$.createSubscription('state:changed', () => this.state);
+				subscribe = this.$.createSubscription(
+					'state:changed',
+					() => this.state,
+				);
 
 				setState(value: number) {
 					this.state = {value};
@@ -196,7 +205,7 @@ describe('Tracker', () => {
 			type Events = {'count:changed': number};
 			const r = new Tracker<Events>();
 			let value = 0;
-			
+
 			// Create subscription function
 			const subscribe = r.createSubscription('count:changed', () => value);
 

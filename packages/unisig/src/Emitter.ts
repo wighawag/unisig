@@ -105,7 +105,8 @@ export class Emitter<
 			this._listeners.set(event, new Set());
 		}
 		this._listeners.get(event)!.add(listener as Listener<unknown>);
-		return () => this._listeners.get(event)?.delete(listener as Listener<unknown>);
+		return () =>
+			this._listeners.get(event)?.delete(listener as Listener<unknown>);
 	}
 
 	/**

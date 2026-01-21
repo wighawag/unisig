@@ -44,7 +44,9 @@ export type ErrorHandler<Events> = (
  * }>;
  * ```
  */
-export type EventMap<T extends Record<string, unknown> = Record<string, unknown>> = T;
+export type EventMap<
+	T extends Record<string, unknown> = Record<string, unknown>,
+> = T;
 
 /**
  * Core dependency interface - the minimal abstraction every signal library can implement.

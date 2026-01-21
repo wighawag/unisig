@@ -94,7 +94,10 @@ describe('Tracker Performance Benchmarks', () => {
 		bench('triggerCollection() with event', () => {
 			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:added', () => {});
-			tracker.triggerCollection('users', 'user:added', {id: '1', name: 'Alice'});
+			tracker.triggerCollection('users', 'user:added', {
+				id: '1',
+				name: 'Alice',
+			});
 		});
 
 		bench('triggerItemRemoved() with event', () => {

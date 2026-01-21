@@ -124,7 +124,7 @@ export class Tracker<
 	 * ```
 	 */
 	constructor(options?: TrackerOptions<Events>) {
-		const { adapter, errorHandler } = options || {};
+		const {adapter, errorHandler} = options || {};
 		this.scope = new Scope(adapter);
 		this.emitter = new Emitter<Events>(
 			errorHandler ? {errorHandler} : undefined,
@@ -779,9 +779,3 @@ export function createTracker<
 >(options?: TrackerOptions<Events>): Tracker<Events> {
 	return new Tracker<Events>(options);
 }
-
-/**
- * Alias for createTracker - provides a shorter name.
- * Use this if you prefer a more concise API.
- */
-export const tracker = createTracker;
