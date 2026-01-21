@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, tracker} from '../src/Tracker.js';
+import {Tracker, createTracker} from '../src/Tracker.js';
 import type {ReactivityAdapter} from '../src/types.js';
 
 // Mock adapter
@@ -49,7 +49,7 @@ describe('Tracker - Edge Cases', () => {
 		});
 
 		it('tracker() should be equivalent to new Tracker()', () => {
-			const r = tracker<TestEvents>();
+			const r = createTracker<TestEvents>();
 			expect(r).toBeInstanceOf(Tracker);
 		});
 	});
