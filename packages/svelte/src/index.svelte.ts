@@ -15,6 +15,24 @@ import type {BasicReactivityAdapter, Signal} from 'unisig';
 import type {ReactivityAdapter} from '@unisig/scope';
 
 /**
+ * Wrapper class that uses $state as a class field to create deep reactivity.
+ *
+ * This is necessary because $state can only be used in specific contexts:
+ * - As a variable declaration initializer
+ * - As a class field declaration (which is what we use here)
+ * - As the first assignment to a class field at the top level of a constructor
+ *
+ * By using it as a class field, we can wrap any value and make it deeply reactive.
+ */
+class ReactiveStateWrapper<T> {
+ 	value = $state<T>();
+
+ 	constructor(initial: T) {
+ 		this.value = initial;
+ 	}
+}
+
+/**
  * Svelte dependency implementation using createSubscriber.
  *
  * Uses Svelte's createSubscriber API to create a subscription-based
@@ -72,7 +90,7 @@ export class SvelteDependency {
  * Svelte 5 reactivity adapter for unisig.
  *
  * Provides full integration with Svelte's reactive system:
- * - Uses `$state` for deep reactive state
+ * - Uses `reactive()` for deep reactive state
  * - Uses `createSubscriber` for dependency tracking
  * - Uses `$effect.tracking()` to detect reactive scope
  * - Supports cleanup via `onDispose`
@@ -147,8 +165,10 @@ export const svelteAdapter: ReactivityAdapter = {
 	/**
 	 * Create a deep reactive object using Svelte's $state.
 	 *
-	 * Returns the object directly with property access/assignment that
-	 * automatically tracks and triggers reactivity.
+	 * Uses ReactiveStateWrapper to circumvent the restriction that $state can
+	 * only be used as a class field declaration. Returns the reactive value
+	 * directly with property access/assignment that automatically tracks
+	 * and triggers reactivity.
 	 *
 	 * @param initial - Initial value (objects are deeply reactive)
 	 * @returns Reactive version of the value (same shape as input)
@@ -163,14 +183,14 @@ export const svelteAdapter: ReactivityAdapter = {
 	 * ```
 	 */
 	state<T>(initial: T): T {
-		return $state(initial) as T;
+		return new ReactiveStateWrapper<T>(initial).value as T;
 	},
 
 	/**
 	 * Create a shallow reactive signal with get/set interface.
 	 *
-	 * Wraps Svelte's $state in a get/set interface for consistency
-	 * across different signal runtimes.
+	 * Wraps Svelte's $state via ReactiveStateWrapper in a get/set interface
+	 * for consistency across different signal runtimes.
 	 *
 	 * @param initial - Initial value
 	 * @returns Signal with get/set methods
@@ -185,10 +205,12 @@ export const svelteAdapter: ReactivityAdapter = {
 	 * ```
 	 */
 	signal<T>(initial: T): Signal<T> {
-		const s = $state({value: initial});
+		const s = new ReactiveStateWrapper(initial);
 		return {
-			get: () => s.value,
-			set: (v: T) => (s.value = v),
+			get: () => s.value as T,
+			set: (v: T) => {
+				s.value = v as T;
+			},
 		};
 	},
 
