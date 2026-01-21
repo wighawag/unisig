@@ -840,8 +840,8 @@ describe('Tracker', () => {
 		});
 
 		it('should allow creating Trackers with different event types', () => {
-			type Events1 = {'event1': string};
-			type Events2 = {'event2': number};
+			type Events1 = {event1: string};
+			type Events2 = {event2: number};
 
 			const adapter = createMockAdapter();
 			const createTracker = createTrackerFactory(adapter);

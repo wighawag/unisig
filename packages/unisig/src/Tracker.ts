@@ -768,7 +768,10 @@ export function createTracker<
 /**
  * Options for creating a Tracker via the factory (excludes adapter since it's pre-configured).
  */
-export type TrackerFactoryOptions<Events> = Omit<TrackerOptions<Events>, 'adapter'>;
+export type TrackerFactoryOptions<Events> = Omit<
+	TrackerOptions<Events>,
+	'adapter'
+>;
 
 /**
  * Create a factory function for creating Tracker instances with a pre-configured adapter.
