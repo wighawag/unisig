@@ -1,0 +1,65 @@
+{
+	"name": "@unisig/svelte",
+	"version": "0.0.1",
+	"description": "Svelte 5 adapter for unisig - reactive state with signals and events",
+	"publishConfig": {
+		"access": "public"
+	},
+	"keywords": [
+		"unisig",
+		"svelte",
+		"signals",
+		"reactivity",
+		"adapter",
+		"reactive",
+		"state",
+		"events"
+	],
+	"author": "Ronan Sandford",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wighawag/unisig.git",
+		"directory": "packages/svelte"
+	},
+	"homepage": "https://github.com/wighawag/unisig#readme",
+	"bugs": {
+		"url": "https://github.com/wighawag/unisig/issues"
+	},
+	"type": "module",
+	"svelte": "./dist/index.svelte.js",
+	"types": "./dist/index.svelte.d.ts",
+	"exports": {
+		".": {
+			"svelte": "./dist/index.svelte.js",
+			"types": "./dist/index.svelte.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=20"
+	},
+	"peerDependencies": {
+		"svelte": "^5.7.0",
+		"unisig": "*"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^5.0.0",
+		"prettier": "^3.8.0",
+		"svelte": "^5.28.0",
+		"typescript": "^5.3.0",
+		"unisig": "workspace:*",
+		"vitest": "^2.0.0"
+	},
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"build": "tsc",
+		"test": "vitest run"
+	}
+}
