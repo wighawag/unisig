@@ -86,7 +86,7 @@ export interface TrackerOptions<Events> {
  *     const user = this.users.get(id)
  *     if (!user) return
  *     this.users.delete(id)
- *     this.$.triggerRemove('users', id, 'user:removed', id)
+ *     this.$.triggerItemRemoved('users', id, 'user:removed', id)
  *   }
  * }
  * ```
@@ -246,37 +246,37 @@ export class Tracker<
 
 	/**
 	 * Get or create a dependency by key.
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 */
-	dep(key: string): Dependency | null {
+	dep(key: string): Dependency | undefined {
 		return this.scope.dep(key);
 	}
 
 	/**
 	 * Get or create a per-item dependency.
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 */
-	itemDep(collection: string, id: string | number): Dependency | null {
+	itemDep(collection: string, id: string | number): Dependency | undefined {
 		return this.scope.itemDep(collection, id);
 	}
 
 	/**
 	 * Get or create a property dependency for a key.
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 */
-	propDep(key: string, prop: string): Dependency | null {
+	propDep(key: string, prop: string): Dependency | undefined {
 		return this.scope.propDep(key, prop);
 	}
 
 	/**
 	 * Get or create a property dependency for a specific item.
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 */
 	itemPropDep(
 		collection: string,
 		id: string | number,
 		prop: string,
-	): Dependency | null {
+	): Dependency | undefined {
 		return this.scope.itemPropDep(collection, id, prop);
 	}
 
@@ -353,7 +353,7 @@ export class Tracker<
 
 	/**
 	 * Trigger a change for a specific item and optionally emit an event.
-	 * Does NOT trigger the collection - use triggerList() for that.
+	 * Does NOT trigger the collection - use triggerCollection() for that.
 	 * Also notifies all property watchers for this item.
 	 *
 	 * @param collection - Name of the collection
@@ -455,21 +455,21 @@ export class Tracker<
 	}
 
 	/**
-	 * Trigger a list change and optionally emit an event.
+	 * Trigger a collection change and optionally emit an event.
 	 *
 	 * @param collection - Name of the collection
 	 * @param event - Event to emit (must provide data with this)
 	 * @param data - Event data (required when event is provided)
 	 */
-	triggerList(collection: string): void;
-	triggerList<K extends keyof Events>(
+	triggerCollection(collection: string): void;
+	triggerCollection<K extends keyof Events>(
 		collection: string,
 		event: K,
 		data: Events[K],
 	): void;
-	triggerList(collection: string, event?: unknown, data?: unknown): void {
+	triggerCollection(collection: string, event?: unknown, data?: unknown): void {
 		if (this.batching) {
-			const key = `list:${collection}`;
+			const key = `collection:${collection}`;
 			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
 		} else {
 			this.scope.triggerList(collection);
@@ -480,7 +480,7 @@ export class Tracker<
 	}
 
 	/**
-	 * Trigger for item removal: notifies item watchers, list watchers,
+	 * Trigger for item removal: notifies item watchers, collection watchers,
 	 * cleans up the item dep, and optionally emits an event.
 	 *
 	 * @param collection - Name of the collection
@@ -488,21 +488,21 @@ export class Tracker<
 	 * @param event - Event to emit (must provide data with this)
 	 * @param data - Event data (required when event is provided)
 	 */
-	triggerRemove(collection: string, id: string | number): void;
-	triggerRemove<K extends keyof Events>(
+	triggerItemRemoved(collection: string, id: string | number): void;
+	triggerItemRemoved<K extends keyof Events>(
 		collection: string,
 		id: string | number,
 		event: K,
 		data: Events[K],
 	): void;
-	triggerRemove(
+	triggerItemRemoved(
 		collection: string,
 		id: string | number,
 		event?: unknown,
 		data?: unknown,
 	): void {
 		if (this.batching) {
-			const key = `remove:${collection}:${id}`;
+			const key = `itemRemoved:${collection}:${id}`;
 			this.pendingTriggers.set(key, () => this.scope.triggerRemove(collection, id));
 		} else {
 			this.scope.triggerRemove(collection, id);
@@ -513,21 +513,21 @@ export class Tracker<
 	}
 
 	/**
-	 * Trigger for item addition: notifies list watchers and optionally emits an event.
+	 * Trigger for item addition: notifies collection watchers and optionally emits an event.
 	 *
 	 * @param collection - Name of the collection
 	 * @param event - Event to emit (must provide data with this)
 	 * @param data - Event data (required when event is provided)
 	 */
-	triggerAdd(collection: string): void;
-	triggerAdd<K extends keyof Events>(
+	triggerItemAdded(collection: string): void;
+	triggerItemAdded<K extends keyof Events>(
 		collection: string,
 		event: K,
 		data: Events[K],
 	): void;
-	triggerAdd(collection: string, event?: unknown, data?: unknown): void {
+	triggerItemAdded(collection: string, event?: unknown, data?: unknown): void {
 		if (this.batching) {
-			const key = `add:${collection}`;
+			const key = `itemAdded:${collection}`;
 			this.pendingTriggers.set(key, () => this.scope.triggerList(collection));
 		} else {
 			this.scope.triggerList(collection);
@@ -654,6 +654,125 @@ export class Tracker<
 		id: string | number,
 	): T {
 		return this.scope.deepItemProxy(target, collection, id);
+	}
+
+	// ============ READONLY PROXIES ============
+
+	/**
+	 * Create a read-only proxy that tracks property reads but throws on writes.
+	 *
+	 * @param target - The object to wrap
+	 * @param key - The dependency key for this object
+	 * @returns A read-only proxy that tracks but doesn't trigger
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyConfig() {
+	 *   this.$.track('config')
+	 *   return this.$.readonlyProxy(this.config, 'config')
+	 * }
+	 *
+	 * // Usage in effect:
+	 * createEffect(() => {
+	 *   console.log(store.getReadonlyConfig().theme) // Only re-runs when theme changes
+	 *   store.getReadonlyConfig().theme = 'dark' // Throws: Cannot modify read-only proxy
+	 * })
+	 * ```
+	 */
+	readonlyProxy<T extends object>(target: T, key: string): Readonly<T> {
+		return this.scope.readonlyProxy(target, key);
+	}
+
+	/**
+	 * Create a read-only proxy for a collection item that tracks property reads
+	 * but throws on writes.
+	 *
+	 * @param target - The object to wrap
+	 * @param collection - The collection name
+	 * @param id - The item id
+	 * @returns A read-only proxy that tracks but doesn't trigger
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyUser(id: string) {
+	 *   this.$.trackItem('users', id)
+	 *   const user = this.users.get(id)
+	 *   return user ? this.$.readonlyItemProxy(user, 'users', id) : undefined
+	 * }
+	 *
+	 * // Usage in effect:
+	 * createEffect(() => {
+	 *   const user = store.getReadonlyUser('1')
+	 *   console.log(user?.score) // Only re-runs when score changes
+	 *   user?.score = 100 // Throws: Cannot modify read-only proxy
+	 * })
+	 * ```
+	 */
+	readonlyItemProxy<T extends object>(
+		target: T,
+		collection: string,
+		id: string | number,
+	): Readonly<T> {
+		return this.scope.readonlyItemProxy(target, collection, id);
+	}
+
+	/**
+	 * Create a deep read-only proxy that tracks property reads at any nesting level
+	 * but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * @param target - The object to wrap
+	 * @param key - The dependency key for this object
+	 * @returns A deeply read-only proxied object
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyConfig() {
+	 *   this.$.track('config')
+	 *   return this.$.readonlyDeepProxy(this.config, 'config')
+	 * }
+	 *
+	 * // Nested access is tracked:
+	 * createEffect(() => {
+	 *   console.log(store.getReadonlyConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
+	 *   store.getReadonlyConfig().theme.colors.primary = '#ff0000' // Throws
+	 * })
+	 * ```
+	 */
+	readonlyDeepProxy<T extends object>(target: T, key: string): Readonly<T> {
+		return this.scope.readonlyDeepProxy(target, key);
+	}
+
+	/**
+	 * Create a deep read-only proxy for a collection item that tracks property reads
+	 * at any nesting level but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * @param target - The object to wrap
+	 * @param collection - The collection name
+	 * @param id - The item id
+	 * @returns A deeply read-only proxied object
+	 *
+	 * @example
+	 * ```ts
+	 * getReadonlyUser(id: string) {
+	 *   this.$.trackItem('users', id)
+	 *   const user = this.users.get(id)
+	 *   return user ? this.$.readonlyDeepItemProxy(user, 'users', id) : undefined
+	 * }
+	 *
+	 * // Nested access is tracked:
+	 * createEffect(() => {
+	 *   const user = store.getReadonlyUser('1')
+	 *   console.log(user?.stats.health) // Tracks 'stats.health'
+	 *   user?.stats.health = 100 // Throws
+	 * })
+	 * ```
+	 */
+	readonlyDeepItemProxy<T extends object>(
+		target: T,
+		collection: string,
+		id: string | number,
+	): Readonly<T> {
+		return this.scope.readonlyDeepItemProxy(target, collection, id);
 	}
 
 	// ============ CLEANUP ============

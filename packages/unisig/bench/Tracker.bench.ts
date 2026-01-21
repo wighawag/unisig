@@ -24,7 +24,7 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('create Tracker with adapter', () => {
-			new Tracker<TestEvents>(mockAdapter);
+			new Tracker<TestEvents>({adapter: mockAdapter});
 		});
 
 		bench('create Tracker with options (adapter + error handler)', () => {
@@ -36,7 +36,7 @@ describe('Tracker Performance Benchmarks', () => {
 
 		bench('create 100 Tracker instances', () => {
 			for (let i = 0; i < 100; i++) {
-				new Tracker<TestEvents>(mockAdapter);
+				new Tracker<TestEvents>({adapter: mockAdapter});
 			}
 		});
 	});
@@ -77,13 +77,13 @@ describe('Tracker Performance Benchmarks', () => {
 
 	describe('Combined Operations (Signal + Event)', () => {
 		bench('trigger() with event (signals + events)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:added', () => {});
 			tracker.trigger('users', 'user:added', {id: '1', name: 'Alice'});
 		});
 
 		bench('triggerItem() with event', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:updated', () => {});
 			tracker.triggerItem('users', 'user-1', 'user:updated', {
 				id: 'user-1',
@@ -91,28 +91,28 @@ describe('Tracker Performance Benchmarks', () => {
 			});
 		});
 
-		bench('triggerList() with event', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+		bench('triggerCollection() with event', () => {
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:added', () => {});
-			tracker.triggerList('users', 'user:added', {id: '1', name: 'Alice'});
+			tracker.triggerCollection('users', 'user:added', {id: '1', name: 'Alice'});
 		});
 
-		bench('triggerRemove() with event', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+		bench('triggerItemRemoved() with event', () => {
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:removed', () => {});
-			tracker.triggerRemove('users', 'user-1', 'user:removed', 'user-1');
+			tracker.triggerItemRemoved('users', 'user-1', 'user:removed', 'user-1');
 		});
 	});
 
 	describe('Granular Tracking Operations', () => {
 		bench('track() single key', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			mockAdapter.create().depend();
 			tracker.track('users');
 		});
 
 		bench('track() 100 different keys', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				mockAdapter.create().depend();
 				tracker.track(`key_${i}`);
@@ -120,13 +120,13 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('trackItem() single item', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			mockAdapter.create().depend();
 			tracker.trackItem('users', 'user-1');
 		});
 
 		bench('trackItem() 100 different items', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				mockAdapter.create().depend();
 				tracker.trackItem('users', `user-${i}`);
@@ -134,13 +134,13 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('trackProp() single property', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			mockAdapter.create().depend();
 			tracker.trackProp('config', 'theme');
 		});
 
 		bench('trackItemProp() single item property', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			mockAdapter.create().depend();
 			tracker.trackItemProp('users', 'user-1', 'name');
 		});
@@ -148,32 +148,32 @@ describe('Tracker Performance Benchmarks', () => {
 
 	describe('Dependency Access', () => {
 		bench('dep() get or create dependency', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.dep('test');
 		});
 
 		bench('dep() get cached dependency', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.dep('test');
 			tracker.dep('test');
 		});
 
 		bench('itemDep() get or create 100 item dependencies', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				tracker.itemDep('users', `user-${i}`);
 			}
 		});
 
 		bench('propDep() get or create 100 property dependencies', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				tracker.propDep('config', `prop_${i}`);
 			}
 		});
 
 		bench('itemPropDep() get or create 100 item property dependencies', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				tracker.itemPropDep('users', 'user-1', `prop_${i}`);
 			}
@@ -187,19 +187,19 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('getAdapter() get adapter', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.getAdapter();
 		});
 
 		bench('isInScope() check', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.isInScope();
 		});
 	});
 
 	describe('Real-World Usage Patterns', () => {
 		bench('simple read pattern (track)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			const users = new Map<string, {id: string; name: string}>();
 
 			for (let i = 0; i < 100; i++) {
@@ -212,7 +212,7 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('item-level read pattern (trackItem)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			const users = new Map<string, {id: string; name: string}>();
 
 			for (let i = 0; i < 100; i++) {
@@ -226,20 +226,20 @@ describe('Tracker Performance Benchmarks', () => {
 			}
 		});
 
-		bench('add item pattern (triggerList + emit)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+		bench('add item pattern (triggerCollection + emit)', () => {
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:added', () => {});
 			const users = new Map<string, {id: string; name: string}>();
 
 			for (let i = 0; i < 100; i++) {
 				const user = {id: `user-${i}`, name: `User ${i}`};
 				users.set(user.id, user);
-				tracker.triggerList('users', 'user:added', user);
+				tracker.triggerCollection('users', 'user:added', user);
 			}
 		});
 
 		bench('update item pattern (triggerItem)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			const users = new Map<string, {id: string; name: string}>();
 
 			for (let i = 0; i < 100; i++) {
@@ -253,8 +253,8 @@ describe('Tracker Performance Benchmarks', () => {
 			}
 		});
 
-		bench('remove item pattern (triggerRemove)', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+		bench('remove item pattern (triggerItemRemoved)', () => {
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.on('user:removed', () => {});
 			const users = new Map<string, {id: string; name: string}>();
 
@@ -264,7 +264,7 @@ describe('Tracker Performance Benchmarks', () => {
 
 			for (let i = 0; i < 100; i++) {
 				users.delete(`user-${i}`);
-				tracker.triggerRemove(
+				tracker.triggerItemRemoved(
 					'users',
 					`user-${i}`,
 					'user:removed',
@@ -276,7 +276,7 @@ describe('Tracker Performance Benchmarks', () => {
 
 	describe('Cleanup Operations', () => {
 		bench('clear() with many dependencies', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 100; i++) {
 				tracker.dep(`key_${i}`);
 				tracker.itemDep('users', `user-${i}`);
@@ -288,7 +288,7 @@ describe('Tracker Performance Benchmarks', () => {
 
 	describe('High-Frequency Operations', () => {
 		bench('1000 track/trigger cycles', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 1000; i++) {
 				mockAdapter.create().depend();
 				tracker.track('counter');
@@ -297,7 +297,7 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 
 		bench('1000 item track/trigger cycles', () => {
-			const tracker = new Tracker<TestEvents>(mockAdapter);
+			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			for (let i = 0; i < 1000; i++) {
 				mockAdapter.create().depend();
 				tracker.trackItem('items', i);

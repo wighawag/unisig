@@ -79,9 +79,9 @@ describe('Scope', () => {
 	});
 
 	describe('dep()', () => {
-		it('should return null if no adapter', () => {
+		it('should return undefined if no adapter', () => {
 			const scope = new Scope();
-			expect(scope.dep('test')).toBeNull();
+			expect(scope.dep('test')).toBeUndefined();
 		});
 
 		it('should create and return a dependency', () => {
@@ -89,7 +89,7 @@ describe('Scope', () => {
 			const scope = new Scope(adapter);
 
 			const dep = scope.dep('test');
-			expect(dep).not.toBeNull();
+			expect(dep).toBeDefined();
 			expect(adapter.deps).toHaveLength(1);
 		});
 
@@ -117,9 +117,9 @@ describe('Scope', () => {
 	});
 
 	describe('itemDep()', () => {
-		it('should return null if no adapter', () => {
+		it('should return undefined if no adapter', () => {
 			const scope = new Scope();
-			expect(scope.itemDep('users', '1')).toBeNull();
+			expect(scope.itemDep('users', '1')).toBeUndefined();
 		});
 
 		it('should create per-item dependencies', () => {
@@ -127,7 +127,7 @@ describe('Scope', () => {
 			const scope = new Scope(adapter);
 
 			const dep = scope.itemDep('users', '1');
-			expect(dep).not.toBeNull();
+			expect(dep).toBeDefined();
 		});
 
 		it('should return same dependency for same collection and id', () => {
@@ -318,9 +318,9 @@ describe('Scope', () => {
 	});
 
 	describe('propDep()', () => {
-		it('should return null if no adapter', () => {
+		it('should return undefined if no adapter', () => {
 			const scope = new Scope();
-			expect(scope.propDep('config', 'theme')).toBeNull();
+			expect(scope.propDep('config', 'theme')).toBeUndefined();
 		});
 
 		it('should create per-property dependencies', () => {
@@ -328,7 +328,7 @@ describe('Scope', () => {
 			const scope = new Scope(adapter);
 
 			const dep = scope.propDep('config', 'theme');
-			expect(dep).not.toBeNull();
+			expect(dep).toBeDefined();
 		});
 
 		it('should return same dependency for same key and prop', () => {
@@ -353,9 +353,9 @@ describe('Scope', () => {
 	});
 
 	describe('itemPropDep()', () => {
-		it('should return null if no adapter', () => {
+		it('should return undefined if no adapter', () => {
 			const scope = new Scope();
-			expect(scope.itemPropDep('users', '1', 'score')).toBeNull();
+			expect(scope.itemPropDep('users', '1', 'score')).toBeUndefined();
 		});
 
 		it('should create per-item-property dependencies', () => {
@@ -363,7 +363,7 @@ describe('Scope', () => {
 			const scope = new Scope(adapter);
 
 			const dep = scope.itemPropDep('users', '1', 'score');
-			expect(dep).not.toBeNull();
+			expect(dep).toBeDefined();
 		});
 
 		it('should return same dependency for same collection, id, and prop', () => {

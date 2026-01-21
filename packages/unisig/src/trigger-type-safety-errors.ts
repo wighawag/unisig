@@ -34,14 +34,14 @@ tracker.triggerItemProp('users', '123', 'name', 'user:added', {
 	name: 'Alice',
 });
 
-tracker.triggerList('users');
-tracker.triggerList('users', 'user:added', {id: '123', name: 'Charlie'});
+tracker.triggerCollection('users');
+tracker.triggerCollection('users', 'user:added', {id: '123', name: 'Charlie'});
 
-tracker.triggerRemove('users', '123');
-tracker.triggerRemove('users', '123', 'user:removed', '123');
+tracker.triggerItemRemoved('users', '123');
+tracker.triggerItemRemoved('users', '123', 'user:removed', '123');
 
-tracker.triggerAdd('users');
-tracker.triggerAdd('users', 'user:added', {id: '456', name: 'Diana'});
+tracker.triggerItemAdded('users');
+tracker.triggerItemAdded('users', 'user:added', {id: '456', name: 'Diana'});
 
 // These should produce TypeScript errors (commented out to allow compilation):
 
@@ -58,10 +58,10 @@ tracker.triggerProp('config', 'theme', 'user:updated');
 tracker.triggerItemProp('users', '123', 'name', 'user:added');
 
 // @ts-expect-error - event provided but data is missing
-tracker.triggerList('users', 'user:added');
+tracker.triggerCollection('users', 'user:added');
 
 // @ts-expect-error - event provided but data is missing
-tracker.triggerRemove('users', '123', 'user:removed');
+tracker.triggerItemRemoved('users', '123', 'user:removed');
 
 // @ts-expect-error - event provided but data is missing
-tracker.triggerAdd('users', 'user:added');
+tracker.triggerItemAdded('users', 'user:added');

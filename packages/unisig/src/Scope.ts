@@ -76,12 +76,12 @@ export class Scope {
 
 	/**
 	 * Get or create a dependency by key.
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 *
 	 * @param key - Unique key for this dependency
 	 */
-	dep(key: string): Dependency | null {
-		if (!this.adapter) return null;
+	dep(key: string): Dependency | undefined {
+		if (!this.adapter) return undefined;
 		if (!this.deps.has(key)) {
 			this.deps.set(key, this.adapter.create());
 		}
@@ -91,13 +91,13 @@ export class Scope {
 	/**
 	 * Get or create a per-item dependency.
 	 * Useful for granular updates (e.g., only re-render when a specific item changes).
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 *
 	 * @param collection - Name of the collection/group
 	 * @param id - Unique identifier of the item
 	 */
-	itemDep(collection: string, id: string | number): Dependency | null {
-		if (!this.adapter) return null;
+	itemDep(collection: string, id: string | number): Dependency | undefined {
+		if (!this.adapter) return undefined;
 		if (!this.itemDeps.has(collection)) {
 			this.itemDeps.set(collection, new Map());
 		}
@@ -124,13 +124,13 @@ export class Scope {
 	/**
 	 * Get or create a property dependency for a key.
 	 * Useful for granular updates (e.g., only re-render when a specific property changes).
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 *
 	 * @param key - The main key
 	 * @param prop - The property name
 	 */
-	propDep(key: string, prop: string): Dependency | null {
-		if (!this.adapter) return null;
+	propDep(key: string, prop: string): Dependency | undefined {
+		if (!this.adapter) return undefined;
 		if (!this.propDeps.has(key)) {
 			this.propDeps.set(key, new Map());
 		}
@@ -144,7 +144,7 @@ export class Scope {
 	/**
 	 * Get or create a property dependency for a specific item.
 	 * Useful for very granular updates (e.g., only re-render when user.score changes).
-	 * Returns null if no adapter is set.
+	 * Returns undefined if no adapter is set.
 	 *
 	 * @param collection - Name of the collection/group
 	 * @param id - Unique identifier of the item
@@ -154,8 +154,8 @@ export class Scope {
 		collection: string,
 		id: string | number,
 		prop: string,
-	): Dependency | null {
-		if (!this.adapter) return null;
+	): Dependency | undefined {
+		if (!this.adapter) return undefined;
 		if (!this.itemPropDeps.has(collection)) {
 			this.itemPropDeps.set(collection, new Map());
 		}
@@ -824,6 +824,420 @@ export class Scope {
 				}
 
 				return result;
+			},
+		});
+
+		cache.set(arr, proxy);
+		return proxy as T[];
+	}
+
+	// ============ READONLY PROXIES ============
+
+	/**
+		* Create a read-only proxy that tracks property reads but throws on writes.
+		*
+		* @param target - The object to wrap
+		* @param key - The dependency key for this object
+		* @returns A read-only proxy that tracks but doesn't trigger
+		*
+		* @example
+		* ```ts
+		* getReadonlyConfig() {
+		*   this.scope.track('config')
+		*   return this.scope.readonlyProxy(this.config, 'config')
+		* }
+		*
+		* // Usage in effect:
+		* createEffect(() => {
+		*   console.log(store.getReadonlyConfig().theme) // Only re-runs when theme changes
+		*   store.getReadonlyConfig().theme = 'dark' // Throws: Cannot modify read-only proxy
+		* })
+		* ```
+		*/
+	readonlyProxy<T extends object>(target: T, key: string): Readonly<T> {
+		const scope = this;
+		return new Proxy(target, {
+			get(obj, prop, receiver) {
+				if (typeof prop === 'string') {
+					scope.trackProp(key, prop);
+				}
+				return Reflect.get(obj, prop, receiver);
+			},
+			set(obj, prop, value, receiver) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on key '${key}'`,
+				);
+			},
+			deleteProperty(obj, prop) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on key '${key}'`,
+				);
+			},
+		}) as Readonly<T>;
+	}
+
+	/**
+		* Create a read-only proxy for a collection item that tracks property reads
+		* but throws on writes.
+		*
+		* @param target - The object to wrap
+		* @param collection - The collection name
+		* @param id - The item id
+		* @returns A read-only proxy that tracks but doesn't trigger
+		*
+		* @example
+		* ```ts
+		* getReadonlyUser(id: string) {
+		*   this.scope.trackItem('users', id)
+		*   const user = this.users.get(id)
+		*   return user ? this.scope.readonlyItemProxy(user, 'users', id) : undefined
+		* }
+		*
+		* // Usage in effect:
+		* createEffect(() => {
+		*   const user = store.getReadonlyUser('1')
+		*   console.log(user?.score) // Only re-runs when score changes
+		*   user?.score = 100 // Throws: Cannot modify read-only proxy
+		* })
+		* ```
+		*/
+	readonlyItemProxy<T extends object>(
+		target: T,
+		collection: string,
+		id: string | number,
+	): Readonly<T> {
+		const scope = this;
+		return new Proxy(target, {
+			get(obj, prop, receiver) {
+				if (typeof prop === 'string') {
+					scope.trackItemProp(collection, id, prop);
+				}
+				return Reflect.get(obj, prop, receiver);
+			},
+			set(obj, prop, value, receiver) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on item '${id}' in collection '${collection}'`,
+				);
+			},
+			deleteProperty(obj, prop) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on item '${id}' in collection '${collection}'`,
+				);
+			},
+		}) as Readonly<T>;
+	}
+
+	/**
+		* Create a deep read-only proxy that tracks property reads at any nesting level
+		* but throws on writes. Uses dot notation for nested paths.
+		*
+		* @param target - The object to wrap
+		* @param key - The dependency key for this object
+		* @returns A deeply read-only proxied object
+		*
+		* @example
+		* ```ts
+		* getReadonlyConfig() {
+		*   this.scope.track('config')
+		*   return this.scope.readonlyDeepProxy(this.config, 'config')
+		* }
+		*
+		* // Nested access is tracked:
+		* createEffect(() => {
+		*   console.log(store.getReadonlyConfig().theme.colors.primary) // Tracks 'theme.colors.primary'
+		*   store.getReadonlyConfig().theme.colors.primary = '#ff0000' // Throws
+		* })
+		* ```
+		*/
+	readonlyDeepProxy<T extends object>(target: T, key: string): Readonly<T> {
+		return this.createReadonlyDeepProxy(target, key, '', new WeakMap());
+	}
+
+	/**
+		* Create a deep read-only proxy for a collection item that tracks property reads
+		* at any nesting level but throws on writes. Uses dot notation for nested paths.
+		*
+		* @param target - The object to wrap
+		* @param collection - The collection name
+		* @param id - The item id
+		* @returns A deeply read-only proxied object
+		*
+		* @example
+		* ```ts
+		* getReadonlyUser(id: string) {
+		*   this.scope.trackItem('users', id)
+		*   const user = this.users.get(id)
+		*   return user ? this.scope.readonlyDeepItemProxy(user, 'users', id) : undefined
+		* }
+		*
+		* // Nested access is tracked:
+		* createEffect(() => {
+		*   const user = store.getReadonlyUser('1')
+		*   console.log(user?.stats.health) // Tracks 'stats.health'
+		*   user?.stats.health = 100 // Throws
+		* })
+		* ```
+		*/
+	readonlyDeepItemProxy<T extends object>(
+		target: T,
+		collection: string,
+		id: string | number,
+	): Readonly<T> {
+		return this.createReadonlyDeepItemProxy(target, collection, id, '', new WeakMap());
+	}
+
+	/**
+		* Internal: Create a deep read-only proxy for key-based tracking
+		*/
+	private createReadonlyDeepProxy<T extends object>(
+		target: T,
+		key: string,
+		basePath: string,
+		cache: WeakMap<object, object>,
+	): T {
+		// Return cached proxy if exists (maintains identity)
+		if (cache.has(target)) {
+			return cache.get(target) as T;
+		}
+
+		const scope = this;
+
+		const proxy = new Proxy(target, {
+			get(obj, prop, receiver) {
+				const value = Reflect.get(obj, prop, receiver);
+
+				// Only track string properties (not symbols)
+				if (typeof prop === 'string') {
+					const fullPath = basePath ? `${basePath}.${prop}` : prop;
+					scope.trackProp(key, fullPath);
+
+					// Recursively proxy nested objects
+					if (scope.shouldDeepProxy(value)) {
+						return scope.createReadonlyDeepProxy(value, key, fullPath, cache);
+					}
+
+					// Handle arrays specially
+					if (Array.isArray(value)) {
+						return scope.createReadonlyDeepArrayProxy(
+							value,
+							key,
+							'',
+							fullPath,
+							cache,
+							'prop',
+						);
+					}
+				}
+
+				return value;
+			},
+
+			set(obj, prop, value, receiver) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on key '${key}'`,
+				);
+			},
+
+			deleteProperty(obj, prop) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on key '${key}'`,
+				);
+			},
+		});
+
+		cache.set(target, proxy);
+		return proxy as T;
+	}
+
+	/**
+		* Internal: Create a deep read-only proxy for item-based tracking
+		*/
+	private createReadonlyDeepItemProxy<T extends object>(
+		target: T,
+		collection: string,
+		id: string | number,
+		basePath: string,
+		cache: WeakMap<object, object>,
+	): T {
+		// Return cached proxy if exists (maintains identity)
+		if (cache.has(target)) {
+			return cache.get(target) as T;
+		}
+
+		const scope = this;
+
+		const proxy = new Proxy(target, {
+			get(obj, prop, receiver) {
+				const value = Reflect.get(obj, prop, receiver);
+
+				// Only track string properties (not symbols)
+				if (typeof prop === 'string') {
+					const fullPath = basePath ? `${basePath}.${prop}` : prop;
+					scope.trackItemProp(collection, id, fullPath);
+
+					// Recursively proxy nested objects
+					if (scope.shouldDeepProxy(value)) {
+						return scope.createReadonlyDeepItemProxy(
+							value,
+							collection,
+							id,
+							fullPath,
+							cache,
+						);
+					}
+
+					// Handle arrays specially
+					if (Array.isArray(value)) {
+						return scope.createReadonlyDeepArrayProxy(
+							value,
+							collection,
+							id,
+							fullPath,
+							cache,
+							'item',
+						);
+					}
+				}
+
+				return value;
+			},
+
+			set(obj, prop, value, receiver) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on item '${id}' in collection '${collection}'`,
+				);
+			},
+
+			deleteProperty(obj, prop) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on item '${id}' in collection '${collection}'`,
+				);
+			},
+		});
+
+		cache.set(target, proxy);
+		return proxy as T;
+	}
+
+	/**
+		* Internal: Create a deep read-only proxy for arrays
+		*/
+	private createReadonlyDeepArrayProxy<T>(
+		arr: T[],
+		keyOrCollection: string,
+		idOrPath: string | number,
+		path: string,
+		cache: WeakMap<object, object>,
+		mode: 'prop' | 'item',
+	): T[] {
+		// Return cached proxy if exists
+		if (cache.has(arr)) {
+			return cache.get(arr) as T[];
+		}
+
+		const scope = this;
+
+		// Helper to track based on mode
+		const track = (propPath: string) => {
+			if (mode === 'prop') {
+				scope.trackProp(keyOrCollection, propPath);
+			} else {
+				scope.trackItemProp(keyOrCollection, idOrPath, propPath);
+			}
+		};
+
+		// Mutation methods that should throw
+		const mutationMethods = [
+			'push',
+			'pop',
+			'shift',
+			'unshift',
+			'splice',
+			'sort',
+			'reverse',
+			'fill',
+			'copyWithin',
+		];
+
+		const proxy = new Proxy(arr, {
+			get(target, prop, receiver) {
+				const value = Reflect.get(target, prop, receiver);
+
+				if (typeof prop === 'string') {
+					// Numeric index access
+					if (!isNaN(Number(prop))) {
+						const fullPath = `${path}.${prop}`;
+						track(fullPath);
+
+						if (scope.shouldDeepProxy(value)) {
+							if (mode === 'prop') {
+								return scope.createReadonlyDeepProxy(
+									value as object,
+									keyOrCollection,
+									fullPath,
+									cache,
+								);
+							} else {
+								return scope.createReadonlyDeepItemProxy(
+									value as object,
+									keyOrCollection,
+									idOrPath,
+									fullPath,
+									cache,
+								);
+							}
+						}
+
+						return value;
+					}
+
+					// Array length
+					if (prop === 'length') {
+						track(`${path}.length`);
+						return value;
+					}
+
+					// Mutation methods - wrap to throw
+					if (mutationMethods.includes(prop) && typeof value === 'function') {
+						return function (this: T[], ...args: unknown[]) {
+							throw new Error(
+								`Cannot modify read-only proxy. Attempted to call method '${prop}' on array at path '${path}'`,
+							);
+						};
+					}
+
+					// Iteration methods that access elements
+					if (
+						[
+							'forEach',
+							'map',
+							'filter',
+							'find',
+							'findIndex',
+							'some',
+							'every',
+							'reduce',
+							'reduceRight',
+						].includes(prop)
+					) {
+						track(path); // Track the whole array for iteration
+						return value;
+					}
+				}
+
+				return value;
+			},
+
+			set(target, prop, value, receiver) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to set index '${String(prop)}' on array at path '${path}'`,
+				);
+			},
+
+			deleteProperty(target, prop) {
+				throw new Error(
+					`Cannot modify read-only proxy. Attempted to delete index '${String(prop)}' on array at path '${path}'`,
+				);
 			},
 		});
 

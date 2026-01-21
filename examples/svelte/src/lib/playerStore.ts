@@ -185,7 +185,7 @@ class PlayerStore {
 	 */
 	add(player: Player): void {
 		this.players.set(player.id, player);
-		this.$.triggerAdd('players', 'player:added', player);
+		this.$.triggerItemAdded('players', 'player:added', player);
 	}
 
 	/**
@@ -195,7 +195,7 @@ class PlayerStore {
 	remove(id: string): void {
 		if (!this.players.has(id)) return;
 		this.players.delete(id);
-		this.$.triggerRemove('players', id, 'player:removed', id);
+		this.$.triggerItemRemoved('players', id, 'player:removed', id);
 	}
 
 	/**

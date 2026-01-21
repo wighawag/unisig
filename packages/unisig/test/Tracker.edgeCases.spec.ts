@@ -160,9 +160,9 @@ describe('Tracker - Edge Cases', () => {
 			// Should not throw
 			r.trigger('items');
 			r.triggerItem('items', '1');
-			r.triggerList('items');
-			r.triggerRemove('items', '1');
-			r.triggerAdd('items');
+			r.triggerCollection('items');
+			r.triggerItemRemoved('items', '1');
+			r.triggerItemAdded('items');
 			r.triggerProp('config', 'theme');
 			r.triggerItemProp('items', '1', 'score');
 
@@ -171,9 +171,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('dep() edge cases', () => {
-		it('should return null when no adapter', () => {
+		it('should return undefined when no adapter', () => {
 			const r = new Tracker<TestEvents>();
-			expect(r.dep('test')).toBeNull();
+			expect(r.dep('test')).toBeUndefined();
 		});
 
 		it('should return same dependency for same key', () => {
@@ -200,9 +200,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('itemDep() edge cases', () => {
-		it('should return null when no adapter', () => {
+		it('should return undefined when no adapter', () => {
 			const r = new Tracker<TestEvents>();
-			expect(r.itemDep('users', '1')).toBeNull();
+			expect(r.itemDep('users', '1')).toBeUndefined();
 		});
 
 		it('should return same dependency for same collection and id', () => {
@@ -247,9 +247,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('propDep() edge cases', () => {
-		it('should return null when no adapter', () => {
+		it('should return undefined when no adapter', () => {
 			const r = new Tracker<TestEvents>();
-			expect(r.propDep('config', 'theme')).toBeNull();
+			expect(r.propDep('config', 'theme')).toBeUndefined();
 		});
 
 		it('should return same dependency for same key and prop', () => {
@@ -274,9 +274,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('itemPropDep() edge cases', () => {
-		it('should return null when no adapter', () => {
+		it('should return undefined when no adapter', () => {
 			const r = new Tracker<TestEvents>();
-			expect(r.itemPropDep('users', '1', 'score')).toBeNull();
+			expect(r.itemPropDep('users', '1', 'score')).toBeUndefined();
 		});
 
 		it('should return same dependency for same collection, id, and prop', () => {
@@ -321,14 +321,14 @@ describe('Tracker - Edge Cases', () => {
 		});
 	});
 
-	describe('triggerRemove() edge cases', () => {
+	describe('triggerItemRemoved() edge cases', () => {
 		it('should clean up item deps after removal', () => {
 			const adapter = createMockAdapter();
 			const r = new Tracker<TestEvents>({adapter});
 
 			r.itemDep('users', '1');
 			r.dep('users');
-			r.triggerRemove('users', '1');
+			r.triggerItemRemoved('users', '1');
 
 			// After removal, new dep should be created
 			r.itemDep('users', '1');

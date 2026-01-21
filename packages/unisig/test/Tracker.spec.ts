@@ -310,13 +310,13 @@ describe('Tracker', () => {
 			});
 		});
 
-		describe('triggerList()', () => {
-			it('should notify list signal', () => {
+		describe('triggerCollection()', () => {
+			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
 				const r = new Tracker<TestEvents>({adapter});
 
 				r.dep('items');
-				r.triggerList('items');
+				r.triggerCollection('items');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
@@ -327,23 +327,23 @@ describe('Tracker', () => {
 				const listener = vi.fn();
 
 				r.on('list:cleared', listener);
-				r.triggerList('items', 'list:cleared', undefined as void);
+				r.triggerCollection('items', 'list:cleared', undefined as void);
 
 				expect(listener).toHaveBeenCalledTimes(1);
 			});
 		});
 
-		describe('triggerRemove()', () => {
-			it('should notify item and list signals', () => {
+		describe('triggerItemRemoved()', () => {
+			it('should notify item and collection signals', () => {
 				const adapter = createMockAdapter();
 				const r = new Tracker<TestEvents>({adapter});
 
 				r.itemDep('items', '1');
 				r.dep('items');
-				r.triggerRemove('items', '1');
+				r.triggerItemRemoved('items', '1');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1); // item
-				expect(adapter.deps[1].notify).toHaveBeenCalledTimes(1); // list
+				expect(adapter.deps[1].notify).toHaveBeenCalledTimes(1); // collection
 			});
 
 			it('should emit event if provided', () => {
@@ -352,19 +352,19 @@ describe('Tracker', () => {
 				const listener = vi.fn();
 
 				r.on('item:removed', listener);
-				r.triggerRemove('items', '1', 'item:removed', '1');
+				r.triggerItemRemoved('items', '1', 'item:removed', '1');
 
 				expect(listener).toHaveBeenCalledWith('1');
 			});
 		});
 
-		describe('triggerAdd()', () => {
-			it('should notify list signal', () => {
+		describe('triggerItemAdded()', () => {
+			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
 				const r = new Tracker<TestEvents>({adapter});
 
 				r.dep('items');
-				r.triggerAdd('items');
+				r.triggerItemAdded('items');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
@@ -375,7 +375,7 @@ describe('Tracker', () => {
 				const listener = vi.fn();
 
 				r.on('item:added', listener);
-				r.triggerAdd('items', 'item:added', {id: '1', value: 42});
+				r.triggerItemAdded('items', 'item:added', {id: '1', value: 42});
 
 				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
 			});
@@ -446,7 +446,7 @@ describe('Tracker', () => {
 
 				add(user: {id: string; name: string; score: number}) {
 					this.users.set(user.id, user);
-					this.$.triggerAdd('users', 'user:added', {
+					this.$.triggerItemAdded('users', 'user:added', {
 						id: user.id,
 						name: user.name,
 					});
@@ -462,7 +462,7 @@ describe('Tracker', () => {
 				remove(id: string) {
 					if (!this.users.has(id)) return;
 					this.users.delete(id);
-					this.$.triggerRemove('users', id, 'user:removed', id);
+					this.$.triggerItemRemoved('users', id, 'user:removed', id);
 				}
 			}
 
@@ -674,7 +674,7 @@ describe('Tracker', () => {
 
 				add(player: {id: string; name: string; score: number}) {
 					this.players.set(player.id, player);
-					this.$.triggerList('players');
+					this.$.triggerCollection('players');
 				}
 
 				// Update only score - triggers only score watchers

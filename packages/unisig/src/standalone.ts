@@ -78,24 +78,20 @@ function validateValue(value: unknown): void {
  */
 export function withAdapter<T extends ReactivityAdapter = ReactivityAdapter>(
 	adapter: T,
-): <U>(initial: U) => U extends object ? U : Ref<U> {
+): <U>(initial: U) => (U extends object ? U : Ref<U>) {
 	return function createReactiveState<U>(
 		initial: U,
-	): U extends object ? U : Ref<U> {
+	): (U extends object ? U : Ref<U>) {
 		validateValue(initial);
 		const scope = new Scope(adapter);
 		const key = `state_${++keyCounter}`;
 
 		if (isPrimitive(initial)) {
 			// Wrap primitives in a ref object
-			return scope.deepProxy({value: initial}, key) as U extends object
-				? U
-				: Ref<U>;
+			return scope.deepProxy({value: initial}, key) as (U extends object ? U : Ref<U>);
 		}
 
-		return scope.deepProxy(initial as object, key) as U extends object
-			? U
-			: Ref<U>;
+		return scope.deepProxy(initial as object, key) as (U extends object ? U : Ref<U>);
 	};
 }
 
