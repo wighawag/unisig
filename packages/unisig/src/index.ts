@@ -16,6 +16,9 @@ export {Scope} from './Scope.js';
 export {Tracker, tracker, createTracker} from './Tracker.js';
 export type {TrackerOptions} from './Tracker.js';
 
+// Multi-Adapter (support multiple signal runtimes)
+export {MultiAdapter, CompositeDependency, createMultiAdapter} from './MultiAdapter.js';
+
 // Standalone reactive state (rune-like API)
 export {withAdapter, withAdapterRef, isRef} from './standalone.js';
 export type {Ref, UnwrapRef} from './standalone.js';

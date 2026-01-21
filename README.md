@@ -531,6 +531,147 @@ const solidAdapter: ReactivityAdapter = {
 };
 ```
 
+## Using Multiple Signal Runtimes
+
+unisig supports using multiple signal libraries simultaneously through the [`MultiAdapter`](packages/unisig/src/MultiAdapter.ts) class. This allows you to track changes across different frameworks or signal libraries with a single Tracker instance.
+
+### Basic Usage
+
+```typescript
+import { Tracker, MultiAdapter, createMultiAdapter } from "unisig";
+import { solidAdapter } from "@signaldb/solid";
+import { preactAdapter } from "@signaldb/preact";
+import { mobxAdapter } from "@signaldb/mobx";
+
+// Using MultiAdapter constructor
+const multiAdapter = new MultiAdapter([
+  solidAdapter,
+  preactAdapter,
+  mobxAdapter,
+]);
+
+// Or using the helper function
+const multiAdapter = createMultiAdapter(solidAdapter, preactAdapter, mobxAdapter);
+
+// Create a Tracker that works with all three runtimes
+const $ = new Tracker<UserEvents>({ adapter: multiAdapter });
+```
+
+### How It Works
+
+The [`MultiAdapter`](packages/unisig/src/MultiAdapter.ts) creates a [`CompositeDependency`](packages/unisig/src/MultiAdapter.ts) for each tracked key, which wraps dependencies from all underlying adapters:
+
+- **On read** (`track()`, `trackItem()`, etc.): Tracks with ALL adapters
+- **On write** (`trigger()`, `triggerItem()`, etc.): Notifies ALL adapters
+- **Scope detection**: Returns true if ANY adapter is in scope
+
+### Use Cases
+
+#### 1. Cross-Framework Components
+
+When building component libraries that work across multiple frameworks:
+
+```typescript
+import { MultiAdapter } from "unisig";
+import { solidAdapter } from "@signaldb/solid";
+import { preactAdapter } from "@signaldb/preact";
+import { vueAdapter } from "@signaldb/vue";
+
+const sharedStore = new Tracker<SharedEvents>({
+  adapter: new MultiAdapter([solidAdapter, preactAdapter, vueAdapter]),
+});
+
+// Now the same store works seamlessly with:
+// - Solid.js components (via solidAdapter)
+// - Preact components (via preactAdapter)
+// - Vue components (via vueAdapter)
+```
+
+#### 2. Migration Scenarios
+
+When migrating from one signal library to another:
+
+```typescript
+// Start with both, then remove the old one
+const multiAdapter = new MultiAdapter([oldAdapter, newAdapter]);
+const $ = new Tracker<MyEvents>({ adapter: multiAdapter });
+
+// Gradually migrate components, then switch to:
+// const $ = new Tracker<MyEvents>({ adapter: newAdapter });
+```
+
+#### 3. Hybrid Applications
+
+When using multiple frameworks in the same application:
+
+```typescript
+// Main store works with both Solid and Preact
+const multiAdapter = new MultiAdapter([solidAdapter, preactAdapter]);
+const store = new Tracker<AppEvents>({ adapter: multiAdapter });
+
+// Solid.js component
+function SolidComponent() {
+  const users = createMemo(() => store.getAll());
+  return <UserList users={users()} />;
+}
+
+// Preact component
+function PreactComponent() {
+  const users = useSignal(() => store.getAll());
+  return <UserList users={users()} />;
+}
+```
+
+### API Reference
+
+#### `MultiAdapter`
+
+```typescript
+import { MultiAdapter } from "unisig";
+
+class MultiAdapter implements ReactivityAdapter {
+  constructor(adapters: ReactivityAdapter[])
+  
+  create(): Dependency
+  isInScope(): boolean
+  onDispose(callback: () => void, dep: Dependency): void
+  getAdapters(): readonly ReactivityAdapter[]
+}
+```
+
+#### `createMultiAdapter` (Helper)
+
+```typescript
+import { createMultiAdapter } from "unisig";
+
+function createMultiAdapter(
+  ...adapters: ReactivityAdapter[]
+): MultiAdapter
+```
+
+#### `CompositeDependency`
+
+The internal dependency wrapper (usually you don't need to use this directly):
+
+```typescript
+class CompositeDependency implements Dependency {
+  constructor(dependencies: Dependency[])
+  
+  depend(): void
+  notify(): void
+  getDependencies(): readonly Dependency[]
+}
+```
+
+### Performance Considerations
+
+Using a [`MultiAdapter`](packages/unisig/src/MultiAdapter.ts) adds minimal overhead:
+
+- **Memory**: One [`CompositeDependency`](packages/unisig/src/MultiAdapter.ts) wrapper per tracked key
+- **Runtime**: O(n) where n is the number of adapters (calls `depend()` or `notify()` on each)
+
+For most applications with 2-3 adapters, this overhead is negligible. If you have many adapters (10+), consider whether you truly need all of them simultaneously.
+
 ## Granular Reactivity
 
 ### Collection Level
