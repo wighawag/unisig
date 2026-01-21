@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, createTracker} from '../src/Tracker.js';
-import type {ReactivityAdapter} from '../src/types.js';
+import {Tracker, createTracker} from '@unisig/tracker';
+import type {ReactivityAdapter} from 'unisig';
 
 // Mock adapter
 function createMockAdapter() {
@@ -546,11 +546,7 @@ describe('Tracker - Edge Cases', () => {
 			r.emit('item:added', {id: '1', value: 42});
 
 			expect(errorHandler).toHaveBeenCalledTimes(1);
-			expect(errorHandler).toHaveBeenCalledWith(
-				'item:added',
-				error,
-				expect.any(Function),
-			);
+			expect(errorHandler).toHaveBeenCalledWith('item:added', error, expect.any(Function));
 		});
 
 		it('should continue execution after error when handler configured', () => {
@@ -582,11 +578,7 @@ describe('Tracker - Edge Cases', () => {
 
 			r.trigger('items', 'item:added', {id: '1', value: 42});
 
-			expect(errorHandler).toHaveBeenCalledWith(
-				'item:added',
-				error,
-				expect.any(Function),
-			);
+			expect(errorHandler).toHaveBeenCalledWith('item:added', error, expect.any(Function));
 		});
 
 		it('should handle errors in once() listeners', () => {
@@ -623,11 +615,7 @@ describe('Tracker - Edge Cases', () => {
 			// Signal should still be triggered
 			expect(adapter.deps[0].notify).toHaveBeenCalled();
 			// Error should be handled
-			expect(errorHandler).toHaveBeenCalledWith(
-				'item:added',
-				error,
-				expect.any(Function),
-			);
+			expect(errorHandler).toHaveBeenCalledWith('item:added', error, expect.any(Function));
 		});
 
 		it('should work with options object containing only errorHandler', () => {
@@ -641,11 +629,7 @@ describe('Tracker - Edge Cases', () => {
 
 			r.emit('item:added', {id: '1', value: 42});
 
-			expect(errorHandler).toHaveBeenCalledWith(
-				'item:added',
-				error,
-				expect.any(Function),
-			);
+			expect(errorHandler).toHaveBeenCalledWith('item:added', error, expect.any(Function));
 		});
 	});
 });

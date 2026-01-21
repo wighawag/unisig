@@ -8,7 +8,8 @@ import {
 } from '../src/standalone.js';
 import {
 	NoEffectSupportError,
-	createAdapterBundle,
+	createReactivityBundle,
+	type RefFn,
 } from '../src/bundle.js';
 import type {ReactivityAdapter, Dependency} from '../src/types.js';
 
@@ -522,93 +523,31 @@ describe('NoEffectSupportError', () => {
 	});
 });
 
-describe('createAdapterBundle', () => {
+describe('createReactivityBundle', () => {
 	describe('basic functionality', () => {
-		it('should return an object with createTracker, effect, state, ref, and adapter', () => {
+		it('should return an object with effect, ref, and adapter', () => {
 			const adapter = createMockAdapterWithEffect();
-			const bundle = createAdapterBundle(adapter);
+			const bundle = createReactivityBundle(adapter);
 
-			expect(typeof bundle.createTracker).toBe('function');
 			expect(typeof bundle.effect).toBe('function');
-			expect(typeof bundle.state).toBe('function');
 			expect(typeof bundle.ref).toBe('function');
 			expect(bundle.adapter).toBe(adapter);
 		});
 
 		it('should work with adapter without effect support', () => {
 			const adapter = createMockAdapter();
-			const bundle = createAdapterBundle(adapter);
+			const bundle = createReactivityBundle(adapter);
 
 			// Other functions should still work
-			expect(typeof bundle.createTracker).toBe('function');
-			expect(typeof bundle.state).toBe('function');
 			expect(typeof bundle.ref).toBe('function');
-		});
-	});
-
-	describe('createTracker', () => {
-		it('should create a Tracker with the adapter', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {createTracker} = createAdapterBundle(adapter);
-
-			const tracker = createTracker<{test: string}>();
-
-			expect(tracker).toBeDefined();
-			expect(tracker.getAdapter()).toBe(adapter);
-		});
-
-		it('should pass options to the Tracker', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {createTracker} = createAdapterBundle(adapter);
-			const errorHandler = vi.fn();
-
-			const tracker = createTracker<{test: string}>({errorHandler});
-
-			// Emit an event that throws
-			const badListener = () => {
-				throw new Error('test');
-			};
-			tracker.on('test', badListener);
-			tracker.emit('test', 'data');
-
-			expect(errorHandler).toHaveBeenCalled();
-		});
-	});
-
-	describe('state', () => {
-		it('should create reactive state for objects', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {state} = createAdapterBundle(adapter);
-
-			const obj = state({name: 'Alice', score: 0});
-			expect(obj.name).toBe('Alice');
-			expect(obj.score).toBe(0);
-		});
-
-		it('should create Ref for primitives', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {state} = createAdapterBundle(adapter);
-
-			const count = state(42);
-			expect(count.value).toBe(42);
-		});
-
-		it('should track property access', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {state} = createAdapterBundle(adapter);
-
-			const obj = state({value: 1});
-			const _ = obj.value;
-
-			expect(adapter.deps.length).toBeGreaterThan(0);
-			expect(adapter.deps[0].depend).toHaveBeenCalled();
+			expect(bundle.adapter).toBe(adapter);
 		});
 	});
 
 	describe('ref', () => {
 		it('should create a ref with value property', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {ref} = createAdapterBundle(adapter);
+			const {ref} = createReactivityBundle(adapter);
 
 			const count = ref(0);
 			expect(count.value).toBe(0);
@@ -616,24 +555,37 @@ describe('createAdapterBundle', () => {
 
 		it('should wrap objects in ref', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {ref} = createAdapterBundle(adapter);
+			const {ref} = createReactivityBundle(adapter);
 
 			const obj = ref({name: 'Alice'});
 			expect(obj.value).toEqual({name: 'Alice'});
 		});
+
+		it('should be a function', () => {
+			const adapter = createMockAdapterWithEffect();
+			const {ref}: {ref: RefFn} = createReactivityBundle(adapter);
+
+			expect(typeof ref).toBe('function');
+		});
 	});
 
 	describe('effect', () => {
+		it('should be a function', () => {
+			const adapter = createMockAdapterWithEffect();
+			const {effect} = createReactivityBundle(adapter);
+
+			expect(typeof effect).toBe('function');
+		});
 		it('should throw NoEffectSupportError when adapter has no effect', () => {
 			const adapter = createMockAdapter();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 
 			expect(() => effect(() => {})).toThrow(NoEffectSupportError);
 		});
 
 		it('should run the effect function immediately', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 			const fn = vi.fn();
 
 			effect(fn);
@@ -643,7 +595,7 @@ describe('createAdapterBundle', () => {
 
 		it('should return a cleanup function', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 
 			const cleanup = effect(() => {});
 
@@ -652,7 +604,7 @@ describe('createAdapterBundle', () => {
 
 		it('should call user cleanup when effect is disposed', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 			const userCleanup = vi.fn();
 
 			const cleanup = effect(() => userCleanup);
@@ -663,7 +615,7 @@ describe('createAdapterBundle', () => {
 
 		it('should call user cleanup before re-running effect', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 			const userCleanup = vi.fn();
 			let runCount = 0;
 
@@ -684,7 +636,7 @@ describe('createAdapterBundle', () => {
 
 		it('should remove effect from list when disposed', () => {
 			const adapter = createMockAdapterWithEffect();
-			const {effect} = createAdapterBundle(adapter);
+			const {effect} = createReactivityBundle(adapter);
 
 			expect(adapter.effects.length).toBe(0);
 
@@ -699,145 +651,5 @@ describe('createAdapterBundle', () => {
 			cleanup2();
 			expect(adapter.effects.length).toBe(0);
 		});
-
-		it('should work with state tracking', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {effect, state} = createAdapterBundle(adapter);
-			const values: number[] = [];
-
-			const count = state(0);
-
-			effect(() => {
-				values.push(count.value);
-			});
-
-			expect(values).toEqual([0]);
-
-			// Mutate state
-			count.value = 5;
-
-			// Simulate effect re-run (in real adapters this happens automatically)
-			adapter.triggerEffects();
-
-			expect(values).toEqual([0, 5]);
-		});
-
-		it('should allow effect to read from Tracker', () => {
-			const adapter = createMockAdapterWithEffect();
-			const {effect, createTracker} = createAdapterBundle(adapter);
-			const $ = createTracker();
-			const values: string[] = [];
-
-			let currentUser = 'Alice';
-
-			effect(() => {
-				$.track('currentUser');
-				values.push(currentUser);
-			});
-
-			expect(values).toEqual(['Alice']);
-
-			// Change user and trigger
-			currentUser = 'Bob';
-			$.trigger('currentUser');
-			adapter.triggerEffects();
-
-			expect(values).toEqual(['Alice', 'Bob']);
-		});
-	});
-});
-
-describe('createAdapterBundle integration', () => {
-	it('should work in a typical store pattern', () => {
-		const adapter = createMockAdapterWithEffect();
-		const {createTracker, effect} = createAdapterBundle(adapter);
-
-		// Create a simple store
-		type StoreEvents = {
-			'user:changed': {id: string; name: string};
-		};
-
-		const $ = createTracker<StoreEvents>();
-		let currentUser: {id: string; name: string} | null = null;
-
-		const store = {
-			getUser: () => {
-				$.track('user');
-				return currentUser;
-			},
-			setUser: (user: {id: string; name: string}) => {
-				currentUser = user;
-				$.trigger('user', 'user:changed', user);
-			},
-		};
-
-		// Track changes in effect
-		const effectCalls: Array<{id: string; name: string} | null> = [];
-		effect(() => {
-			effectCalls.push(store.getUser());
-		});
-
-		expect(effectCalls).toEqual([null]);
-
-		// Update store
-		store.setUser({id: '1', name: 'Alice'});
-		adapter.triggerEffects();
-
-		expect(effectCalls).toEqual([null, {id: '1', name: 'Alice'}]);
-	});
-
-	it('should support account switching pattern', () => {
-		const adapter = createMockAdapterWithEffect();
-		const {createTracker, effect} = createAdapterBundle(adapter);
-
-		// Simulate account-based store
-		const $ = createTracker();
-		let currentAccountId: string | null = null;
-		const actionsByAccount = new Map<string, string[]>();
-
-		const store = {
-			getCurrentAccountId: () => {
-				$.track('currentAccount');
-				return currentAccountId;
-			},
-			getActions: () => {
-				const accountId = store.getCurrentAccountId();
-				if (!accountId) return [];
-				$.track(`actions:${accountId}`);
-				return actionsByAccount.get(accountId) ?? [];
-			},
-			switchAccount: (accountId: string) => {
-				currentAccountId = accountId;
-				if (!actionsByAccount.has(accountId)) {
-					actionsByAccount.set(accountId, [`action-${accountId}-1`]);
-				}
-				$.trigger('currentAccount');
-				$.trigger(`actions:${accountId}`);
-			},
-		};
-
-		// Effect tracking actions
-		const actionSnapshots: string[][] = [];
-		effect(() => {
-			actionSnapshots.push([...store.getActions()]);
-		});
-
-		expect(actionSnapshots).toEqual([[]]);
-
-		// Switch to account 1
-		store.switchAccount('account-1');
-		adapter.triggerEffects();
-
-		expect(actionSnapshots).toEqual([[], ['action-account-1-1']]);
-
-		// Switch to account 2
-		store.switchAccount('account-2');
-		adapter.triggerEffects();
-
-		expect(actionSnapshots).toEqual([
-			[],
-			['action-account-1-1'],
-			['action-account-2-1'],
-		]);
 	});
 });

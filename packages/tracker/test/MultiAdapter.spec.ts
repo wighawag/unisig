@@ -3,10 +3,9 @@ import {
 	MultiAdapter,
 	CompositeDependency,
 	createMultiAdapter,
-	type ReactivityAdapter,
-} from '../src/MultiAdapter.js';
-import type {Dependency} from '../src/types.js';
-import {Tracker} from '../src/Tracker.js';
+} from '@unisig/tracker';
+import type {Dependency, ReactivityAdapter} from 'unisig';
+import {Tracker} from '@unisig/tracker';
 
 describe('CompositeDependency', () => {
 	it('should call depend on all underlying dependencies', () => {
@@ -92,18 +91,14 @@ describe('MultiAdapter', () => {
 	});
 
 	it('should throw if no adapters are provided', () => {
-		expect(() => new MultiAdapter([])).toThrow(
-			'MultiAdapter requires at least one adapter',
-		);
+		expect(() => new MultiAdapter([])).toThrow('MultiAdapter requires at least one adapter');
 	});
 
 	it('should throw if adapters is not an array', () => {
 		expect(() => new MultiAdapter(null as any)).toThrow(
 			'MultiAdapter requires an array of adapters',
 		);
-		expect(() => new MultiAdapter({} as any)).toThrow(
-			'MultiAdapter requires an array of adapters',
-		);
+		expect(() => new MultiAdapter({} as any)).toThrow('MultiAdapter requires an array of adapters');
 	});
 
 	it('should return true to isInScope if any adapter is in scope', () => {

@@ -1,6 +1,6 @@
 import {describe, bench} from 'vitest';
-import {Scope} from '../src/Scope.js';
-import {createReactivityAdapter} from '../src/types.js';
+import {Scope, Tracker} from '../src/index';
+import {createReactivityAdapter} from '../src/types';
 
 // Simple mock adapter for benchmarking
 const mockAdapter = createReactivityAdapter({
@@ -243,6 +243,39 @@ describe('Proxy Performance Benchmarks', () => {
 			mockAdapter.create().depend();
 			proxy.stats.health;
 			proxy.stats.mana;
+		});
+	});
+
+	describe('Tracker Proxy Methods', () => {
+		bench('Tracker.proxy()', () => {
+			const tracker = new Tracker(mockAdapter);
+			const obj = {name: 'Alice', score: 100};
+			tracker.proxy(obj, 'config');
+		});
+
+		bench('Tracker.itemProxy()', () => {
+			const tracker = new Tracker(mockAdapter);
+			const user = {id: '1', name: 'Alice', score: 100};
+			tracker.itemProxy(user, 'users', '1');
+		});
+
+		bench('Tracker.deepProxy()', () => {
+			const tracker = new Tracker(mockAdapter);
+			const obj = {
+				name: 'Alice',
+				stats: {health: 100},
+			};
+			tracker.deepProxy(obj, 'config');
+		});
+
+		bench('Tracker.deepItemProxy()', () => {
+			const tracker = new Tracker(mockAdapter);
+			const user = {
+				id: '1',
+				name: 'Alice',
+				stats: {health: 100},
+			};
+			tracker.deepItemProxy(user, 'users', '1');
 		});
 	});
 

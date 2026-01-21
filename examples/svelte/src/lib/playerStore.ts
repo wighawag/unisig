@@ -1,10 +1,10 @@
 import {
-	Tracker,
+	type Tracker,
 	type ReactivityAdapter,
+	createTracker,
 	type Listener,
 	type Unsubscribe,
-} from 'unisig';
-import {svelteAdapter} from './svelteAdapter.svelte';
+} from './index.js';
 
 export interface Player {
 	id: string;
@@ -30,8 +30,8 @@ type PlayerEvents = {
 class PlayerStore {
 	private $: Tracker<PlayerEvents>;
 
-	constructor(adapter?: ReactivityAdapter) {
-		this.$ = new Tracker<PlayerEvents>({adapter});
+	constructor() {
+		this.$ = createTracker();
 	}
 	private players = new Map<string, Player>();
 
@@ -280,4 +280,4 @@ class PlayerStore {
 }
 
 // Export singleton instance with adapter already configured
-export const playerStore = new PlayerStore(svelteAdapter);
+export const playerStore = new PlayerStore();

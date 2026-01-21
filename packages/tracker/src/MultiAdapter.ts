@@ -1,4 +1,4 @@
-import type {Dependency, ReactivityAdapter} from './types.js';
+import type {Dependency, ReactivityAdapter} from 'unisig';
 
 /**
  * A composite dependency that wraps multiple underlying dependencies.

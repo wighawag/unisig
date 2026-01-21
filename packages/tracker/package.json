@@ -1,17 +1,17 @@
 {
-	"name": "@unisig/svelte",
+	"name": "@unisig/tracker",
 	"version": "0.0.1",
-	"description": "Svelte 5 adapter for unisig - reactive state with signals",
+	"description": "Tracker for unisig - adds specific reactivity and event for your data",
 	"publishConfig": {
 		"access": "public"
 	},
 	"keywords": [
 		"unisig",
-		"svelte",
-		"signals",
+		"tracker",
 		"reactivity",
-		"adapter",
-		"reactive",
+		"events",
+		"signals",
+		"granular",
 		"state"
 	],
 	"author": "Ronan Sandford",
@@ -19,19 +19,20 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/wighawag/unisig.git",
-		"directory": "packages/svelte"
+		"directory": "packages/tracker"
 	},
 	"homepage": "https://github.com/wighawag/unisig#readme",
 	"bugs": {
 		"url": "https://github.com/wighawag/unisig/issues"
 	},
 	"type": "module",
-	"svelte": "./dist/index.svelte.js",
-	"types": "./dist/index.svelte.d.ts",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"svelte": "./dist/index.svelte.js",
-			"types": "./dist/index.svelte.d.ts"
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
 		}
 	},
 	"files": [
@@ -43,20 +44,20 @@
 	"engines": {
 		"node": ">=20"
 	},
-	"peerDependencies": {
-		"svelte": "^5.7.0"
+	"dependencies": {
+		"unisig": "workspace:*"
 	},
 	"devDependencies": {
-		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"prettier": "^3.8.0",
-		"svelte": "^5.28.0",
 		"typescript": "^5.3.0",
-		"unisig": "workspace:*",
 		"vitest": "^2.0.0"
 	},
 	"scripts": {
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"build": "tsc"
+		"build": "tsc",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"bench": "vitest bench"
 	}
 }

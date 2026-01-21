@@ -1,6 +1,6 @@
 import {describe, bench} from 'vitest';
-import {Tracker} from '../src/Tracker';
-import {createReactivityAdapter} from '../src/types';
+import {Tracker} from '../src/Tracker.js';
+import {createReactivityAdapter} from 'unisig';
 
 type TestEvents = {
 	'user:added': {id: string; name: string};

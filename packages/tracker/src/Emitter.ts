@@ -1,4 +1,4 @@
-import type {Listener, ErrorHandler} from './types.js';
+import type {Listener, ErrorHandler} from 'unisig';
 
 /**
  * Unsubscribe function returned by `on()`

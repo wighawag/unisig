@@ -6,7 +6,7 @@
  * Yet it can use reactive effects through the adapter's effect function.
  */
 
-import {effect} from './svelteAdapter.svelte';
+import {effect} from './index.js';
 import {playerStore} from './playerStore';
 
 /**

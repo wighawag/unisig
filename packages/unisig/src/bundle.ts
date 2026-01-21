@@ -1,5 +1,3 @@
-import {Scope} from './Scope.js';
-import {Tracker, type TrackerOptions} from './Tracker.js';
 import type {ReactivityAdapter} from './types.js';
 
 /**
@@ -9,8 +7,7 @@ export class NoEffectSupportError extends Error {
 	constructor() {
 		super(
 			'Adapter does not support effects. ' +
-				'Either provide an adapter with an effect() method, ' +
-				'or use events via $.on() instead.',
+				'Either provide an adapter with an effect() method.',
 		);
 		this.name = 'NoEffectSupportError';
 	}
@@ -24,14 +21,9 @@ export interface Ref<T> {
 }
 
 /**
- * Type for the effect function returned by createAdapterBundle.
+ * Type for the effect function returned by createReactivityBundle.
  */
 export type EffectFn = (fn: () => void | (() => void)) => () => void;
-
-/**
- * Type for the state creation function.
- */
-export type StateFn = <U>(initial: U) => U extends object ? U : Ref<U>;
 
 /**
  * Type for the ref creation function.
@@ -39,33 +31,9 @@ export type StateFn = <U>(initial: U) => U extends object ? U : Ref<U>;
 export type RefFn = <U>(initial: U) => Ref<U>;
 
 /**
- * Type for the createTracker function.
+ * Bundle of utilities returned by createReactivityBundle.
  */
-export type CreateTrackerFn = <
-	Events extends Record<string, unknown> = Record<string, unknown>,
->(
-	options?: Omit<TrackerOptions<Events>, 'adapter'>,
-) => Tracker<Events>;
-
-/**
- * Bundle of utilities returned by createAdapterBundle.
- */
-export interface AdapterBundle {
-	/**
-	 * Create a new Tracker instance with the configured adapter.
-	 *
-	 * @param options - Optional tracker configuration (errorHandler, etc.)
-	 * @returns A new Tracker instance
-	 *
-	 * @example
-	 * ```ts
-	 * type MyEvents = { 'item:added': Item };
-	 * const tracker = createTracker<MyEvents>();
-	 * tracker.on('item:added', (item) => console.log(item));
-	 * ```
-	 */
-	createTracker: CreateTrackerFn;
-
+export interface ReactivityBundle {
 	/**
 	 * Create a reactive effect that re-runs when tracked dependencies change.
 	 *
@@ -79,8 +47,7 @@ export interface AdapterBundle {
 	 *
 	 * @example
 	 * ```ts
-	 * const { createTracker, effect } = createAdapterBundle(svelteAdapter);
-	 * const $ = createTracker<MyEvents>();
+	 * const { effect } = createReactivityBundle(svelteAdapter);
 	 *
 	 * // In a plain TypeScript class:
 	 * class GameManager {
@@ -88,8 +55,8 @@ export interface AdapterBundle {
 	 *
 	 *   constructor() {
 	 *     this.cleanup = effect(() => {
-	 *       const actions = userStore.getAllActions();
-	 *       this.processActions(actions);
+	 *       const data = userStore.getData();
+	 *       this.processData(data);
 	 *     });
 	 *   }
 	 *
@@ -102,26 +69,7 @@ export interface AdapterBundle {
 	effect: EffectFn;
 
 	/**
-	 * Create reactive state. Objects are deeply proxied, primitives are wrapped in Ref.
-	 *
-	 * @param initial - Initial value for the state
-	 * @returns Reactive state (proxied object or Ref for primitives)
-	 *
-	 * @example
-	 * ```ts
-	 * const count = state(0);
-	 * console.log(count.value); // 0
-	 * count.value++;
-	 *
-	 * const player = state({ name: 'Alice', score: 0 });
-	 * console.log(player.name); // 'Alice'
-	 * player.score = 100;
-	 * ```
-	 */
-	state: StateFn;
-
-	/**
-	 * Create a reactive ref. Always wraps the value in a Ref, even for objects.
+	 * Create a reactive ref. Wraps the value in a Ref for reactivity.
 	 *
 	 * @param initial - Initial value for the ref
 	 * @returns A Ref wrapping the value
@@ -171,9 +119,6 @@ function validateValue(value: unknown): void {
 	);
 }
 
-// Counter for generating unique keys
-let keyCounter = 0;
-
 /**
  * Create a bundle of reactive utilities pre-configured with an adapter.
  *
@@ -182,28 +127,15 @@ let keyCounter = 0;
  * throughout your codebase for consistent reactivity.
  *
  * @param adapter - The reactivity adapter to use
- * @returns An AdapterBundle with createTracker, effect, state, and ref functions
+ * @returns A ReactivityBundle with effect and ref functions
  *
  * @example
  * ```ts
  * // setup.ts (or setup.svelte.ts for Svelte)
- * import { createAdapterBundle } from 'unisig';
- * import { svelteAdapter } from './svelteAdapter.svelte';
+ * import { createReactivityBundle } from 'unisig';
+ * import { svelteAdapter } from '@unisig/svelte';
  *
- * export const { createTracker, effect, state, ref } = createAdapterBundle(svelteAdapter);
- * ```
- *
- * @example
- * ```ts
- * // userStore.ts - pure TypeScript
- * import { createTracker } from './setup';
- *
- * const $ = createTracker<{ 'user:changed': User }>();
- *
- * export const userStore = {
- *   get: (id: string) => { $.track('user', id); return users.get(id); },
- *   // ...
- * };
+ * export const { effect, ref } = createReactivityBundle(svelteAdapter);
  * ```
  *
  * @example
@@ -229,7 +161,7 @@ let keyCounter = 0;
  * }
  * ```
  */
-export function createAdapterBundle(adapter: ReactivityAdapter): AdapterBundle {
+export function createReactivityBundle(adapter: ReactivityAdapter): ReactivityBundle {
 	// Create the effect function
 	const effect: EffectFn = (fn) => {
 		if (!adapter.effect) {
@@ -238,43 +170,13 @@ export function createAdapterBundle(adapter: ReactivityAdapter): AdapterBundle {
 		return adapter.effect(fn);
 	};
 
-	// Create the state function
-	const state: StateFn = <U>(initial: U): U extends object ? U : Ref<U> => {
-		validateValue(initial);
-		const scope = new Scope(adapter);
-		const key = `state_${++keyCounter}`;
-
-		if (isPrimitive(initial)) {
-			return scope.deepProxy({value: initial}, key) as U extends object
-				? U
-				: Ref<U>;
-		}
-
-		return scope.deepProxy(initial as object, key) as U extends object
-			? U
-			: Ref<U>;
-	};
-
-	// Create the ref function
+	// Create the ref function (simple wrapper for primitives)
 	const ref: RefFn = <U>(initial: U): Ref<U> => {
-		const scope = new Scope(adapter);
-		const key = `ref_${++keyCounter}`;
-		return scope.deepProxy({value: initial}, key);
-	};
-
-	// Create the createTracker function
-	const createTracker: CreateTrackerFn = <
-		Events extends Record<string, unknown> = Record<string, unknown>,
-	>(
-		options?: Omit<TrackerOptions<Events>, 'adapter'>,
-	) => {
-		return new Tracker<Events>({...options, adapter});
+		return {value: initial};
 	};
 
 	return {
-		createTracker,
 		effect,
-		state,
 		ref,
 		adapter,
 	};

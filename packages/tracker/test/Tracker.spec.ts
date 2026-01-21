@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, createTracker, createTrackerFactory} from '../src/Tracker.js';
-import type {ReactivityAdapter} from '../src/types.js';
+import {Tracker, createTracker, createTrackerFactory} from '@unisig/tracker';
+import type {ReactivityAdapter} from 'unisig';
 
 // Mock adapter
 function createMockAdapter() {

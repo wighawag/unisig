@@ -3,9 +3,9 @@ import type {
 	Dependency,
 	ErrorHandler,
 	Listener,
-} from './types.js';
+} from 'unisig';
+import {Scope} from 'unisig';
 import {Emitter, type Unsubscribe, type EmitterOptions} from './Emitter.js';
-import {Scope} from './Scope.js';
 
 /**
  * Options for configuring Tracker behavior

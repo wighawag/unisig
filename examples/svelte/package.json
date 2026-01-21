@@ -16,6 +16,7 @@
 	},
 	"dependencies": {
 		"@unisig/svelte": "workspace:*",
+		"@unisig/tracker": "workspace:*",
 		"unisig": "workspace:*"
 	},
 	"scripts": {

@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import {Emitter} from '../src/Emitter.js';
+import {Emitter} from '@unisig/tracker';
 
 type TestEvents = {
 	'item:added': {id: string; name: string};

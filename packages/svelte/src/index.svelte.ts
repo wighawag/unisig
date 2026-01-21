@@ -1,8 +1,7 @@
 /**
  * @unisig/svelte - Svelte 5 adapter for unisig
  *
- * Provides reactive state management using Svelte 5's reactivity system.
- * Includes support for framework-agnostic effects.
+ * Provides the ReactivityAdapter for Svelte 5's reactivity system.
  *
  * This adapter is derived from @signaldb/svelte by Max Nowack.
  * Original work: https://github.com/maxnowack/signaldb
@@ -12,7 +11,6 @@
  */
 
 import {createSubscriber} from 'svelte/reactivity';
-import {createAdapterBundle, createReactivityAdapter, type ReactivityAdapter} from 'unisig';
 
 /**
  * Svelte dependency implementation using createSubscriber.
@@ -80,12 +78,15 @@ export class SvelteDependency {
  * @example
  * ```ts
  * import { svelteAdapter } from '@unisig/svelte';
- * import { Tracker } from 'unisig';
+ * import { Tracker } from '@unisig/tracker';
+ * import { createReactivityBundle } from 'unisig';
  *
- * const tracker = new Tracker(svelteAdapter);
+ * const bundle = createReactivityBundle(svelteAdapter);
+ * const tracker = new Tracker({ adapter: svelteAdapter });
+ * const { effect } = bundle;
  * ```
  */
-export const svelteAdapter: ReactivityAdapter = createReactivityAdapter({
+export const svelteAdapter = {
 	/**
 	 * Create a new dependency tracker using SvelteDependency.
 	 */
@@ -99,7 +100,7 @@ export const svelteAdapter: ReactivityAdapter = createReactivityAdapter({
 	/**
 	 * Register a cleanup callback for when the reactive scope ends.
 	 */
-	onDispose(callback, svelteDependency: SvelteDependency) {
+	onDispose(callback: () => void, svelteDependency: SvelteDependency) {
 		svelteDependency.onDispose(callback);
 	},
 
@@ -115,23 +116,22 @@ export const svelteAdapter: ReactivityAdapter = createReactivityAdapter({
 	 *
 	 * @example
 	 * ```ts
-	 * // In a .svelte.ts file
-	 * import { effect } from '@unisig/svelte';
-	 * export { effect };
+	 * // setup.svelte.ts
+	 * import { createReactivityBundle } from 'unisig';
+	 * import { svelteAdapter } from '@unisig/svelte';
 	 *
-	 * // In a plain .ts file
+	 * export const { effect } = createReactivityBundle(svelteAdapter);
+	 *
+	 * // myStore.ts (plain TypeScript)
 	 * import { effect } from './setup.svelte';
 	 *
 	 * const cleanup = effect(() => {
 	 *   console.log('Data changed:', store.getData());
 	 *   return () => console.log('Cleanup');
 	 * });
-	 *
-	 * // Later
-	 * cleanup();
 	 * ```
 	 */
-	effect: (fn) => {
+	effect: (fn: () => void | (() => void)) => {
 		let userCleanup: (() => void) | undefined;
 		let destroyed = false;
 
@@ -156,79 +156,7 @@ export const svelteAdapter: ReactivityAdapter = createReactivityAdapter({
 			rootCleanup();
 		};
 	},
-});
-
-/**
- * Pre-configured adapter bundle for Svelte.
- *
- * Provides all the utilities you need for reactive state management:
- * - `createTracker`: Create a new Tracker instance
- * - `effect`: Create framework-agnostic effects
- * - `state`: Create reactive state objects
- * - `ref`: Create reactive single-value references
- * - `adapter`: The underlying Svelte adapter
- *
- * @example
- * ```ts
- * // In a .svelte.ts setup file
- * import { svelteBundle } from '@unisig/svelte';
- * export const { createTracker, effect, state, ref } = svelteBundle;
- *
- * // In any .ts file
- * import { effect, createTracker } from './setup.svelte';
- *
- * const tracker = createTracker();
- * const cleanup = effect(() => {
- *   tracker.track('data');
- *   console.log('Data changed');
- * });
- * ```
- */
-export const svelteBundle = createAdapterBundle(svelteAdapter);
-
-/**
- * Create a new Tracker instance configured with the Svelte adapter.
- * @see Tracker
- */
-export const createTracker = svelteBundle.createTracker;
-
-/**
- * Create a reactive effect that re-runs when tracked dependencies change.
- *
- * **Important:** This must be imported from a `.svelte.ts` file to work,
- * as it uses Svelte's $effect rune under the hood.
- *
- * @example
- * ```ts
- * // setup.svelte.ts
- * export { effect } from '@unisig/svelte';
- *
- * // store.ts (plain TypeScript)
- * import { effect } from './setup.svelte';
- *
- * const cleanup = effect(() => {
- *   console.log('Something changed');
- * });
- * ```
- */
-export const effect = svelteBundle.effect;
-
-/**
- * Create a reactive state object (deep proxy).
- * @see withAdapter
- */
-export const state = svelteBundle.state;
-
-/**
- * Create a reactive reference (single value wrapper).
- * @see withAdapterRef
- */
-export const ref = svelteBundle.ref;
-
-/**
- * The underlying Svelte adapter instance.
- */
-export const adapter = svelteBundle.adapter;
+};
 
 // Default export is the adapter for simple imports
 export default svelteAdapter;

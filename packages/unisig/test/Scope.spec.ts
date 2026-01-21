@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {Scope} from '../src/Scope.js';
-import type {ReactivityAdapter, Dependency} from '../src/types.js';
+import type {ReactivityAdapter, Dependency} from 'unisig';
 
 // Mock adapter that tracks all calls
 function createMockAdapter() {
