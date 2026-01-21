@@ -197,7 +197,7 @@ Deep proxies use dot notation for tracking:
 ### Components Not Updating
 
 Check that:
-1. Adapter is configured: `store.setAdapter(adapter)`
+1. Adapter is passed to the Tracker constructor: `new Tracker({ adapter })`
 2. Tracking is called in getters: `this.$.trackItem('players', id)`
 3. Triggering is called in setters: `this.$.triggerItem('players', id)`
 4. Access is in reactive context: `$derived.by(() => store.get(id))`

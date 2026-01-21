@@ -42,16 +42,6 @@ describe('Scope', () => {
 		});
 	});
 
-	describe('setAdapter()', () => {
-		it('should set the adapter', () => {
-			const scope = new Scope();
-			const adapter = createMockAdapter();
-
-			scope.setAdapter(adapter);
-			expect(scope.getAdapter()).toBe(adapter);
-		});
-	});
-
 	describe('isInScope()', () => {
 		it('should return false if no adapter', () => {
 			const scope = new Scope();

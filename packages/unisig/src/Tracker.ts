@@ -53,13 +53,8 @@ export interface TrackerOptions<Events> {
  * }
  *
  * class UserStore {
- *   private $ = new Tracker<MyEvents>()
+ *   private $ = new Tracker<MyEvents>({ adapter: myAdapter })
  *   private users = new Map<string, User>()
- *
- *   // Expose configuration
- *   setReactivityAdapter(adapter: ReactivityAdapter) {
- *     this.$.setAdapter(adapter)
- *   }
  *
  *   on<K extends keyof MyEvents>(event: K, listener: Listener<MyEvents[K]>) {
  *     return this.$.on(event, listener)
@@ -129,16 +124,6 @@ export class Tracker<
 		this.emitter = new Emitter<Events>(
 			errorHandler ? {errorHandler} : undefined,
 		);
-	}
-
-	/**
-	 * Set or change the reactivity adapter.
-	 * Existing dependencies are not affected.
-	 *
-	 * @param adapter - The reactivity adapter to use
-	 */
-	setAdapter(adapter: ReactivityAdapter): void {
-		this.scope.setAdapter(adapter);
 	}
 
 	/**

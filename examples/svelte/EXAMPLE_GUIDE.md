@@ -27,7 +27,7 @@ class PlayerStore {
 
 1. **Private Tracker Instance**: The `Tracker` instance is private to prevent external manipulation
 2. **Public Event Subscription**: The `on` method is exposed to allow external event listeners
-3. **Adapter Configuration**: The adapter is set during construction or via `setAdapter()`
+3. **Adapter Configuration**: The adapter is passed during construction
 4. **Granular Getters**: Multiple getter methods for different levels of reactivity:
    - `getAll()` - Collection level (tracks entire list)
    - `get(id)` - Item level (tracks specific item with deep proxy)

@@ -10,11 +10,7 @@ import type {Dependency, ReactivityAdapter} from './types.js';
  * @example
  * ```ts
  * class MyStore {
- *   private scope = new Scope()
- *
- *   setAdapter(adapter: ReactivityAdapter) {
- *     this.scope.setAdapter(adapter)
- *   }
+ *   private scope = new Scope(myAdapter)
  *
  *   getItems() {
  *     this.scope.track('items')
@@ -44,16 +40,6 @@ export class Scope {
 	 * @param adapter - Optional reactivity adapter to use
 	 */
 	constructor(adapter?: ReactivityAdapter) {
-		this.adapter = adapter;
-	}
-
-	/**
-	 * Set or change the reactivity adapter.
-	 * Existing dependencies are not affected.
-	 *
-	 * @param adapter - The reactivity adapter to use
-	 */
-	setAdapter(adapter: ReactivityAdapter): void {
 		this.adapter = adapter;
 	}
 

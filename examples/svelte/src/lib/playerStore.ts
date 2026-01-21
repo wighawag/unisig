@@ -36,14 +36,6 @@ class PlayerStore {
 	private players = new Map<string, Player>();
 
 	/**
-	 * Configure the reactivity adapter.
-	 * Call this once when setting up the store.
-	 */
-	setAdapter(adapter: ReactivityAdapter) {
-		this.$.setAdapter(adapter);
-	}
-
-	/**
 	 * Subscribe to events
 	 */
 	on<K extends keyof PlayerEvents>(

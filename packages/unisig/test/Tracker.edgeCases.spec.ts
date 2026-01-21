@@ -54,25 +54,6 @@ describe('Tracker - Edge Cases', () => {
 		});
 	});
 
-	describe('setAdapter()', () => {
-		it('should set the adapter', () => {
-			const r = new Tracker<TestEvents>();
-			const adapter = createMockAdapter();
-
-			r.setAdapter(adapter);
-			expect(r.getAdapter()).toBe(adapter);
-		});
-
-		it('should replace existing adapter', () => {
-			const adapter1 = createMockAdapter();
-			const adapter2 = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter: adapter1});
-
-			r.setAdapter(adapter2);
-			expect(r.getAdapter()).toBe(adapter2);
-		});
-	});
-
 	describe('isInScope()', () => {
 		it('should return false when no adapter', () => {
 			const r = new Tracker<TestEvents>();

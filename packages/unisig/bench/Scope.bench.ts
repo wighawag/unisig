@@ -152,11 +152,6 @@ describe('Scope Performance Benchmarks', () => {
 	});
 
 	describe('Adapter Management', () => {
-		bench('setAdapter() set adapter', () => {
-			const scope = new Scope();
-			scope.setAdapter(mockAdapter);
-		});
-
 		bench('getAdapter() get adapter', () => {
 			const scope = new Scope(mockAdapter);
 			scope.getAdapter();

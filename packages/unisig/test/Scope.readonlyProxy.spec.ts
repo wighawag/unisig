@@ -4,9 +4,8 @@ import {Scope} from '../src/Scope.js';
 describe('Scope Readonly Proxies', () => {
 	describe('readonlyProxy', () => {
 		it('should track property reads', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -23,9 +22,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on property writes', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -41,9 +39,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on property delete', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -59,9 +56,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should not track outside reactive scope', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => false,
 			});
@@ -77,9 +73,8 @@ describe('Scope Readonly Proxies', () => {
 
 	describe('readonlyItemProxy', () => {
 		it('should track property reads for item', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -96,9 +91,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on property writes for item', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -114,9 +108,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on property delete for item', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -134,9 +127,8 @@ describe('Scope Readonly Proxies', () => {
 
 	describe('readonlyDeepProxy', () => {
 		it('should track nested property reads with dot notation', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -160,9 +152,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on nested property writes', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -184,9 +175,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should track array accesses', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -205,9 +195,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on array mutation methods', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -227,9 +216,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on array index writes', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -247,9 +235,8 @@ describe('Scope Readonly Proxies', () => {
 
 	describe('readonlyDeepItemProxy', () => {
 		it('should track nested property reads for item with dot notation', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -271,9 +258,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should throw on nested property writes for item', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -293,9 +279,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should track array accesses for item', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -316,9 +301,8 @@ describe('Scope Readonly Proxies', () => {
 
 	describe('proxy identity preservation', () => {
 		it('should return same nested proxy instance for same object within same proxy', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -338,9 +322,8 @@ describe('Scope Readonly Proxies', () => {
 
 	describe('skip proxy types', () => {
 		it('should not proxy Date objects', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -352,9 +335,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should not proxy RegExp objects', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -366,9 +348,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should not proxy Map objects', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});
@@ -380,9 +361,8 @@ describe('Scope Readonly Proxies', () => {
 		});
 
 		it('should not proxy Set objects', () => {
-			const scope = new Scope();
 			const mockDep = {depend: vi.fn(), notify: vi.fn()};
-			scope.setAdapter({
+			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
 			});

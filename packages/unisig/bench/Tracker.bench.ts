@@ -184,11 +184,6 @@ describe('Tracker Performance Benchmarks', () => {
 	});
 
 	describe('Adapter Management', () => {
-		bench('setAdapter() set adapter', () => {
-			const tracker = new Tracker<TestEvents>();
-			tracker.setAdapter(mockAdapter);
-		});
-
 		bench('getAdapter() get adapter', () => {
 			const tracker = new Tracker<TestEvents>({adapter: mockAdapter});
 			tracker.getAdapter();

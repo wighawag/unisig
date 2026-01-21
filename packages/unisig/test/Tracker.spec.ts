@@ -53,16 +53,6 @@ describe('Tracker', () => {
 		});
 	});
 
-	describe('setAdapter()', () => {
-		it('should set the adapter', () => {
-			const r = new Tracker<TestEvents>();
-			const adapter = createMockAdapter();
-
-			r.setAdapter(adapter);
-			expect(r.getAdapter()).toBe(adapter);
-		});
-	});
-
 	describe('Event methods', () => {
 		it('on() should subscribe to events', () => {
 			const r = new Tracker<TestEvents>();
@@ -431,14 +421,14 @@ describe('Tracker', () => {
 			};
 
 			class UserStore {
-				private $ = new Tracker<StoreEvents>();
+				private $: Tracker<StoreEvents>;
 				private users = new Map<
 					string,
 					{id: string; name: string; score: number}
 				>();
 
-				setAdapter(adapter: ReactivityAdapter) {
-					this.$.setAdapter(adapter);
+				constructor(adapter?: ReactivityAdapter) {
+					this.$ = new Tracker<StoreEvents>({adapter});
 				}
 
 				on: typeof this.$.on = (e, l) => this.$.on(e, l);
@@ -476,8 +466,7 @@ describe('Tracker', () => {
 			}
 
 			const adapter = createMockAdapter();
-			const store = new UserStore();
-			store.setAdapter(adapter);
+			const store = new UserStore(adapter);
 
 			const addedListener = vi.fn();
 			const updatedListener = vi.fn();
@@ -656,14 +645,14 @@ describe('Tracker', () => {
 			};
 
 			class PlayerStore {
-				private $ = new Tracker<PlayerEvents>();
+				private $: Tracker<PlayerEvents>;
 				private players = new Map<
 					string,
 					{id: string; name: string; score: number}
 				>();
 
-				setAdapter(adapter: ReactivityAdapter) {
-					this.$.setAdapter(adapter);
+				constructor(adapter?: ReactivityAdapter) {
+					this.$ = new Tracker<PlayerEvents>({adapter});
 				}
 
 				on: typeof this.$.on = (e, l) => this.$.on(e, l);
@@ -710,8 +699,7 @@ describe('Tracker', () => {
 			}
 
 			const adapter = createMockAdapter();
-			const store = new PlayerStore();
-			store.setAdapter(adapter);
+			const store = new PlayerStore(adapter);
 
 			const scoreListener = vi.fn();
 			const nameListener = vi.fn();

@@ -282,10 +282,7 @@ createEffect(() => {
 Main class combining signals and events.
 
 ```typescript
-const $ = new Tracker<MyEvents>()
-
-// Configuration
-$.setAdapter(adapter)      // Set signal adapter
+const $ = new Tracker<MyEvents>({ adapter })  // Pass adapter in constructor
 $.getAdapter()             // Get current adapter
 $.isInScope()              // Check if in reactive scope
 
