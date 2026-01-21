@@ -1,6 +1,6 @@
 {
 	"name": "unisig",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Universal signals - add reactivity to any data with pluggable signal adapters and built-in events",
 	"publishConfig": {
 		"access": "public"
@@ -43,7 +43,8 @@
 	},
 	"files": [
 		"dist",
-		"src"
+		"src",
+		"README.md"
 	],
 	"sideEffects": false,
 	"engines": {
@@ -55,6 +56,7 @@
 		"vitest": "^2.0.0"
 	},
 	"scripts": {
+		"prepublishOnly": "cp ../../README.md .",
 		"format": "prettier --write .",
 		"format:check": "prettier .",
 		"build": "tsc",

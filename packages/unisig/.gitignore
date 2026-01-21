@@ -1,5 +1,6 @@
 node_modules/
 dist/
+README.md
 
 # Benchmark temporary files (generated during CI)
 benchmark-results.txt
