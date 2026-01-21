@@ -1,6 +1,6 @@
 {
 	"name": "unisig",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Universal signals - add reactivity to any data with pluggable signal adapters and built-in events",
 	"publishConfig": {
 		"access": "public"
