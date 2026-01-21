@@ -779,3 +779,59 @@ export function createTracker<
 >(options?: TrackerOptions<Events>): Tracker<Events> {
 	return new Tracker<Events>(options);
 }
+
+/**
+ * Options for creating a Tracker via the factory (excludes adapter since it's pre-configured).
+ */
+export type TrackerFactoryOptions<Events> = Omit<TrackerOptions<Events>, 'adapter'>;
+
+/**
+ * Create a factory function for creating Tracker instances with a pre-configured adapter.
+ * This is useful when you want to create multiple Trackers with the same adapter
+ * without repeating the adapter configuration.
+ *
+ * @param adapter - The reactivity adapter to use for all created Trackers
+ * @returns A factory function that creates Tracker instances with the configured adapter
+ *
+ * @example
+ * ```ts
+ * import { createTrackerFactory } from 'unisig';
+ * import svelteAdapter from './svelteAdapter';
+ *
+ * // Create the factory with your adapter
+ * const createTracker = createTrackerFactory(svelteAdapter);
+ *
+ * // Use the factory to create typed Tracker instances
+ * type PlayerEvents = {
+ *   'score:changed': number;
+ *   'name:changed': string;
+ * };
+ *
+ * type GameEvents = {
+ *   'started': void;
+ *   'ended': { winner: string };
+ * };
+ *
+ * const playerTracker = createTracker<PlayerEvents>();
+ * const gameTracker = createTracker<GameEvents>();
+ *
+ * // You can still pass additional options like errorHandler
+ * const trackerWithErrorHandling = createTracker<PlayerEvents>({
+ *   errorHandler: (event, error) => console.error(`Error in ${String(event)}:`, error),
+ * });
+ * ```
+ */
+export function createTrackerFactory(
+	adapter: ReactivityAdapter,
+): <Events extends Record<string, unknown> = Record<string, unknown>>(
+	options?: TrackerFactoryOptions<Events>,
+) => Tracker<Events> {
+	return function <
+		Events extends Record<string, unknown> = Record<string, unknown>,
+	>(options?: TrackerFactoryOptions<Events>): Tracker<Events> {
+		return new Tracker<Events>({
+			...options,
+			adapter,
+		});
+	};
+}
