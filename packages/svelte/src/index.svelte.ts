@@ -25,12 +25,22 @@ import type {ReactivityAdapter} from '@unisig/scope';
  * By using it as a class field, we can wrap any value and make it deeply reactive.
  */
 class ReactiveStateWrapper<T> {
- 	value = $state<T>();
+	value = $state<T>();
 
- 	constructor(initial: T) {
- 		this.value = initial;
- 	}
+	constructor(initial: T) {
+		this.value = initial;
+	}
 }
+// could also be, but need furrther tests:
+/*
+class ReactiveStateWrapper<T> {
+	value: T;
+
+	constructor(initial: T) {
+		this.value = $state(initial) as T;
+	}
+}
+*/
 
 /**
  * Svelte dependency implementation using createSubscriber.
