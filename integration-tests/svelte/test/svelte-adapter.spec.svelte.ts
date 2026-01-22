@@ -204,16 +204,14 @@ describe('Svelte Integration Tests', () => {
 		// used internally by Scope/Tracker for granular dependency tracking, and may
 		// require different test setup than the basic adapter tests here.
 		// See: integration-tests/svelte/test/svelte-tracker.spec.svelte.ts (to be created)
-		it.skip('should track dependencies in reactive context', async () => {
+		it('should track dependencies in reactive context', async () => {
 			const dep = svelteAdapter.create();
 			const values: number[] = [];
 			let count = 0;
 
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					dep.depend();
-					values.push(count);
-				});
+			const cleanup = svelteAdapter.effect(() => {
+				dep.depend();
+				values.push(count);
 			});
 
 			await tick();
@@ -255,12 +253,7 @@ describe('Svelte Integration Tests', () => {
 
 			primitive.value = 200;
 			await tick();
-			expect(results).toEqual([
-				'Alice-0-100',
-				'Bob-0-100',
-				'Bob-1-100',
-				'Bob-1-200',
-			]);
+			expect(results).toEqual(['Alice-0-100', 'Bob-0-100', 'Bob-1-100', 'Bob-1-200']);
 
 			cleanup();
 		});
