@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {createRoot} from 'solid-js';
 import solidAdapter from '@unisig/solid-js';
-import {unisig} from 'unisig';
+import unisig from 'unisig';
 
 describe('SolidJS Integration Tests', () => {
 	describe('effect()', () => {

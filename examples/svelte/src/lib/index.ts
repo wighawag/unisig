@@ -1,6 +1,6 @@
 import {createTrackerFactory} from '@unisig/tracker';
 import svelteAdapter from '@unisig/svelte';
-import {unisig} from 'unisig';
+import unisig from 'unisig';
 
 export type {Tracker} from '@unisig/tracker';
 

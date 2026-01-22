@@ -241,7 +241,7 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
  * count.set(1);        // Effect re-runs
  * ```
  */
-export function unisig<Adapter extends BasicReactivityAdapter>(
+export default function unisig<Adapter extends BasicReactivityAdapter>(
 	adapter: Adapter,
 ): ReactivityBundle<Adapter> {
 	return {

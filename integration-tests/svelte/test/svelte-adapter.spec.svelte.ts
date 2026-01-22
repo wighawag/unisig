@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {tick} from 'svelte';
 import svelteAdapter from '@unisig/svelte';
-import {unisig} from 'unisig';
+import unisig from 'unisig';
 
 describe('Svelte Integration Tests', () => {
 	describe('effect()', () => {

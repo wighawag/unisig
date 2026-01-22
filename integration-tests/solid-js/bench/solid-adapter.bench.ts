@@ -1,6 +1,6 @@
 import {describe, bench} from 'vitest';
 import solidAdapter from '@unisig/solid-js';
-import {unisig} from 'unisig';
+import unisig from 'unisig';
 
 describe('SolidJS Adapter Benchmarks', () => {
 	describe('reactive() - Objects', () => {

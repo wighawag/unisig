@@ -9,6 +9,6 @@
 
 // Tracker
 export {createTrackerFactory} from './Tracker.js';
-export type {TrackerFactoryOptions} from './Tracker.js';
+export type {TrackerFactoryOptions, Tracker} from './Tracker.js';
 
 export {ReactivityAdapter, Dependency} from './types.js';
