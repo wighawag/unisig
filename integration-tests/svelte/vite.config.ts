@@ -6,7 +6,11 @@ export default defineConfig({
 	test: {
 		include: ['test/**/*.spec.svelte.ts'],
 		environment: 'happy-dom',
+		benchmark: {
+			include: ['bench/**/*.bench.svelte.ts'],
+		},
 	},
+
 	resolve: process.env.VITEST
 		? {
 				conditions: ['browser'],
