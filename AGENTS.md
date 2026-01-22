@@ -16,51 +16,83 @@ This guide is for AI agents working with the unisig repository. It provides esse
 
 ```
 unisig/
-├── packages/unisig/          # Main package
+├── packages/unisig/          # Core reactive primitives package
 │   ├── src/
-│   │   ├── Emitter.ts       # Event emitter class
-│   │   ├── Tracker.ts       # Main tracking class (signals + events)
-│   │   ├── Scope.ts         # Signal scope for reactive tracking
-│   │   ├── standalone.ts    # Factory functions (withAdapter, withAdapterRef)
-│   │   ├── types.ts         # TypeScript interfaces and types
-│   │   └── *.spec.ts        # Test files (comprehensive coverage)
+│   │   ├── index.ts         # Main exports (unisig factory)
+│   │   └── *.spec.ts        # Test files
 │   ├── package.json
 │   └── tsconfig.json
+├── packages/tracker/         # Tracker package (targeted reactivity)
+│   ├── src/
+│   │   ├── Tracker.ts       # Main tracking class
+│   │   ├── Scope.ts         # Signal scope for reactive tracking
+│   │   ├── ProxyFactory.ts  # Auto-tracking proxy implementations
+│   │   ├── types.ts         # TypeScript interfaces and types
+│   │   └── *.spec.ts        # Test files (comprehensive coverage)
+│   ├── test/
+│   │   └── *.spec.ts        # Integration tests
+│   ├── package.json
+│   └── tsconfig.json
+├── packages/solid-js/        # Solid.js adapter
+│   ├── src/
+│   │   └── index.ts         # Adapter implementation
+│   └── package.json
+├── packages/svelte/          # Svelte 5 adapter
+│   ├── src/
+│   │   └── index.svelte.ts  # Adapter implementation
+│   └── package.json
 ├── examples/
 │   └── svelte/              # Svelte example application
-│       ├── src/lib/         # Svelte components and adapters
+│       ├── src/lib/         # Svelte components and stores
 │       ├── EXAMPLE_GUIDE.md # Implementation guide for the example
 │       └── README.md        # Example-specific documentation
+├── integration-tests/        # Integration tests for adapters
+│   ├── solid-js/
+│   └── svelte/
+├── docs/                     # Documentation
+│   ├── PATTERNS.md          # Design patterns and best practices
+│   └── SIGNALS_REFRESHER.md # Signals refresher guide
 ├── README.md                # Main documentation
-├── PATTERNS.md              # Design patterns and best practices
 ├── CONTRIBUTING.md          # Contribution guidelines
 └── AGENTS.md                # This file - agent guide
 ```
 
 ## Core Architecture
 
-### Three Main Classes
+### Core Classes
 
-1. **[`Emitter`](packages/unisig/src/Emitter.ts)** - Event emitter only
-   - `on(event, listener)` - Subscribe to events
-   - `off(event, listener)` - Unsubscribe
-   - `once(event, listener)` - Subscribe once
-   - `emit(event, data)` - Emit event
-   - `hasListeners(event)` - Check if event has listeners
-   - `listenerCount(event)` - Count listeners
-   - `removeAllListeners(event?)` - Remove listeners
-
-2. **[`Scope`](packages/unisig/src/Scope.ts)** - Signal tracking only
+1. **[`Scope`](packages/tracker/src/Scope.ts)** - Signal tracking only
    - `track(key)` - Register dependency
+   - `trackItem(collection, id)` - Track a specific item
+   - `trackProp(key, prop)` - Track a property of a key
+   - `trackItemProp(collection, id, prop)` - Track a property of an item
    - `trigger(key)` - Notify dependency
+   - `triggerItem(collection, id)` - Trigger item change
+   - `triggerProp(key, prop)` - Trigger property change
+   - `triggerItemProp(collection, id, prop)` - Trigger item property change
+   - `triggerList(collection)` - Trigger collection/list change
+   - `triggerRemove(collection, id)` - Trigger item removal
    - `dep(key)` - Get/create dependency
+   - `itemDep(collection, id)` - Get/create item dependency
+   - `propDep(key, prop)` - Get/create property dependency
+   - `itemPropDep(collection, id, prop)` - Get/create item property dependency
+   - `proxy(target, key)` - Auto-tracking proxy
+   - `itemProxy(target, collection, id)` - Item auto-tracking proxy
+   - `deepProxy(target, key)` - Deep auto-tracking proxy
+   - `deepItemProxy(target, collection, id)` - Deep item auto-tracking proxy
+   - `readonlyProxy(target, key)` - Read-only proxy
+   - `readonlyItemProxy(target, collection, id)` - Read-only item proxy
+   - `readonlyDeepProxy(target, key)` - Deep read-only proxy
+   - `readonlyDeepItemProxy(target, collection, id)` - Deep read-only item proxy
+   - `clear()` - Clear all dependencies
    - Uses adapter for depend/notify
 
-3. **[`Tracker`](packages/unisig/src/Tracker.ts)** - Combines both Emitter and Scope
-   - Event methods (on, off, once, emit, etc.)
-   - Tracking methods (track, trackItem, trackProp)
-   - Trigger methods (trigger, triggerItem, triggerProp)
-   - Proxy methods (proxy, deepProxy, itemProxy, etc.)
+2. **[`Tracker`](packages/tracker/src/Tracker.ts)** - Wrapper around Scope
+   - All Scope methods (track, trackItem, trackProp, trackItemProp)
+   - All Trigger methods (trigger, triggerItem, triggerProp, triggerItemProp, triggerCollection, triggerItemRemoved, triggerItemAdded)
+   - All Proxy methods (proxy, itemProxy, deepProxy, deepItemProxy, readonlyProxy, readonlyItemProxy, readonlyDeepProxy, readonlyDeepItemProxy)
+   - Dependency access methods (dep, itemDep, propDep, itemPropDep)
+   - Helper methods (getAdapter, isInScope, clear)
 
 ### Key Pattern: Targeted Tracking
 
@@ -68,13 +100,18 @@ The library supports targeted reactivity at three levels:
 
 1. **Collection level** - `track('users')`, `trigger('users')`
 2. **Item level** - `trackItem('users', '123')`, `triggerItem('users', '123')`
-3. **Property level** - `trackProp('users', '123', 'name')`, `triggerProp('users', '123', 'name')`
+3. **Property level** - `trackProp('config', 'theme')`, `triggerProp('config', 'theme')`
+4. **Item property level** - `trackItemProp('users', '123', 'name')`, `triggerItemProp('users', '123', 'name')`
 
 ### Factory Pattern for Standalone State
 
 The [`index.ts`](packages/unisig/src/index.ts) module provides the `unisig()` factory function:
 
 - `unisig(adapter)` - Creates a bundle with `reactive()`, `signal()`, and `effect()` functions
+
+The [`Tracker.ts`](packages/tracker/src/Tracker.ts) module provides the `createTrackerFactory()` function:
+
+- `createTrackerFactory(adapter)` - Creates a factory for creating Tracker instances with a pre-configured adapter
 
 This avoids global state and enables testing with multiple adapters.
 
@@ -133,20 +170,16 @@ Pre-built adapters available from `@unisig/*` packages.
 
 ### Code Patterns
 
-1. **READ methods** - Always call `track()`, `trackItem()`, or `trackProp()` at the start
-2. **WRITE methods** - Always call `trigger()`, `triggerItem()`, or `triggerProp()` after mutation
-3. **Event emission** - Call `emit()` after triggering for event subscribers
-4. **Proxy usage** - Return proxied objects from getter methods for automatic tracking
+1. **READ methods** - Always call `track()`, `trackItem()`, `trackProp()`, or `trackItemProp()` at the start
+2. **WRITE methods** - Always call `trigger()`, `triggerItem()`, `triggerProp()`, or `triggerItemProp()` after mutation
+3. **Proxy usage** - Return proxied objects from getter methods for automatic tracking
 
 Example store pattern:
 
 ```typescript
 class UserStore {
-  private $ = new Tracker<UserEvents>();
+  private $ = new Tracker({ adapter: myAdapter });
   private users = new Map<string, User>();
-
-  // Expose events
-  on = this.$.on.bind(this.$);
 
   // READ method
   getUser(id: string): User | undefined {
@@ -161,7 +194,6 @@ class UserStore {
 
     Object.assign(user, changes);
     this.$.triggerItem("users", id);
-    this.$.emit("user:updated", { id, changes });
   }
 }
 ```
@@ -230,22 +262,23 @@ The [`examples/svelte`](examples/svelte/) directory contains a working example:
 When working on this repo, always read these files first:
 
 1. **[`README.md`](README.md)** - Complete user documentation
-2. **[`PATTERNS.md`](PATTERNS.md)** - Design patterns and best practices
-3. **[`packages/unisig/src/index.ts`](packages/unisig/src/index.ts)** - Public API exports
-4. **[`packages/unisig/src/Tracker.ts`](packages/unisig/src/Tracker.ts)** - Main class
-5. **[`CONTRIBUTING.md`](CONTRIBUTING.md)** - Contribution guidelines
+2. **[`docs/PATTERNS.md`](docs/PATTERNS.md)** - Design patterns and best practices
+3. **[`packages/unisig/src/index.ts`](packages/unisig/src/index.ts)** - Public API exports for unisig
+4. **[`packages/tracker/src/Tracker.ts`](packages/tracker/src/Tracker.ts)** - Main Tracker class
+5. **[`packages/tracker/src/Scope.ts`](packages/tracker/src/Scope.ts)** - Core Scope class
+6. **[`CONTRIBUTING.md`](CONTRIBUTING.md)** - Contribution guidelines
 
 ## Testing Strategy
 
-The project has 230 tests across 7 test files:
+The project has comprehensive test coverage across multiple test files:
 
-- **Emitter.spec.ts** - Event emitter functionality (19 tests)
-- **Scope.spec.ts** - Signal scope basics (49 tests)
-- **Scope.deepProxy.spec.ts** - Deep proxy behavior (28 tests)
-- **Tracker.spec.ts** - Tracker integration (36 tests)
-- **Tracker.edgeCases.spec.ts** - Edge cases (48 tests)
-- **standalone.spec.ts** - Factory functions (43 tests)
-- **types.spec.ts** - Type system (7 tests)
+- **unisig.spec.ts** - Core unisig functionality
+- **Scope.spec.ts** - Signal scope basics
+- **Scope.deepProxy.spec.ts** - Deep proxy behavior
+- **Scope.readonlyProxy.spec.ts** - Read-only proxy behavior
+- **Tracker.spec.ts** - Tracker integration
+- **Tracker.edgeCases.spec.ts** - Edge cases
+- **Tracker.proxy.integration.spec.ts** - Proxy integration tests
 
 When adding features, maintain this comprehensive coverage. Test edge cases thoroughly.
 
@@ -257,7 +290,7 @@ When adding features, maintain this comprehensive coverage. Test edge cases thor
    - The library provides BOTH in one API
 
 2. **Tracking is Context-Aware**
-   - `track()`/`trackItem()` calls are no-ops outside reactive scope
+   - `track()`/`trackItem()`/`trackProp()`/`trackItemProp()` calls are no-ops outside reactive scope
    - Same methods work for both signal and event patterns
    - No need for separate "direct" methods
 
@@ -277,7 +310,7 @@ When adding features, maintain this comprehensive coverage. Test edge cases thor
 1. **Forgetting to call `track()` in READ methods**
    - Always call at the start of getter methods
 
-2. **Forgetting to call `trigger()` in WRITE methods**
+2. **Forgetting to call `trigger()`/`triggerItem()`/`triggerProp()`/`triggerItemProp()` in WRITE methods**
    - Always call after mutations
 
 3. **Using `interface` instead of `type` for events**
@@ -294,7 +327,7 @@ When adding features, maintain this comprehensive coverage. Test edge cases thor
 1. **WeakMap caching** - Proxies are cached to maintain identity
 2. **Conditional tracking** - `track()` only works inside reactive scope
 3. **Targeted notifications** - Track at the right level to minimize updates
-4. **No unnecessary operations** - Emitter checks for listeners before emitting
+4. **No unnecessary operations** - Tracking only happens when in reactive scope
 
 ## Summary
 

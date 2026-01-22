@@ -2,8 +2,6 @@
 
 **Universal signals** — add reactivity to any data with pluggable signal adapters.
 
-**Zero dependencies.** Self contained
-
 ## Features
 
 - 🎯 **Framework-agnostic** - Works with any signal library

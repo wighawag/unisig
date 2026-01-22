@@ -51,12 +51,12 @@ class PlayerStore {
 
 ### How It Works Internally
 
-The [`trackItemProp`](packages/scope/src/Scope.ts:252) method tracks at three levels:
+The [`trackItemProp`](packages/tracker/src/Scope.ts:248) method tracks at three levels:
 - Property level (`players:id:score`)
 - Item level (`players:id`)
 - Collection level (`players`)
 
-The [`triggerItemProp`](packages/scope/src/Scope.ts:342) method only triggers at the property level.
+The [`triggerItemProp`](packages/tracker/src/Scope.ts:338) method only triggers at the property level.
 
 This separation ensures:
 - **Effects get the dependencies they need** for removal detection (collection) and complete replacement (item).
@@ -142,7 +142,7 @@ class PlayerStore {
     const player = this.players.get(id)
     if (!player) return
     player.name = name
-    this.$.triggerItemProp('players', id, 'name', 'player:renamed', { id, name })
+    this.$.triggerItemProp('players', id, 'name')
   }
 }
 ```
