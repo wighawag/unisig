@@ -45,7 +45,7 @@ export const { reactive, signal, effect } = unisig(svelteAdapter);
 </button>
 ```
 
-### With `@unisig/tracker` (Granular Tracking)
+### With `@unisig/tracker` (Targeted Tracking)
 
 ```typescript
 // stores/playerStore.svelte.ts

@@ -22,10 +22,10 @@ export interface Dependency {
 }
 
 /**
- * Scope-specific adapter interface for granular manual tracking.
+ * Scope-specific adapter interface for targeted manual tracking.
  *
  * This interface contains only the methods needed by Scope for
- * granular dependency tracking. Use this when you only need
+ * targeted dependency tracking. Use this when you only need
  * Scope functionality without the basic signal/state methods.
  */
 export interface ScopeAdapter {
@@ -71,7 +71,7 @@ export interface ScopeAdapter {
 }
 
 /**
- * Full adapter interface for granular manual tracking with signal support.
+ * Full adapter interface for targeted manual tracking with signal support.
  *
  * Extends both BasicReactivityAdapter (effect, state, signal) and ScopeAdapter
  * (create, isInScope, onDispose). Implement this interface to connect your

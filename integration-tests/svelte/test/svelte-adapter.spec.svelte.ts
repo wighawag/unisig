@@ -199,11 +199,6 @@ describe('Svelte Integration Tests', () => {
 			expect(typeof dep.notify).toBe('function');
 		});
 
-		// TODO: Move this test to a separate file that tests Tracker/Scope integration
-		// with Svelte in a proper component/browser environment. The create() API is
-		// used internally by Scope/Tracker for granular dependency tracking, and may
-		// require different test setup than the basic adapter tests here.
-		// See: integration-tests/svelte/test/svelte-tracker.spec.svelte.ts (to be created)
 		it('should track dependencies in reactive context', async () => {
 			const dep = svelteAdapter.create();
 			const values: number[] = [];

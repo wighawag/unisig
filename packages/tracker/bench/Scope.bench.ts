@@ -196,7 +196,7 @@ describe('Scope Performance Benchmarks', () => {
 		});
 	});
 
-	describe('Granular Tracking Patterns', () => {
+	describe('Targeted Tracking Patterns', () => {
 		bench('collection-level tracking (coarse)', () => {
 			const scope = new Scope(mockAdapter);
 			mockAdapter.create().depend();

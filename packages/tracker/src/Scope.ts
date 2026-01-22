@@ -5,7 +5,7 @@ import {createProxyFactory, type ProxyFactory} from './ProxyFactory.js';
  * Manages reactive dependencies for a class or object.
  *
  * Provides methods to track reads and trigger notifications for both
- * simple key-based dependencies and granular per-item dependencies.
+ * simple key-based dependencies and targeted per-item dependencies.
  * Also supports property-level tracking and auto-tracking proxies.
  *
  * @example
@@ -30,10 +30,7 @@ export class Scope {
 	private deps = new Map<string, Dependency>();
 	private itemDeps = new Map<string, Map<string | number, Dependency>>();
 	private propDeps = new Map<string, Map<string, Dependency>>();
-	private itemPropDeps = new Map<
-		string,
-		Map<string | number, Map<string, Dependency>>
-	>();
+	private itemPropDeps = new Map<string, Map<string | number, Map<string, Dependency>>>();
 	private proxyFactory: ProxyFactory;
 
 	/**
@@ -79,7 +76,7 @@ export class Scope {
 
 	/**
 	 * Get or create a per-item dependency.
-	 * Useful for granular updates (e.g., only re-render when a specific item changes).
+	 * Useful for targeted updates (e.g., only re-render when a specific item changes).
 	 * Returns undefined if no adapter is set.
 	 *
 	 * @param collection - Name of the collection/group
@@ -112,7 +109,7 @@ export class Scope {
 
 	/**
 	 * Get or create a property dependency for a key.
-	 * Useful for granular updates (e.g., only re-render when a specific property changes).
+	 * Useful for targeted updates (e.g., only re-render when a specific property changes).
 	 * Returns undefined if no adapter is set.
 	 *
 	 * @param key - The main key
@@ -132,18 +129,14 @@ export class Scope {
 
 	/**
 	 * Get or create a property dependency for a specific item.
-	 * Useful for very granular updates (e.g., only re-render when user.score changes).
+	 * Useful for very targeted updates (e.g., only re-render when user.score changes).
 	 * Returns undefined if no adapter is set.
 	 *
 	 * @param collection - Name of the collection/group
 	 * @param id - Unique identifier of the item
 	 * @param prop - The property name
 	 */
-	itemPropDep(
-		collection: string,
-		id: string | number,
-		prop: string,
-	): Dependency | undefined {
+	itemPropDep(collection: string, id: string | number, prop: string): Dependency | undefined {
 		if (!this.adapter) return undefined;
 		if (!this.itemPropDeps.has(collection)) {
 			this.itemPropDeps.set(collection, new Map());
@@ -417,7 +410,7 @@ export class Scope {
 	 * and auto-triggers property writes.
 	 *
 	 * Always uses custom proxy implementation to ensure proper integration
-	 * with Scope's granular tracking (collection/item/property levels).
+	 * with Scope's targeted tracking (collection/item/property levels).
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -439,11 +432,7 @@ export class Scope {
 	 * })
 	 * ```
 	 */
-	itemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T {
+	itemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 		return this.proxyFactory.itemProxy(target, collection, id);
 	}
 
@@ -480,7 +469,7 @@ export class Scope {
 	 * at any nesting level. Uses dot notation for nested paths.
 	 *
 	 * Always uses custom proxy implementation to ensure proper integration
-	 * with Scope's granular tracking (collection/item/property levels).
+	 * with Scope's targeted tracking (collection/item/property levels).
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -502,11 +491,7 @@ export class Scope {
 	 * })
 	 * ```
 	 */
-	deepItemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T {
+	deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 		return this.proxyFactory.deepItemProxy(target, collection, id);
 	}
 

@@ -25,7 +25,7 @@ describe('Tracker Performance Benchmarks', () => {
 		});
 	});
 
-	describe('Granular Tracking Operations', () => {
+	describe('Targeted Tracking Operations', () => {
 		bench('track() single key', () => {
 			const tracker = createTracker();
 			mockAdapter.create().depend();

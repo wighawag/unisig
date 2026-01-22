@@ -196,7 +196,7 @@ const myAdapter: BasicReactivityAdapter = {
 
 ## Related Packages
 
-For stores, collections, and granular reactivity (collection/item/property level tracking), see [`@unisig/tracker`](https://github.com/wighawag/unisig/tree/main/packages/tracker).
+For stores, collections, and targeted reactivity (collection/item/property level tracking), see [`@unisig/tracker`](https://github.com/wighawag/unisig/tree/main/packages/tracker).
 
 ## License
 

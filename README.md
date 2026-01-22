@@ -16,7 +16,7 @@
 | Package | Description |
 |---------|-------------|
 | [`unisig`](./packages/unisig) | Core reactive primitives (`reactive`, `signal`, `effect`) |
-| [`@unisig/tracker`](./packages/tracker) | Granular reactivity tracking (Tracker, Scope) |
+| [`@unisig/tracker`](./packages/tracker) | Targeted reactivity tracking (Tracker, Scope) |
 | [`@unisig/solid-js`](./packages/solid-js) | Solid.js adapter |
 | [`@unisig/svelte`](./packages/svelte) | Svelte 5 adapter |
 
@@ -31,7 +31,7 @@ npm install unisig @unisig/solid-js
 # or
 npm install unisig @unisig/svelte
 
-# For granular tracking (stores, collections)
+# For targeted tracking (stores, collections)
 npm install @unisig/tracker
 ```
 
@@ -71,7 +71,7 @@ effect(() => {
 
 ### Advanced Usage with `@unisig/tracker`
 
-For stores, collections, and granular reactivity, use the Tracker package:
+For stores, collections, and targeted reactivity, use the Tracker package:
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
@@ -122,7 +122,7 @@ createEffect(() => {
 ```
 
 See the [`@unisig/tracker` README](./packages/tracker/README.md) for full documentation on:
-- Granular reactivity (collection, item, property level)
+- Targeted reactivity (collection, item, property level)
 - Auto-tracking proxies (shallow, deep, and read-only)
 - Performance patterns
 
@@ -152,7 +152,7 @@ const myAdapter: BasicReactivityAdapter = {
 };
 ```
 
-For `@unisig/tracker` (granular tracking):
+For `@unisig/tracker` (targeted tracking):
 
 ```typescript
 import type { ScopeAdapter } from "@unisig/tracker";

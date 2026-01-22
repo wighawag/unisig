@@ -119,7 +119,7 @@
 						</li>
 					</ul>
 					<p class="note">
-						This granular reactivity is achieved using <code
+						This targeted reactivity is achieved using <code
 							>trackItemProp()</code
 						>
 						and

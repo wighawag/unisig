@@ -28,7 +28,7 @@ class PlayerStore {
 1. **Private Tracker Instance**: The `Tracker` instance is private to prevent external manipulation
 2. **Public Event Subscription**: The `on` method is exposed to allow external event listeners
 3. **Adapter Configuration**: The adapter is passed during construction
-4. **Granular Getters**: Multiple getter methods for different levels of reactivity:
+4. **Targeted Getters**: Multiple getter methods for different levels of reactivity:
    - `getAll()` - Collection level (tracks entire list)
    - `get(id)` - Item level (tracks specific item with deep proxy)
    - `getScore(id)` - Property level (tracks only score)
@@ -220,7 +220,7 @@ updateScore(id: string, score: number): void {
 
 ### Choose the Right Tracking Level
 
-| Method | Granularity | Re-renders When | Use For |
+| Method | Targetedity | Re-renders When | Use For |
 |--------|-------------|-----------------|---------|
 | `track()` | Collection | Any item changes | Lists, counts, computed over all items |
 | `trackItem()` | Item | This item changes | Single item display |
@@ -400,7 +400,7 @@ onMount(() => {
 // Old: Everything in one signal
 const players = $state<Player[]>([]);
 
-// New: Granular reactivity
+// New: Targeted reactivity
 const playerIds = $derived.by(() => playerStore.getIds());
 const player = $derived.by(() => playerStore.get(id));
 const score = $derived.by(() => playerStore.getScore(id));
@@ -429,4 +429,4 @@ The unisig library provides:
 ✅ **Type safety** - Full TypeScript support  
 ✅ **Framework-agnostic** - Works with any signal library  
 
-This example demonstrates best practices for using unisig with Svelte 5, showing how to achieve optimal performance through granular tracking while maintaining a clean, maintainable codebase.
+This example demonstrates best practices for using unisig with Svelte 5, showing how to achieve optimal performance through targeted tracking while maintaining a clean, maintainable codebase.

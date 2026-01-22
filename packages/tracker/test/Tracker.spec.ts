@@ -327,7 +327,7 @@ describe('Tracker', () => {
 	});
 
 	describe('Integration: Store with property-level reactivity', () => {
-		it('should support granular property updates', () => {
+		it('should support targeted property updates', () => {
 			class PlayerStore {
 				private $: Tracker;
 				private players = new Map<string, {id: string; name: string; score: number}>();
@@ -343,7 +343,7 @@ describe('Tracker', () => {
 					return player ? this.$.itemProxy(player, 'players', id) : undefined;
 				}
 
-				// Get only score (granular tracking)
+				// Get only score (targeted tracking)
 				getScore(id: string) {
 					this.$.trackItemProp('players', id, 'score');
 					return this.players.get(id)?.score;

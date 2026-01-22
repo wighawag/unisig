@@ -1,12 +1,12 @@
 # @unisig/tracker
 
-**Granular reactivity tracking** for any signal library.
+**Targeted reactivity tracking** for any signal library.
 
 Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 
 ## Features
 
-- 📦 **Granular reactivity** - Track at collection, item, or property level
+- 📦 **Targeted reactivity** - Track at collection, item, or property level
 - 🔄 **Auto-tracking proxies** - Shallow, deep, and read-only variants
 - 🎯 **Framework-agnostic** - Works with any signal library via adapters
 - ⚡ **Zero dependencies (except for unisig)** - Lightweight and fast
@@ -107,7 +107,7 @@ const gameTracker = createTracker();
 
 ### `Tracker`
 
-Main class for granular signal tracking.
+Main class for targeted signal tracking.
 
 ```typescript
 const $ = createTracker();
@@ -153,12 +153,12 @@ $.readonlyDeepProxy(target, key)
 $.readonlyDeepItemProxy(target, collection, id)
 ```
 
-## Granular Reactivity
+## Targeted Reactivity
 
-### Philosophy: Tracking is Broad, Triggering is Granular
+### Philosophy: Tracking is Broad, Triggering is Targeted
 
 - **Tracking (reading) is broad**: When you read data, you subscribe to all levels that might affect you.
-- **Triggering (writing) is granular**: When you write data, you only notify what actually changed.
+- **Triggering (writing) is targeted**: When you write data, you only notify what actually changed.
 
 **Example:**
 ```typescript
@@ -359,7 +359,7 @@ class PlayerStore {
 Use proxied getters only when you need fine-grained property-level tracking with automatic triggering:
 
 ```typescript
-// For complex components that need granular updates AND writes through proxy
+// For complex components that need targeted updates AND writes through proxy
 getLive(id: string): Player | undefined {
   this.$.trackItem('players', id)
   const player = this.players.get(id)

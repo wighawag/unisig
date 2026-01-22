@@ -35,7 +35,7 @@ effect(() => {
 });
 ```
 
-### With `@unisig/tracker` (Granular Tracking)
+### With `@unisig/tracker` (Targeted Tracking)
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";

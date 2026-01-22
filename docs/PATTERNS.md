@@ -18,7 +18,7 @@ This guide covers common patterns for building efficient, reactive data stores w
 unisig follows a deliberate design philosophy that ensures efficient reactivity:
 
 - **Tracking (reading) is broad**: When you read data, you subscribe to all levels that might affect you.
-- **Triggering (writing) is granular**: When you write data, you only notify what actually changed.
+- **Triggering (writing) is targeted**: When you write data, you only notify what actually changed.
 
 ### Why This Matters
 
@@ -88,11 +88,11 @@ This philosophy is baked into all tracking methods (`track`, `trackItem`, `track
 
 ## Read-Only vs Live Getters
 
-When designing your store API, you have a choice between returning read-only objects (fast) or live objects with granular reactivity (proxied). This choice has significant performance implications.
+When designing your store API, you have a choice between returning read-only objects (fast) or live objects with targeted reactivity (proxied). This choice has significant performance implications.
 
 ### The Trade-off
 
-| Approach | Performance | Granularity | Best For |
+| Approach | Performance | Targetedity | Best For |
 |----------|-------------|-------------|----------|
 | **Read-only getters** | ~16M ops/sec (fast) | Item-level tracking | Display components, lists, simple UIs |
 | **Live getters (proxied)** | ~100K ops/sec (160x slower) | Property-level tracking | Complex components, fine-grained updates |
@@ -177,14 +177,14 @@ class PlayerStore {
 - Component will re-render entirely when data changes
 - Simple CRUD operations
 - Performance is important
-- You don't need property-level granular updates
+- You don't need property-level targeted updates
 
 ❌ **Avoid read-only getters when:**
 - You need property-level tracking to avoid re-rendering
 - Component has expensive rendering logic
 - You want to update only specific DOM elements
 
-### Proxied Getters (For Granular Reactivity)
+### Proxied Getters (For Targeted Reactivity)
 
 Return proxied objects for automatic property-level tracking. Use this sparingly when you really need fine-grained updates.
 
@@ -199,7 +199,7 @@ class PlayerStore {
    * Use this when you need fine-grained property-level tracking.
    *
    * Performance: ~100K ops/sec (slower due to proxy overhead)
-   * Use this for complex components that need granular reactivity.
+   * Use this for complex components that need targeted reactivity.
    */
   getProxied(id: string): Player | undefined {
     this.$.trackItem('players', id)
@@ -213,7 +213,7 @@ class PlayerStore {
    * Use this when you need fine-grained property-level tracking for each item.
    *
    * Performance: ~100K ops/sec (slower due to proxy overhead)
-   * Use this for complex components that need granular reactivity.
+   * Use this for complex components that need targeted reactivity.
    */
   getAllProxied(): Player[] {
     this.$.track('players')
@@ -313,7 +313,7 @@ class PlayerStore {
 <p>Level: {playerLevel}</p>
 ```
 
-**Performance:** Same as read-only getters (~16M ops/sec), but with granular tracking.
+**Performance:** Same as read-only getters (~16M ops/sec), but with targeted tracking.
 
 ### Hybrid Approach (Best of Both Worlds)
 
@@ -335,7 +335,7 @@ class PlayerStore {
     return [...this.players.values()]
   }
 
-  // Granular property access (fast)
+  // Targeted property access (fast)
   getScore(id: string): number | undefined {
     this.$.trackItemProp('players', id, 'score')
     return this.players.get(id)?.score
@@ -397,7 +397,7 @@ class ActionsStore {
 }
 ```
 
-Even with granular tracking (`trackItem`), the filter still scans all actions.
+Even with targeted tracking (`trackItem`), the filter still scans all actions.
 
 ### Solution: Pre-Indexing
 
@@ -903,7 +903,7 @@ You don't need separate "Direct" methods - the same methods work everywhere!
 | Pattern | Use Case |
 |---------|----------|
 | **Read-Only Getters** | Fast access for display components (default choice) |
-| **Property-Level Getters** | Granular tracking without proxy overhead |
+| **Property-Level Getters** | Targeted tracking without proxy overhead |
 | **Proxied Getters** | Complex components needing fine-grained updates |
 | **Pre-Indexing** | Frequent lookups by a specific field |
 | **Lazy Caching** | Less frequent lookups, simpler code |

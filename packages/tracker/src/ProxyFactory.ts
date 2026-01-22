@@ -34,13 +34,9 @@ export interface ProxyFactory {
 	 * and auto-triggers property writes.
 	 *
 	 * Always uses custom proxy implementation to ensure proper integration
-	 * with Scope's granular tracking (collection/item/property levels).
+	 * with Scope's targeted tracking (collection/item/property levels).
 	 */
-	itemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T;
+	itemProxy<T extends object>(target: T, collection: string, id: string | number): T;
 
 	/**
 	 * Create a deep proxy that auto-tracks property reads at any nesting level.
@@ -56,13 +52,9 @@ export interface ProxyFactory {
 	 * at any nesting level. Uses dot notation for nested paths.
 	 *
 	 * Always uses custom proxy implementation to ensure proper integration
-	 * with Scope's granular tracking (collection/item/property levels).
+	 * with Scope's targeted tracking (collection/item/property levels).
 	 */
-	deepItemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T;
+	deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T;
 
 	/**
 	 * Create a read-only proxy that tracks property reads but throws on writes.
@@ -144,14 +136,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 					// Handle arrays specially
 					if (Array.isArray(value)) {
-						return createDeepArrayProxy(
-							value,
-							key,
-							'',
-							fullPath,
-							cache,
-							'prop',
-						);
+						return createDeepArrayProxy(value, key, '', fullPath, cache, 'prop');
 					}
 				}
 
@@ -202,14 +187,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 					// Handle arrays specially
 					if (Array.isArray(value)) {
-						return createDeepArrayProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-							'item',
-						);
+						return createDeepArrayProxy(value, collection, id, fullPath, cache, 'item');
 					}
 				}
 
@@ -287,12 +265,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 						if (shouldDeepProxy(value)) {
 							if (mode === 'prop') {
-								return createDeepProxy(
-									value as object,
-									keyOrCollection,
-									fullPath,
-									cache,
-								);
+								return createDeepProxy(value as object, keyOrCollection, fullPath, cache);
 							} else {
 								return createDeepItemProxy(
 									value as object,
@@ -392,14 +365,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 					// Handle arrays specially
 					if (Array.isArray(value)) {
-						return createReadonlyDeepArrayProxy(
-							value,
-							key,
-							'',
-							fullPath,
-							cache,
-							'prop',
-						);
+						return createReadonlyDeepArrayProxy(value, key, '', fullPath, cache, 'prop');
 					}
 				}
 
@@ -446,25 +412,12 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 					// Recursively proxy nested objects
 					if (shouldDeepProxy(value)) {
-						return createReadonlyDeepItemProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-						);
+						return createReadonlyDeepItemProxy(value, collection, id, fullPath, cache);
 					}
 
 					// Handle arrays specially
 					if (Array.isArray(value)) {
-						return createReadonlyDeepArrayProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-							'item',
-						);
+						return createReadonlyDeepArrayProxy(value, collection, id, fullPath, cache, 'item');
 					}
 				}
 
@@ -535,12 +488,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 						if (shouldDeepProxy(value)) {
 							if (mode === 'prop') {
-								return createReadonlyDeepProxy(
-									value as object,
-									keyOrCollection,
-									fullPath,
-									cache,
-								);
+								return createReadonlyDeepProxy(value as object, keyOrCollection, fullPath, cache);
 							} else {
 								return createReadonlyDeepItemProxy(
 									value as object,
@@ -642,15 +590,11 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 		/**
 		 * Create a proxy for a collection item.
-		 * Always uses custom proxy to maintain collection/item context for granular tracking.
+		 * Always uses custom proxy to maintain collection/item context for targeted tracking.
 		 */
-		itemProxy<T extends object>(
-			target: T,
-			collection: string,
-			id: string | number,
-		): T {
+		itemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 			// Always use custom proxy for item proxies to ensure proper
-			// integration with Scope's granular tracking (collection/item/property levels)
+			// integration with Scope's targeted tracking (collection/item/property levels)
 			return new Proxy(target, {
 				get(obj, prop, receiver) {
 					if (typeof prop === 'string') {
@@ -684,15 +628,11 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 
 		/**
 		 * Create a deep proxy for a collection item.
-		 * Always uses custom proxy to maintain collection/item context for granular tracking.
+		 * Always uses custom proxy to maintain collection/item context for targeted tracking.
 		 */
-		deepItemProxy<T extends object>(
-			target: T,
-			collection: string,
-			id: string | number,
-		): T {
+		deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 			// Always use custom proxy for item proxies to ensure proper
-			// integration with Scope's granular tracking (collection/item/property levels)
+			// integration with Scope's targeted tracking (collection/item/property levels)
 			return createDeepItemProxy(target, collection, id, '', new WeakMap());
 		},
 
@@ -763,13 +703,7 @@ export function createProxyFactory(scope: Scope): ProxyFactory {
 			collection: string,
 			id: string | number,
 		): Readonly<T> {
-			return createReadonlyDeepItemProxy(
-				target,
-				collection,
-				id,
-				'',
-				new WeakMap(),
-			);
+			return createReadonlyDeepItemProxy(target, collection, id, '', new WeakMap());
 		},
 	};
 }

@@ -46,7 +46,7 @@ Watch the render counts carefully:
 - Edit **Name** → Only Name component re-renders
 - Add/Remove player → Only Player List re-renders
 
-This is achieved using granular tracking:
+This is achieved using targeted tracking:
 
 ```typescript
 // Track only score property
@@ -135,9 +135,9 @@ src/
 │   ├── svelteAdapter.svelte.ts # Svelte 5 adapter
 │   ├── PlayerList.svelte      # List component (collection tracking)
 │   ├── PlayerCard.svelte      # Card component (property tracking)
-│   ├── PlayerName.svelte      # Name component (granular tracking)
-│   ├── PlayerScore.svelte     # Score component (granular tracking)
-│   └── PlayerLevel.svelte     # Level component (granular tracking)
+│   ├── PlayerName.svelte      # Name component (targeted tracking)
+│   ├── PlayerScore.svelte     # Score component (targeted tracking)
+│   └── PlayerLevel.svelte     # Level component (targeted tracking)
 └── App.svelte                 # Main application
 ```
 
@@ -161,7 +161,7 @@ this.$.triggerItemProp('players', id, 'score');
 - Notifies dependencies
 - Triggers re-renders
 
-### Granularity Levels
+### Targetedity Levels
 
 | Level | Method | When to Use |
 |-------|--------|-------------|
@@ -187,7 +187,7 @@ Deep proxies use dot notation for tracking:
 
 ## Performance Tips
 
-1. **Use granular tracking** - Track only what you need
+1. **Use targeted tracking** - Track only what you need
 2. **Avoid deep proxies for simple data** - Use shallow proxies instead
 3. **Prefer property-level tracking** - For high-frequency updates
 4. **Use events for side effects** - API calls, logging, etc.

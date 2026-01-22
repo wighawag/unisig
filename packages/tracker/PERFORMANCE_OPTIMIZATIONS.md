@@ -87,7 +87,7 @@ class PlayerStore {
 }
 ```
 
-**Performance:** Same as read-only getters (~16M ops/sec), but with granular tracking.
+**Performance:** Same as read-only getters (~16M ops/sec), but with targeted tracking.
 
 ### Complete Example: Hybrid API
 
@@ -109,7 +109,7 @@ class PlayerStore {
     return [...this.players.values()]
   }
 
-  // Granular property access (fast)
+  // Targeted property access (fast)
   getScore(id: string): number | undefined {
     this.$.trackItemProp('players', id, 'score')
     return this.players.get(id)?.score
@@ -648,11 +648,11 @@ export class Scope {
 
 ### Preact Signals
 - **Strengths**: Simple API, good performance
-- **Trade-offs**: Less granular tracking
+- **Trade-offs**: Less targeted tracking
 - **Lessons**: Simplicity can be faster
 
 ### Vue 3
-- **Strengths**: Granular tracking, good DX
+- **Strengths**: Targeted tracking, good DX
 - **Trade-offs**: Proxy overhead
 - **Lessons:** Proxies are the right choice for modern JavaScript
 - **Decision:** Follow Vue 3's approach

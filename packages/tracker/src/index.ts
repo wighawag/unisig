@@ -1,7 +1,7 @@
 /**
  * @unisig/tracker - Tracker for unisig
  *
- * Adds granular reactivity to signals.
+ * Adds targeted reactivity to signals.
  * Depends on @unisig for types.
  *
  * @packageDocumentation

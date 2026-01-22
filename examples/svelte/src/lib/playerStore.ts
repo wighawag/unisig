@@ -55,7 +55,7 @@ class PlayerStore {
 	 * Use this when you need fine-grained property-level tracking for each item.
 	 *
 	 * Performance: ~100K ops/sec (slower due to proxy overhead)
-	 * Use this for complex components that need granular reactivity.
+	 * Use this for complex components that need targeted reactivity.
 	 */
 	getAllLive(): Player[] {
 		this.$.track('players');
@@ -97,7 +97,7 @@ class PlayerStore {
 	 * Use this when you need fine-grained property-level tracking.
 	 *
 	 * Performance: ~100K ops/sec (slower due to proxy overhead)
-	 * Use this for complex components that need granular reactivity.
+	 * Use this for complex components that need targeted reactivity.
 	 */
 	getLive(id: string): Player | undefined {
 		this.$.trackItem('players', id);

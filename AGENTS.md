@@ -7,7 +7,7 @@ This guide is for AI agents working with the unisig repository. It provides esse
 **unisig** (Universal Signals) is a framework-agnostic reactive state management library that:
 
 - Works with any signal library (Solid.js, Preact, Vue, MobX, Svelte, etc.) via adapters
-- Provides granular reactivity (collection, item, or property level)
+- Provides targeted reactivity (collection, item, or property level)
 - Includes a built-in event emitter system
 - Has zero dependencies
 - Is written in TypeScript with comprehensive test coverage
@@ -62,9 +62,9 @@ unisig/
    - Trigger methods (trigger, triggerItem, triggerProp)
    - Proxy methods (proxy, deepProxy, itemProxy, etc.)
 
-### Key Pattern: Granular Tracking
+### Key Pattern: Targeted Tracking
 
-The library supports granular reactivity at three levels:
+The library supports targeted reactivity at three levels:
 
 1. **Collection level** - `track('users')`, `trigger('users')`
 2. **Item level** - `trackItem('users', '123')`, `triggerItem('users', '123')`
@@ -222,7 +222,7 @@ The [`examples/svelte`](examples/svelte/) directory contains a working example:
 - The example demonstrates:
   - Creating a Svelte adapter
   - Building a reactive store with Tracker
-  - Granular reactivity patterns
+  - Targeted reactivity patterns
   - Using proxies for automatic tracking
 
 ## Important Files for Agents
@@ -293,7 +293,7 @@ When adding features, maintain this comprehensive coverage. Test edge cases thor
 
 1. **WeakMap caching** - Proxies are cached to maintain identity
 2. **Conditional tracking** - `track()` only works inside reactive scope
-3. **Granular notifications** - Track at the right level to minimize updates
+3. **Targeted notifications** - Track at the right level to minimize updates
 4. **No unnecessary operations** - Emitter checks for listeners before emitting
 
 ## Summary
@@ -302,7 +302,7 @@ This is a well-architected, thoroughly tested reactive state management library.
 
 - Framework-agnostic via adapters
 - Both signals and events in one API
-- Granular reactivity (collection/item/property level)
+- Targeted reactivity (collection/item/property level)
 - Comprehensive test coverage
 - Zero dependencies
 - Strong TypeScript support

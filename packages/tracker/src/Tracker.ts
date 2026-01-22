@@ -12,9 +12,9 @@ export interface TrackerOptions {
 }
 
 /**
- * Reactive helper that provides granular signal tracking.
+ * Reactive helper that provides targeted signal tracking.
  *
- * This class provides granular reactivity at collection, item, and property levels.
+ * This class provides targeted reactivity at collection, item, and property levels.
  * It tracks dependencies and notifies changes through the signal system.
  *
  * @example
