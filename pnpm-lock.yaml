@@ -111,31 +111,11 @@ importers:
         specifier: ^4.0.17
         version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))
 
-  packages/scope:
-    dependencies:
-      unisig:
-        specifier: workspace:*
-        version: link:../unisig
-    devDependencies:
-      prettier:
-        specifier: ^3.8.1
-        version: 3.8.1
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
-      vitest:
-        specifier: ^4.0.17
-        version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))
-
   packages/solid:
-    dependencies:
-      '@unisig/scope':
-        specifier: workspace:*
-        version: link:../scope
-      unisig:
-        specifier: workspace:*
-        version: link:../unisig
     devDependencies:
+      '@unisig/tracker':
+        specifier: workspace:*
+        version: link:../tracker
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
@@ -145,22 +125,21 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
+      unisig:
+        specifier: workspace:*
+        version: link:../unisig
       vitest:
         specifier: ^4.0.17
         version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))
 
   packages/svelte:
-    dependencies:
-      '@unisig/scope':
-        specifier: workspace:*
-        version: link:../scope
-      unisig:
-        specifier: workspace:*
-        version: link:../unisig
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^6.2.4
         version: 6.2.4(svelte@5.48.0)(vite@7.3.1(@types/node@25.0.10))
+      '@unisig/tracker':
+        specifier: workspace:*
+        version: link:../tracker
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
@@ -170,15 +149,14 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
+      unisig:
+        specifier: workspace:*
+        version: link:../unisig
       vitest:
         specifier: ^4.0.17
         version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))
 
   packages/tracker:
-    dependencies:
-      '@unisig/scope':
-        specifier: workspace:*
-        version: link:../scope
     devDependencies:
       prettier:
         specifier: ^3.8.1
@@ -186,6 +164,9 @@ importers:
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
+      unisig:
+        specifier: workspace:*
+        version: link:../unisig
       vitest:
         specifier: ^4.0.17
         version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))

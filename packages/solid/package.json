@@ -44,16 +44,16 @@
 		"node": ">=20"
 	},
 	"peerDependencies": {
-		"solid-js": "1.x.x"
-	},
-	"dependencies": {
-		"@unisig/scope": "workspace:*",
+		"@unisig/tracker": "workspace:*",
+		"solid-js": "1.x.x",
 		"unisig": "workspace:*"
 	},
 	"devDependencies": {
+		"@unisig/tracker": "workspace:*",
 		"prettier": "^3.8.1",
 		"solid-js": "1.x.x",
 		"typescript": "^5.3.0",
+		"unisig": "workspace:*",
 		"vitest": "^4.0.17"
 	},
 	"scripts": {

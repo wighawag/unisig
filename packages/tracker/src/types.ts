@@ -77,5 +77,4 @@ export interface ScopeAdapter {
  * (create, isInScope, onDispose). Implement this interface to connect your
  * signal library for use with both unisig and Tracker.
  */
-export interface ReactivityAdapter
-	extends BasicReactivityAdapter, ScopeAdapter {}
+export interface ReactivityAdapter extends BasicReactivityAdapter, ScopeAdapter {}

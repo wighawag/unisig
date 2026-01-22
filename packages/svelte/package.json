@@ -47,17 +47,17 @@
 		"node": ">=20"
 	},
 	"peerDependencies": {
-		"svelte": "^5.7.0"
-	},
-	"dependencies": {
-		"@unisig/scope": "workspace:*",
+		"@unisig/tracker": "workspace:*",
+		"svelte": "^5.7.0",
 		"unisig": "workspace:*"
 	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@unisig/tracker": "workspace:*",
 		"prettier": "^3.8.1",
 		"svelte": "^5.48.0",
 		"typescript": "^5.3.0",
+		"unisig": "workspace:*",
 		"vitest": "^4.0.17"
 	},
 	"scripts": {

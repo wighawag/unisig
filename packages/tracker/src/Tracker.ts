@@ -1,5 +1,5 @@
-import type {ScopeAdapter, Dependency} from '@unisig/scope';
-import {Scope} from '@unisig/scope';
+import {Scope} from './Scope.js';
+import type {ScopeAdapter, Dependency} from './types.js';
 
 /**
  * Options for configuring Tracker behavior

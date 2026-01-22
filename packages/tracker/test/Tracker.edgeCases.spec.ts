@@ -1,6 +1,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, createTracker} from '@unisig/tracker';
-import type {ScopeAdapter} from '@unisig/scope';
+import {ScopeAdapter} from '../src/types';
+import {createTrackerFactory, Tracker} from '../src/Tracker';
+import {ReactiveResult} from 'unisig';
 
 // Mock adapter
 function createMockAdapter() {
@@ -23,47 +24,40 @@ function createMockAdapter() {
 		isInScope() {
 			return this.inScope;
 		},
+		reactive: undefined as any,
 	};
 
 	return adapter;
 }
 
+const createTracker = createTrackerFactory(createMockAdapter());
+
 describe('Tracker - Edge Cases', () => {
 	describe('constructor and tracker()', () => {
-		it('should create without adapter', () => {
-			const r = new Tracker();
-			expect(r.getAdapter()).toBeUndefined();
-		});
-
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
-		it('tracker() should be equivalent to new Tracker()', () => {
+		it('tracker() should be equivalent to createTracker()', () => {
 			const r = createTracker();
 			expect(r).toBeInstanceOf(Tracker);
 		});
 	});
 
 	describe('isInScope()', () => {
-		it('should return false when no adapter', () => {
-			const r = new Tracker();
-			expect(r.isInScope()).toBe(false);
-		});
-
 		it('should return true when adapter has no isInScope', () => {
 			const adapter: ScopeAdapter = {
 				create: () => ({depend: vi.fn(), notify: vi.fn()}),
-			};
-			const r = new Tracker({adapter});
+			} as unknown as ScopeAdapter;
+			const r = createTrackerFactory(adapter)();
 			expect(r.isInScope()).toBe(true);
 		});
 
 		it('should delegate to adapter.isInScope', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			adapter.inScope = true;
 			expect(r.isInScope()).toBe(true);
@@ -75,7 +69,7 @@ describe('Tracker - Edge Cases', () => {
 
 	describe('Tracking without adapter', () => {
 		it('should not throw when tracking without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 
 			// Should not throw
 			r.track('items');
@@ -87,7 +81,7 @@ describe('Tracker - Edge Cases', () => {
 		});
 
 		it('should not throw when triggering without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 
 			// Should not throw
 			r.trigger('items');
@@ -103,14 +97,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('dep() edge cases', () => {
-		it('should return undefined when no adapter', () => {
-			const r = new Tracker();
-			expect(r.dep('test')).toBeUndefined();
-		});
-
 		it('should return same dependency for same key', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.dep('test');
 			const dep2 = r.dep('test');
@@ -121,7 +110,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different keys', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.dep('key1');
 			const dep2 = r.dep('key2');
@@ -132,14 +121,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('itemDep() edge cases', () => {
-		it('should return undefined when no adapter', () => {
-			const r = new Tracker();
-			expect(r.itemDep('users', '1')).toBeUndefined();
-		});
-
 		it('should return same dependency for same collection and id', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '1');
@@ -149,7 +133,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('users', '2');
@@ -159,7 +143,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different collections', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemDep('users', '1');
 			const dep2 = r.itemDep('posts', '1');
@@ -169,7 +153,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should support numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemDep('items', 1);
 			const dep2 = r.itemDep('items', 2);
@@ -179,14 +163,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('propDep() edge cases', () => {
-		it('should return undefined when no adapter', () => {
-			const r = new Tracker();
-			expect(r.propDep('config', 'theme')).toBeUndefined();
-		});
-
 		it('should return same dependency for same key and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'theme');
@@ -196,7 +175,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.propDep('config', 'theme');
 			const dep2 = r.propDep('config', 'language');
@@ -206,14 +185,9 @@ describe('Tracker - Edge Cases', () => {
 	});
 
 	describe('itemPropDep() edge cases', () => {
-		it('should return undefined when no adapter', () => {
-			const r = new Tracker();
-			expect(r.itemPropDep('users', '1', 'score')).toBeUndefined();
-		});
-
 		it('should return same dependency for same collection, id, and prop', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'score');
@@ -223,7 +197,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should return different dependencies for different props', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			const dep1 = r.itemPropDep('users', '1', 'score');
 			const dep2 = r.itemPropDep('users', '1', 'name');
@@ -235,7 +209,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('trigger() edge cases', () => {
 		it('should create dep if not exists', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.trigger('test');
 
@@ -247,7 +221,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('triggerItemRemoved() edge cases', () => {
 		it('should clean up item deps after removal', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.itemDep('users', '1');
 			r.dep('users');
@@ -262,7 +236,7 @@ describe('Tracker - Edge Cases', () => {
 	describe('clear() edge cases', () => {
 		it('should clear all dependencies', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.dep('key1');
 			r.dep('key2');
@@ -280,7 +254,7 @@ describe('Tracker - Edge Cases', () => {
 
 	describe('proxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 			const obj = {theme: 'dark'};
 
 			const proxied = r.proxy(obj, 'config');
@@ -291,7 +265,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle symbol properties', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			const sym = Symbol('test');
 			const obj = {theme: 'dark', [sym]: 'value'};
 
@@ -303,7 +277,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should maintain original object behavior', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			const obj = {
 				get value() {
 					return 42;
@@ -318,7 +292,7 @@ describe('Tracker - Edge Cases', () => {
 
 	describe('itemProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 			const item = {id: '1', value: 42};
 
 			const proxied = r.itemProxy(item, 'items', '1');
@@ -329,7 +303,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			const item = {id: 1, value: 42};
 
 			const proxied = r.itemProxy(item, 'items', 1);
@@ -340,7 +314,7 @@ describe('Tracker - Edge Cases', () => {
 
 	describe('deepProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 			const obj = {nested: {value: 42}};
 
 			const proxied = r.deepProxy(obj, 'config');
@@ -351,7 +325,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle deeply nested objects', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			const obj = {
 				level1: {
 					level2: {
@@ -371,7 +345,7 @@ describe('Tracker - Edge Cases', () => {
 
 	describe('deepItemProxy() edge cases', () => {
 		it('should work without adapter', () => {
-			const r = new Tracker();
+			const r = createTracker();
 			const item = {nested: {value: 42}};
 
 			const proxied = r.deepItemProxy(item, 'items', '1');
@@ -382,7 +356,7 @@ describe('Tracker - Edge Cases', () => {
 
 		it('should handle numeric ids', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			const item = {id: 1, nested: {value: 42}};
 
 			const proxied = r.deepItemProxy(item, 'items', 1);

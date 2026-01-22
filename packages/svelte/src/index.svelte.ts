@@ -12,7 +12,7 @@
 
 import {createSubscriber} from 'svelte/reactivity';
 import type {Signal, ReactiveResult} from 'unisig';
-import type {ReactivityAdapter} from '@unisig/scope';
+import type {ReactivityAdapter} from '@unisig/tracker';
 
 /**
  * Check if a value is a primitive (not an object or function).

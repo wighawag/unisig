@@ -1,4 +1,4 @@
-import {ReactivityAdapter} from '@unisig/scope';
+import {ReactivityAdapter} from '@unisig/tracker';
 import type {ReactiveResult} from 'unisig';
 import {createSignal, getOwner, onCleanup, createRoot, createEffect} from 'solid-js';
 import {createMutable} from 'solid-js/store';

@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {Scope} from '../src/Scope.js';
 import type {ScopeAdapter, Dependency} from '../src/types.js';
+import {ReactiveResult} from 'unisig';
 
 // Mock adapter that tracks all calls
 function createMockAdapter() {
@@ -23,6 +24,7 @@ function createMockAdapter() {
 		isInScope() {
 			return this.inScope;
 		},
+		reactive: undefined as any,
 	};
 
 	return adapter;
@@ -51,7 +53,7 @@ describe('Scope', () => {
 		it('should return true if adapter has no isInScope', () => {
 			const adapter: ScopeAdapter = {
 				create: () => ({depend: vi.fn(), notify: vi.fn()}),
-			};
+			} as unknown as ScopeAdapter;
 			const scope = new Scope(adapter);
 			expect(scope.isInScope()).toBe(true);
 		});

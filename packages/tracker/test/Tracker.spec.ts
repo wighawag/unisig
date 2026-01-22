@@ -1,6 +1,7 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {Tracker, createTracker, createTrackerFactory} from '@unisig/tracker';
-import type {ScopeAdapter} from '@unisig/scope';
+import {describe, it, expect, vi} from 'vitest';
+import {ScopeAdapter} from '../src/types';
+import {createTrackerFactory, Tracker} from '../src/Tracker';
+import {ReactiveResult} from 'unisig';
 
 // Mock adapter
 function createMockAdapter() {
@@ -23,25 +24,23 @@ function createMockAdapter() {
 		isInScope() {
 			return this.inScope;
 		},
+		reactive: undefined as any,
 	};
 
 	return adapter;
 }
 
+const createTracker = createTrackerFactory(createMockAdapter());
+
 describe('Tracker', () => {
 	describe('constructor and tracker()', () => {
-		it('should create without adapter', () => {
-			const r = new Tracker();
-			expect(r.getAdapter()).toBeUndefined();
-		});
-
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
-		it('tracker() should be equivalent to new Tracker()', () => {
+		it('tracker() should be equivalent to createTracker()', () => {
 			const r = createTracker();
 			expect(r).toBeInstanceOf(Tracker);
 		});
@@ -50,7 +49,7 @@ describe('Tracker', () => {
 	describe('Tracking methods', () => {
 		it('track() should call depend when in scope', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.track('items');
 
@@ -61,7 +60,7 @@ describe('Tracker', () => {
 		it('track() should not track when not in scope', () => {
 			const adapter = createMockAdapter();
 			adapter.inScope = false;
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.track('items');
 
@@ -70,7 +69,7 @@ describe('Tracker', () => {
 
 		it('trackItem() should track both item and collection', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.trackItem('items', '1');
 
@@ -82,7 +81,7 @@ describe('Tracker', () => {
 		describe('trigger()', () => {
 			it('should notify signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.dep('items'); // Create dep
 				r.trigger('items');
@@ -94,7 +93,7 @@ describe('Tracker', () => {
 		describe('triggerItem()', () => {
 			it('should notify item signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.itemDep('items', '1');
 				r.triggerItem('items', '1');
@@ -106,7 +105,7 @@ describe('Tracker', () => {
 		describe('triggerCollection()', () => {
 			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.dep('items');
 				r.triggerCollection('items');
@@ -118,7 +117,7 @@ describe('Tracker', () => {
 		describe('triggerItemRemoved()', () => {
 			it('should notify item and collection signals', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.itemDep('items', '1');
 				r.dep('items');
@@ -132,7 +131,7 @@ describe('Tracker', () => {
 		describe('triggerItemAdded()', () => {
 			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.dep('items');
 				r.triggerItemAdded('items');
@@ -145,7 +144,7 @@ describe('Tracker', () => {
 	describe('clear()', () => {
 		it('should clear dependencies', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker({adapter});
+			const r = createTrackerFactory(adapter)();
 
 			r.dep('items');
 			r.clear();
@@ -161,8 +160,8 @@ describe('Tracker', () => {
 				private $: Tracker;
 				private users = new Map<string, {id: string; name: string; score: number}>();
 
-				constructor(adapter?: ScopeAdapter) {
-					this.$ = new Tracker({adapter});
+				constructor(adapter: ScopeAdapter) {
+					this.$ = createTrackerFactory(adapter)();
 				}
 
 				getAll() {
@@ -224,7 +223,7 @@ describe('Tracker', () => {
 		describe('trackProp()', () => {
 			it('should track property and key', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.trackProp('config', 'theme');
 
@@ -237,7 +236,7 @@ describe('Tracker', () => {
 		describe('trackItemProp()', () => {
 			it('should track property, item, and collection', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.trackItemProp('items', '1', 'value');
 
@@ -248,7 +247,7 @@ describe('Tracker', () => {
 		describe('triggerProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.propDep('config', 'theme');
 				r.triggerProp('config', 'theme');
@@ -260,7 +259,7 @@ describe('Tracker', () => {
 		describe('triggerItemProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				r.itemPropDep('items', '1', 'value');
 				r.triggerItemProp('items', '1', 'value');
@@ -274,7 +273,7 @@ describe('Tracker', () => {
 		describe('proxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -287,7 +286,7 @@ describe('Tracker', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -302,7 +301,7 @@ describe('Tracker', () => {
 		describe('itemProxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -314,7 +313,7 @@ describe('Tracker', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker({adapter});
+				const r = createTrackerFactory(adapter)();
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -333,8 +332,8 @@ describe('Tracker', () => {
 				private $: Tracker;
 				private players = new Map<string, {id: string; name: string; score: number}>();
 
-				constructor(adapter?: ScopeAdapter) {
-					this.$ = new Tracker({adapter});
+				constructor(adapter: ScopeAdapter) {
+					this.$ = createTrackerFactory(adapter)();
 				}
 
 				// Get player with auto-tracking proxy

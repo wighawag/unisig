@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
-import {Tracker} from '@unisig/tracker';
-import type {ScopeAdapter} from '@unisig/scope';
+import {ScopeAdapter} from '../src/types';
+import {createTrackerFactory} from '../src/Tracker';
 
 /**
  * Integration tests for Tracker + Scope proxies.
@@ -13,12 +13,14 @@ const mockAdapter: ScopeAdapter = {
 		depend: () => {},
 		notify: () => {},
 	}),
-};
+} as ScopeAdapter;
+
+const createTracker = createTrackerFactory(mockAdapter);
 
 describe('Tracker Proxy Integration', () => {
 	describe('Simple Proxy (Shallow)', () => {
 		it('should create a proxy via tracker.proxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy = tracker.proxy(obj, 'config');
 
@@ -27,7 +29,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track property reads through proxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy = tracker.proxy(obj, 'config');
 
@@ -36,7 +38,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should trigger notifies on property writes through proxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy = tracker.proxy(obj, 'config');
 
@@ -46,7 +48,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should create itemProxy via tracker.itemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {id: '1', name: 'Alice', score: 100};
 			const proxy = tracker.itemProxy(user, 'users', '1');
 
@@ -55,7 +57,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track property reads through itemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {id: '1', name: 'Alice', score: 100};
 			const proxy = tracker.itemProxy(user, 'users', '1');
 
@@ -64,7 +66,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should trigger notifies on property writes through itemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {id: '1', name: 'Alice', score: 100};
 			const proxy = tracker.itemProxy(user, 'users', '1');
 
@@ -76,7 +78,7 @@ describe('Tracker Proxy Integration', () => {
 
 	describe('Deep Proxy', () => {
 		it('should create deepProxy via tracker.deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				name: 'Alice',
 				stats: {
@@ -97,7 +99,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track shallow property reads through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', stats: {health: 100}};
 			const proxy = tracker.deepProxy(obj, 'config');
 
@@ -106,7 +108,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track nested property reads through deepProxy() (1 level)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', stats: {health: 100}};
 			const proxy = tracker.deepProxy(obj, 'config');
 
@@ -115,7 +117,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track deeply nested property reads through deepProxy() (3 levels)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				name: 'Alice',
 				stats: {
@@ -131,7 +133,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should write shallow property through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', stats: {health: 100}};
 			const proxy = tracker.deepProxy(obj, 'config');
 
@@ -141,7 +143,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should write nested property through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', stats: {health: 100}};
 			const proxy = tracker.deepProxy(obj, 'config');
 
@@ -151,7 +153,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should create deepItemProxy via tracker.deepItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {
 				id: '1',
 				name: 'Alice',
@@ -168,7 +170,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should track nested property reads through deepItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {
 				id: '1',
 				name: 'Alice',
@@ -181,7 +183,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should write nested property through deepItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {
 				id: '1',
 				name: 'Alice',
@@ -197,7 +199,7 @@ describe('Tracker Proxy Integration', () => {
 
 	describe('Array Proxy Operations', () => {
 		it('should create deepProxy with array', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const arr = [1, 2, 3, 4, 5];
 			const proxy = tracker.deepProxy(arr, 'numbers');
 
@@ -206,7 +208,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should read array element through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const arr = [1, 2, 3, 4, 5];
 			const proxy = tracker.deepProxy(arr, 'numbers');
 
@@ -215,7 +217,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should read array length through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const arr = [1, 2, 3, 4, 5];
 			const proxy = tracker.deepProxy(arr, 'numbers');
 
@@ -224,7 +226,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should support push() through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const arr = [1, 2, 3, 4, 5];
 			const proxy = tracker.deepProxy(arr, 'numbers');
 
@@ -235,7 +237,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should support pop() through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const arr = [1, 2, 3, 4, 5];
 			const proxy = tracker.deepProxy(arr, 'numbers');
 
@@ -246,7 +248,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should support nested array access through deepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				users: [
 					{id: '1', name: 'Alice'},
@@ -262,7 +264,7 @@ describe('Tracker Proxy Integration', () => {
 
 	describe('Proxy Identity Preservation', () => {
 		it('should return same proxy instance for same object (cached)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy1 = tracker.deepProxy(obj, 'config');
 			const proxy2 = tracker.deepProxy(obj, 'config');
@@ -272,7 +274,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should reuse cache for multiple nested accesses', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				stats: {
 					health: 100,
@@ -291,7 +293,7 @@ describe('Tracker Proxy Integration', () => {
 
 	describe('Readonly Proxy Methods', () => {
 		it('should create readonlyProxy via tracker.readonlyProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy = tracker.readonlyProxy(obj, 'config');
 
@@ -300,7 +302,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should throw on writes through readonlyProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {name: 'Alice', score: 100};
 			const proxy = tracker.readonlyProxy(obj, 'config');
 
@@ -310,7 +312,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should create readonlyDeepProxy via tracker.readonlyDeepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				name: 'Alice',
 				stats: {health: 100},
@@ -322,7 +324,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should throw on nested writes through readonlyDeepProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {
 				name: 'Alice',
 				stats: {health: 100},
@@ -335,7 +337,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should create readonlyItemProxy via tracker.readonlyItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {id: '1', name: 'Alice', score: 100};
 			const proxy = tracker.readonlyItemProxy(user, 'users', '1');
 
@@ -344,7 +346,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should throw on writes through readonlyItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {id: '1', name: 'Alice', score: 100};
 			const proxy = tracker.readonlyItemProxy(user, 'users', '1');
 
@@ -354,7 +356,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should create readonlyDeepItemProxy via tracker.readonlyDeepItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {
 				id: '1',
 				name: 'Alice',
@@ -367,7 +369,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should throw on nested writes through readonlyDeepItemProxy()', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const user = {
 				id: '1',
 				name: 'Alice',
@@ -383,7 +385,7 @@ describe('Tracker Proxy Integration', () => {
 
 	describe('Edge Cases', () => {
 		it('should handle deepProxy with Date object (not proxied)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {createdAt: new Date(), name: 'Alice'};
 			const proxy = tracker.deepProxy(obj, 'data');
 
@@ -395,7 +397,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should handle deepProxy with RegExp object (not proxied)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {pattern: /test/g, name: 'Alice'};
 			const proxy = tracker.deepProxy(obj, 'data');
 
@@ -407,7 +409,7 @@ describe('Tracker Proxy Integration', () => {
 		});
 
 		it('should handle deepProxy with Map object (not proxied)', () => {
-			const tracker = new Tracker({adapter: mockAdapter});
+			const tracker = createTracker();
 			const obj = {data: new Map(), name: 'Alice'};
 			const proxy = tracker.deepProxy(obj, 'data');
 
