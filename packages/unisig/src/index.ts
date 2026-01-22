@@ -45,29 +45,6 @@ export type ReactiveResult<T> = T extends object ? T : Boxed<T>;
  *
  * This is the core interface that all reactivity adapters must implement
  * to provide reactive state and effects for unisig.
- *
- * @example
- * ```ts
- * // Svelte adapter
- * const svelteAdapter: BasicReactivityAdapter = {
- *   effect: (fn) => {
- *     let cleanup;
- *     const rootCleanup = $effect.root(() => {
- *       $effect(() => {
- *         cleanup?.();
- *         const result = fn();
- *         cleanup = typeof result === 'function' ? result : undefined;
- *       });
- *     });
- *     return () => { cleanup?.(); rootCleanup(); };
- *   },
- *   state: <T>(initial: T) => $state(initial),
- *   signal: <T>(initial: T) => {
- *     const s = $state({ value: initial });
- *     return { get: () => s.value, set: (v) => s.value = v };
- *   },
- * };
- * ```
  */
 export interface BasicReactivityAdapter {
 	/**
@@ -180,7 +157,7 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
 	/**
 	 * Create a reactive effect that re-runs when tracked dependencies change.
 	 *
-	 * @param fn - The effect function. Can return a cleanup function.
+	 * @param fn - The effect function.
 	 * @returns A cleanup function to stop the effect.
 	 *
 	 * @example
@@ -198,7 +175,7 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
 	 * cleanup();          // Stops the effect
 	 * ```
 	 */
-	effect: (fn: () => void | (() => void)) => () => void;
+	effect: (fn: () => void) => () => void;
 
 	/**
 	 * The raw adapter, for advanced use cases.
@@ -219,8 +196,8 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
  * @example
  * ```ts
  * // setup.ts (or setup.svelte.ts for Svelte)
- * import { unisig } from 'unisig';
- * import { svelteAdapter } from '@unisig/svelte';
+ * import unisig from 'unisig';
+ * import svelteAdapter from '@unisig/svelte';
  *
  * export const { reactive, signal, effect } = unisig(svelteAdapter);
  * ```

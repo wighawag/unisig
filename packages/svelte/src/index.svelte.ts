@@ -121,8 +121,8 @@ export class SvelteDependency {
  *
  * @example
  * ```ts
- * import { svelteAdapter } from '@unisig/svelte';
- * import { unisig } from 'unisig';
+ * import svelteAdapter from '@unisig/svelte';
+ * import unisig from 'unisig';
  * import { Tracker } from '@unisig/tracker';
  *
  * const { state, signal, effect } = unisig(svelteAdapter);
@@ -145,8 +145,8 @@ export const svelteAdapter: ReactivityAdapter = {
 	 * @example
 	 * ```ts
 	 * // setup.svelte.ts
-	 * import { unisig } from 'unisig';
-	 * import { svelteAdapter } from '@unisig/svelte';
+	 * import unisig from 'unisig';
+	 * import svelteAdapter from '@unisig/svelte';
 	 *
 	 * export const { effect } = unisig(svelteAdapter);
 	 *

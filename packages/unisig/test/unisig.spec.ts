@@ -1,10 +1,10 @@
 import {describe, it, expect, vi} from 'vitest';
-import {
-	unisig,
-	type BasicReactivityAdapter,
-	type Signal,
-	type ReactiveResult,
+import type {
+	BasicReactivityAdapter,
+	Signal,
+	ReactiveResult,
 } from '../src/index.js';
+import unisig from '../src/index.js';
 
 // Helper to check if a value is a primitive
 function isPrimitive(value: unknown): boolean {

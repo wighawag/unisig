@@ -282,7 +282,7 @@ createEffect(() => {
 Create a factory function for creating Tracker instances with a pre-configured adapter. This is useful when you have multiple stores that all use the same adapter - create the factory once and reuse it throughout your application.
 
 ```typescript
-import { unisig } from "unisig";
+import unisig from "unisig";
 import solidAdapter from "@unisig/solid-js";
 
 // Create the factory with your adapter
@@ -502,8 +502,8 @@ scope.trigger("key");
 For standalone reactive state (like Svelte runes, Solid signals, or Vue refs), use the factory pattern:
 
 ```typescript
-import { unisig } from "unisig";
-import { solidAdapter } from "@unisig/solid-js";
+import unisig from "unisig";
+import solidAdapter from "@unisig/solid-js";
 
 // Create configured reactive primitives
 const { reactive, signal, effect } = unisig(solidAdapter);
@@ -573,8 +573,8 @@ unisig supports using multiple signal libraries simultaneously through the [`Mul
 
 ```typescript
 import { Tracker, MultiAdapter, createMultiAdapter } from "unisig";
-import { solidAdapter } from "@unisg/solid-js";
-import { svelteAdapter } from "@unisg/svelte";
+import solidAdapter from "@unisg/solid-js";
+import svelteAdapter from "@unisg/svelte";
 
 // Using MultiAdapter constructor
 const multiAdapter = new MultiAdapter([
@@ -608,8 +608,8 @@ When building component libraries that work across multiple frameworks:
 
 ```typescript
 import { MultiAdapter } from "unisig";
-import { solidAdapter } from "@unisg/solid-js";
-import { svelteAdapter } from "@unisg/svelte";
+import solidAdapter from "@unisg/solid-js";
+import svelteAdapter from "@unisg/svelte";
 
 const sharedStore = new Tracker<SharedEvents>({
   adapter: new MultiAdapter([solidAdapter, svelteAdapter]),
