@@ -1,6 +1,6 @@
 # unisig
 
-**Universal signals** — simple reactive primitives that work with any signal library.
+**Universal signals** — a universal facade over any signal library's reactive primitives.
 
 Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 

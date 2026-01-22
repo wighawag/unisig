@@ -1,11 +1,11 @@
 # unisig
 
-**Universal signals** — add reactivity to any data with pluggable signal adapters.
+**Universal signals** — a universal facade over any signal library's reactive primitives.
 
 ## Features
 
 - 🎯 **Framework-agnostic** - Works with any signal library
-- ⚡ **Zero dependencies** - Lightweight and fast
+- ⚡ **Zero dependencies** - Lightweight and minimal overhead
 - 🔌 **Pluggable adapters** - Works with signaldb adapters
 - 📝 **Type-safe** - Full TypeScript support
 
