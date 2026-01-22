@@ -117,56 +117,10 @@ See the [`@unisig/tracker` README](./packages/tracker/README.md) for full docume
 - Auto-tracking proxies (shallow and deep)
 - Performance patterns
 
-## How Signals Work
+## Documentation
 
-If you're new to signals, here's a quick overview.
-
-### The Problem Signals Solve
-
-Without signals, you manually tell the UI to update:
-
-```typescript
-// Manual approach - tedious and error-prone
-let count = 0;
-
-function increment() {
-  count++;
-  updateCountDisplay(); // Must remember to call this!
-  updateTotalDisplay(); // And this!
-}
-```
-
-### How Signals Work
-
-Signals **automatically track** what depends on what, then update only what's needed:
-
-```typescript
-// With signals - automatic updates
-const count = signal(0);
-
-// This "effect" automatically re-runs when count changes
-effect(() => {
-  console.log("Count is:", count.get()); // Reading creates a dependency
-});
-
-count.set(count.get() + 1); // Effect automatically re-runs!
-```
-
-### The Core Mechanism
-
-Every signal library works the same way:
-
-1. **Reading** (`depend`): When you READ a value inside an effect, the signal records "this effect needs me"
-2. **Writing** (`notify`): When you WRITE a value, the signal notifies all recorded effects to re-run
-
-An **adapter** maps library-specific APIs to this generic interface:
-
-| Library  | depend() equivalent | notify() equivalent |
-|----------|--------------------|--------------------|
-| Solid.js | Read: `sig()` | Write: `setSig()` |
-| Preact   | Read: `sig.value` | Write: `sig.value = x` |
-| Vue      | Read: `ref.value` | Write: `ref.value = x` |
-| Svelte 5 | Read: `$state` getter | Write: `$state` setter |
+- [**Signals Refresher**](./docs/SIGNALS_REFRESHER.md) - Learn how signals work under the hood
+- [**Patterns & Best Practices**](./docs/PATTERNS.md) - Common patterns for building stores
 
 ## Adapters
 
