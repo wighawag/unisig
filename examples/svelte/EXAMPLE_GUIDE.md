@@ -37,11 +37,11 @@ class PlayerStore {
 ### Svelte Adapter (`svelteAdapter.svelte.ts`)
 
 ```typescript
-import svelteReactivityAdapter from '@signaldb/svelte';
+import svelteReactivityAdapter from '@unisig/svelte';
 export const svelteAdapter: ReactivityAdapter = svelteReactivityAdapter;
 ```
 
-The adapter wraps `@signaldb/svelte` to provide fine-grained reactivity. This adapter:
+The adapter wraps `@unisg/svelte` to provide fine-grained reactivity. This adapter:
 - Tracks dependencies automatically when accessed in reactive contexts
 - Triggers re-renders when dependencies change
 - Works with Svelte 5's `$state`, `$derived`, and `$effect` runes

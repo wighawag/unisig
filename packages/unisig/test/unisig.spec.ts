@@ -1,5 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import {unisig, type BasicReactivityAdapter, type Signal, type StateResult} from '../src/index.js';
+import {unisig, type BasicReactivityAdapter, type Signal, type ReactiveResult} from '../src/index.js';
 
 // Helper to check if a value is a primitive
 function isPrimitive(value: unknown): boolean {
@@ -39,17 +39,17 @@ function createMockAdapter(): BasicReactivityAdapter & {
 				if (idx !== -1) effects.splice(idx, 1);
 			};
 		},
-		state<T>(initial: T): StateResult<T> {
+		reactive<T>(initial: T): ReactiveResult<T> {
 			// For primitives, return { value: T }
 			// For objects, return T directly
 			if (isPrimitive(initial)) {
 				const boxed = { value: initial };
 				states.push(boxed);
-				return boxed as StateResult<T>;
+				return boxed as ReactiveResult<T>;
 			}
 			const state = {...initial as object};
 			states.push(state);
-			return state as StateResult<T>;
+			return state as ReactiveResult<T>;
 		},
 		signal<T>(initial: T): Signal<T> {
 			let value = initial;
@@ -74,23 +74,23 @@ function createMockAdapter(): BasicReactivityAdapter & {
 
 describe('unisig', () => {
 	describe('unisig()', () => {
-		it('should return a bundle with state, signal, effect, and adapter', () => {
+		it('should return a bundle with reactive, signal, effect, and adapter', () => {
 			const adapter = createMockAdapter();
 			const bundle = unisig(adapter);
 
-			expect(typeof bundle.state).toBe('function');
+			expect(typeof bundle.reactive).toBe('function');
 			expect(typeof bundle.signal).toBe('function');
 			expect(typeof bundle.effect).toBe('function');
 			expect(bundle.adapter).toBe(adapter);
 		});
 	});
 
-	describe('state()', () => {
+	describe('reactive()', () => {
 		it('should create reactive state for objects', () => {
 			const adapter = createMockAdapter();
-			const {state} = unisig(adapter);
+			const {reactive} = unisig(adapter);
 
-			const obj = state({name: 'Alice', age: 30});
+			const obj = reactive({name: 'Alice', age: 30});
 
 			expect(obj.name).toBe('Alice');
 			expect(obj.age).toBe(30);
@@ -99,10 +99,10 @@ describe('unisig', () => {
 
 		it('should create reactive state for primitives with .value wrapper', () => {
 			const adapter = createMockAdapter();
-			const {state} = unisig(adapter);
+			const {reactive} = unisig(adapter);
 
-			const num = state(42);
-			const str = state('hello');
+			const num = reactive(42);
+			const str = reactive('hello');
 
 			// Primitives are wrapped in { value: T }
 			expect(num.value).toBe(42);
@@ -112,9 +112,9 @@ describe('unisig', () => {
 
 		it('should allow setting primitive values via .value', () => {
 			const adapter = createMockAdapter();
-			const {state} = unisig(adapter);
+			const {reactive} = unisig(adapter);
 
-			const num = state(42);
+			const num = reactive(42);
 			num.value = 100;
 
 			expect(num.value).toBe(100);
@@ -224,17 +224,17 @@ describe('BasicReactivityAdapter interface', () => {
 	it('should have correct structure', () => {
 		const adapter: BasicReactivityAdapter = {
 			effect: vi.fn(() => () => {}),
-			state: <T>(initial: T): StateResult<T> => {
+			reactive: <T>(initial: T): ReactiveResult<T> => {
 				if (initial === null || (typeof initial !== 'object' && typeof initial !== 'function')) {
-					return { value: initial } as StateResult<T>;
+					return { value: initial } as ReactiveResult<T>;
 				}
-				return initial as StateResult<T>;
+				return initial as ReactiveResult<T>;
 			},
 			signal: <T>(initial: T) => ({get: () => initial, set: vi.fn()}),
 		};
 
 		expect(typeof adapter.effect).toBe('function');
-		expect(typeof adapter.state).toBe('function');
+		expect(typeof adapter.reactive).toBe('function');
 		expect(typeof adapter.signal).toBe('function');
 	});
 });

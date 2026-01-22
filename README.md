@@ -282,8 +282,8 @@ createEffect(() => {
 Create a factory function for creating Tracker instances with a pre-configured adapter. This is useful when you have multiple stores that all use the same adapter - create the factory once and reuse it throughout your application.
 
 ```typescript
-import { createTrackerFactory } from "unisig";
-import solidAdapter from "@signaldb/solid";
+import { unisig } from "unisig";
+import solidAdapter from "@unisig/solid";
 
 // Create the factory with your adapter
 const createTracker = createTrackerFactory(solidAdapter);
@@ -497,27 +497,31 @@ scope.track("key");
 scope.trigger("key");
 ```
 
-## Standalone State with `withAdapter`
+## Standalone State with `unisig`
 
 For standalone reactive state (like Svelte runes, Solid signals, or Vue refs), use the factory pattern:
 
 ```typescript
-import { withAdapter, withAdapterRef } from "unisig";
-import { solidReactivityAdapter } from "@signaldb/solid";
+import { unisig } from "unisig";
+import { solidAdapter } from "@unisig/solid";
 
-// Create configured state function
-const state = withAdapter(solidReactivityAdapter);
-const ref = withAdapterRef(solidReactivityAdapter);
+// Create configured reactive primitives
+const { reactive, signal, effect } = unisig(solidAdapter);
 
-// Primitives return Ref<T>
-const count = state(0);
+// Primitives return { value: T }
+const count = reactive(0);
 console.log(count.value); // 0
 count.value++; // Triggers updates
 
-// Objects return deeply proxied versions
-const player = state({ name: "Alice", score: 0, stats: { health: 100 } });
+// Objects return deeply reactive versions
+const player = reactive({ name: "Alice", score: 0, stats: { health: 100 } });
 console.log(player.name); // Tracks 'name'
 player.score = 50; // Notifies 'score' watchers
+
+// Shallow signals with get/set interface
+const countSignal = signal(0);
+console.log(countSignal.get()); // 0
+countSignal.set(1); // Triggers updates
 
 // Derived values use framework primitives
 const doubled = $derived.by(() => count.value * 2); // Svelte
@@ -532,18 +536,14 @@ const doubled = $derived.by(() => count.value * 2); // Svelte
 
 ## Adapters
 
-unisig uses the same adapter pattern as [signaldb](https://github.com/maxnowack/signaldb). You can use any adapter from the signaldb ecosystem:
 
-- `@signaldb/solid` for Solid.js
-- `@signaldb/preact` for Preact
-- `@signaldb/vue` for Vue
-- `@signaldb/mobx` for MobX
-- `@signaldb/svelte` for Svelte
+- `@unisig/solid` for Solid.js
+- `@unisig/svelte` for Svelte
 
 Example with Solid.js:
 
 ```typescript
-import { solidReactivityAdapter } from "@signaldb/solid";
+import { solidReactivityAdapter } from "@unisig/solid";
 import { Tracker } from "unisig";
 
 const $ = new Tracker<UserEvents>(solidReactivityAdapter);
@@ -573,22 +573,19 @@ unisig supports using multiple signal libraries simultaneously through the [`Mul
 
 ```typescript
 import { Tracker, MultiAdapter, createMultiAdapter } from "unisig";
-import { solidAdapter } from "@signaldb/solid";
-import { preactAdapter } from "@signaldb/preact";
-import { mobxAdapter } from "@signaldb/mobx";
+import { solidAdapter } from "@unisg/solid";
+import { svelteAdapter } from "@unisg/svelte";
 
 // Using MultiAdapter constructor
 const multiAdapter = new MultiAdapter([
   solidAdapter,
-  preactAdapter,
-  mobxAdapter,
+  svelteAdapter,
 ]);
 
 // Or using the helper function
 const multiAdapter = createMultiAdapter(
   solidAdapter,
-  preactAdapter,
-  mobxAdapter,
+  svelteAdapter,
 );
 
 // Create a Tracker that works with all three runtimes
@@ -611,18 +608,16 @@ When building component libraries that work across multiple frameworks:
 
 ```typescript
 import { MultiAdapter } from "unisig";
-import { solidAdapter } from "@signaldb/solid";
-import { preactAdapter } from "@signaldb/preact";
-import { vueAdapter } from "@signaldb/vue";
+import { solidAdapter } from "@unisg/solid";
+import { svelteAdapter } from "@unisg/svelte";
 
 const sharedStore = new Tracker<SharedEvents>({
-  adapter: new MultiAdapter([solidAdapter, preactAdapter, vueAdapter]),
+  adapter: new MultiAdapter([solidAdapter, svelteAdapter]),
 });
 
 // Now the same store works seamlessly with:
 // - Solid.js components (via solidAdapter)
-// - Preact components (via preactAdapter)
-// - Vue components (via vueAdapter)
+// - Svelte components (via svelteAdapter)
 ```
 
 #### 2. Migration Scenarios
@@ -977,7 +972,7 @@ See [PATTERNS.md](./PATTERNS.md) for:
 
 ## Inspiration
 
-This project was inspired by the reactivity adapter pattern from [signaldb](https://github.com/maxnowack/signaldb). The adapter interface used by unisig is compatible with signaldb adapters, allowing you to use any adapter from the signaldb ecosystem (`@signaldb/solid`, `@signaldb/preact`, `@signaldb/vue`, `@signaldb/mobx`, `@signaldb/svelte`, etc.) directly with unisig.
+This project was inspired by the reactivity adapter pattern from [signaldb](https://github.com/maxnowack/signaldb). The adapter interface used by unisig is an extended version of signaldb adapters.
 
 ## License
 

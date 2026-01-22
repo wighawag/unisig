@@ -1,5 +1,5 @@
 import {ReactivityAdapter} from '@unisig/scope';
-import type {StateResult} from 'unisig';
+import type {ReactiveResult} from 'unisig';
 import {createSignal, getOwner, onCleanup, createRoot, createEffect} from 'solid-js';
 import {createMutable} from 'solid-js/store';
 
@@ -26,12 +26,12 @@ const solidReactivityAdapter: ReactivityAdapter = {
 	// Deep - native (requires solid-js/store package)
 	// For primitives, we wrap in { value: T } using createMutable
 	// For objects, we return the object directly with createMutable
-	state<T>(initial: T): StateResult<T> {
+	reactive<T>(initial: T): ReactiveResult<T> {
 		if (isPrimitive(initial)) {
 			// Wrap primitives in { value: T }
-			return createMutable({value: initial}) as StateResult<T>;
+			return createMutable({value: initial}) as ReactiveResult<T>;
 		}
-		return createMutable(initial as object) as StateResult<T>;
+		return createMutable(initial as object) as ReactiveResult<T>;
 	},
 
 	// Shallow - native pattern

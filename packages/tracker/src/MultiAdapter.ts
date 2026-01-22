@@ -75,20 +75,18 @@ export class CompositeDependency implements Dependency {
  * @example
  * ```ts
  * import { withAdapter } from 'unisig'
- * import { solidAdapter } from '@signaldb/solid'
- * import { preactAdapter } from '@signaldb/preact'
- * import { mobxAdapter } from '@signaldb/mobx'
+ * import { solidAdapter } from '@unisig/solid'
+ * import { svelteAdapter } from '@unisig/svelte'
  *
  * const multiAdapter = new MultiAdapter([
  *   solidAdapter,
- *   preactAdapter,
- *   mobxAdapter,
+ *   svelteAdapter,
  * ])
  *
- * const state = withAdapter(multiAdapter)
+ * const reactive = withAdapter(multiAdapter)
  *
- * // Now state() creates signals that work with Solid, Preact, and MobX simultaneously
- * const count = state(0)
+ * // Now reactive() creates signals that work with Solid, Preact, and MobX simultaneously
+ * const count = reactive(0)
  *
  * // In Solid.js component:
  * createEffect(() => console.log(count())) // Re-runs when count changes
@@ -192,22 +190,20 @@ export class MultiAdapter implements ScopeAdapter {
 }
 
 /**
-	* Helper function to create a MultiAdapter with a more concise API.
-	*
-	* @param adapters - Array of scope adapters to combine
-	* @returns A new MultiAdapter instance
-	*
-	* @example
-	* ```ts
-	* import { createMultiAdapter } from '@unisig/tracker'
-	* import { solidAdapter } from '@signaldb/solid'
-	* import { preactAdapter } from '@signaldb/preact'
-	*
-	* const multiAdapter = createMultiAdapter(solidAdapter, preactAdapter)
-	* ```
-	*/
-export function createMultiAdapter(
-	...adapters: ScopeAdapter[]
-): MultiAdapter {
+ * Helper function to create a MultiAdapter with a more concise API.
+ *
+ * @param adapters - Array of scope adapters to combine
+ * @returns A new MultiAdapter instance
+ *
+ * @example
+ * ```ts
+ * import { createMultiAdapter } from '@unisig/tracker'
+ * import { solidAdapter } from '@unisig/solid'
+ * import { svelteAdapter } from '@unisig/svelte'
+ *
+ * const multiAdapter = createMultiAdapter(solidAdapter, svelteAdapter)
+ * ```
+ */
+export function createMultiAdapter(...adapters: ScopeAdapter[]): MultiAdapter {
 	return new MultiAdapter(adapters);
 }

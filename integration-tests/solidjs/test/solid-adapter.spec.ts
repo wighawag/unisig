@@ -26,18 +26,18 @@ describe('SolidJS Integration Tests', () => {
 		});
 	});
 
-	describe('state() - objects', () => {
+	describe('reactive() - objects', () => {
 		it('should create reactive state for objects', () => {
-			const {state} = unisig(solidAdapter);
-			const obj = state({name: 'Alice', age: 30});
+			const {reactive} = unisig(solidAdapter);
+			const obj = reactive({name: 'Alice', age: 30});
 
 			expect(obj.name).toBe('Alice');
 			expect(obj.age).toBe(30);
 		});
 
 		it('should trigger reactivity when properties change', () => {
-			const {state, effect} = unisig(solidAdapter);
-			const obj = state({count: 0});
+			const {reactive, effect} = unisig(solidAdapter);
+			const obj = reactive({count: 0});
 			const values: number[] = [];
 
 			const cleanup = effect(() => {
@@ -57,8 +57,8 @@ describe('SolidJS Integration Tests', () => {
 		});
 
 		it('should support nested objects', () => {
-			const {state, effect} = unisig(solidAdapter);
-			const obj = state({user: {name: 'Alice', profile: {bio: 'Hello'}}});
+			const {reactive, effect} = unisig(solidAdapter);
+			const obj = reactive({user: {name: 'Alice', profile: {bio: 'Hello'}}});
 			const names: string[] = [];
 
 			const cleanup = effect(() => {
@@ -74,26 +74,26 @@ describe('SolidJS Integration Tests', () => {
 		});
 	});
 
-	describe('state() - primitives', () => {
+	describe('reactive() - primitives', () => {
 		it('should wrap primitives in { value: T }', () => {
-			const {state} = unisig(solidAdapter);
-			const count = state(5);
+			const {reactive} = unisig(solidAdapter);
+			const count = reactive(5);
 
 			// Primitives should be boxed
 			expect(count.value).toBe(5);
 		});
 
 		it('should allow setting primitive values via .value', () => {
-			const {state} = unisig(solidAdapter);
-			const count = state(5);
+			const {reactive} = unisig(solidAdapter);
+			const count = reactive(5);
 
 			count.value = 10;
 			expect(count.value).toBe(10);
 		});
 
 		it('should trigger reactivity when primitive value changes', () => {
-			const {state, effect} = unisig(solidAdapter);
-			const count = state(0);
+			const {reactive, effect} = unisig(solidAdapter);
+			const count = reactive(0);
 			const values: number[] = [];
 
 			const cleanup = effect(() => {
@@ -112,8 +112,8 @@ describe('SolidJS Integration Tests', () => {
 		});
 
 		it('should work with string primitives', () => {
-			const {state, effect} = unisig(solidAdapter);
-			const name = state('Alice');
+			const {reactive, effect} = unisig(solidAdapter);
+			const name = reactive('Alice');
 			const names: string[] = [];
 
 			const cleanup = effect(() => {
@@ -205,11 +205,11 @@ describe('SolidJS Integration Tests', () => {
 
 	describe('Combined usage', () => {
 		it('should work with multiple reactive sources', () => {
-			const {state, signal, effect} = unisig(solidAdapter);
+			const {reactive, signal, effect} = unisig(solidAdapter);
 
-			const user = state({name: 'Alice'});
+			const user = reactive({name: 'Alice'});
 			const count = signal(0);
-			const primitive = state(100);
+			const primitive = reactive(100);
 
 			const results: string[] = [];
 

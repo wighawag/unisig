@@ -72,10 +72,9 @@ The library supports granular reactivity at three levels:
 
 ### Factory Pattern for Standalone State
 
-The [`standalone.ts`](packages/unisig/src/standalone.ts) module provides factory functions:
+The [`index.ts`](packages/unisig/src/index.ts) module provides the `unisig()` factory function:
 
-- `withAdapter(adapter)` - Creates a `state()` function
-- `withAdapterRef(adapter)` - Creates a `ref()` function
+- `unisig(adapter)` - Creates a bundle with `reactive()`, `signal()`, and `effect()` functions
 
 This avoids global state and enables testing with multiple adapters.
 
@@ -91,7 +90,7 @@ interface ReactivityAdapter {
 }
 ```
 
-Pre-built adapters available from `@signaldb/*` packages.
+Pre-built adapters available from `@unisig/*` packages.
 
 ## Coding Conventions
 

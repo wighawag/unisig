@@ -20,7 +20,7 @@ Create a setup file that re-exports the utilities:
 
 ```ts
 // src/lib/unisig.svelte.ts
-export { svelteAdapter, createTracker, effect, state, ref } from '@unisig/svelte';
+export { svelteAdapter, createTracker, effect, reactive, signal } from '@unisig/svelte';
 ```
 
 ### Using in Svelte Components
@@ -79,20 +79,20 @@ export class DataStore {
 }
 ```
 
-### Using State and Ref
+### Using Reactive and Signal
 
 ```ts
 // src/lib/reactive.svelte.ts
-import { state, ref } from '@unisig/svelte';
+import { reactive, signal } from '@unisig/svelte';
 
 // Deep reactive state
-const user = state({ name: 'John', settings: { theme: 'dark' } });
+const user = reactive({ name: 'John', settings: { theme: 'dark' } });
 user.name = 'Jane';  // Reactive!
 user.settings.theme = 'light';  // Also reactive!
 
-// Single value reference
-const counter = ref(0);
-counter.value++;  // Reactive!
+// Shallow signal with get/set interface
+const counter = signal(0);
+counter.set(1);  // Reactive!
 ```
 
 ## API
@@ -106,8 +106,8 @@ The raw Svelte adapter implementing the `ReactivityAdapter` interface.
 Pre-configured bundle containing all utilities:
 - `createTracker`: Create a new Tracker instance
 - `effect`: Create framework-agnostic effects
-- `state`: Create reactive state objects
-- `ref`: Create reactive single-value references
+- `reactive`: Create deep reactive state objects
+- `signal`: Create shallow reactive signals with get/set interface
 - `adapter`: The underlying adapter
 
 ### `createTracker()`
@@ -133,13 +133,13 @@ const cleanup = effect(() => {
 cleanup();
 ```
 
-### `state(initialValue)`
+### `reactive(initialValue)`
 
 Create a deeply reactive state object.
 
-### `ref(initialValue)`
+### `signal(initialValue)`
 
-Create a reactive single-value reference.
+Create a shallow reactive signal with get/set interface.
 
 ## Requirements
 

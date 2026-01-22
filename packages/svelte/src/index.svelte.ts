@@ -11,7 +11,7 @@
  */
 
 import {createSubscriber} from 'svelte/reactivity';
-import type {Signal, StateResult} from 'unisig';
+import type {Signal, ReactiveResult} from 'unisig';
 import type {ReactivityAdapter} from '@unisig/scope';
 
 /**
@@ -199,24 +199,24 @@ export const svelteAdapter: ReactivityAdapter = {
 	 *
 	 * @example
 	 * ```ts
-	 * const { state } = unisig(svelteAdapter);
+	 * const { reactive } = unisig(svelteAdapter);
 	 *
 	 * // Objects - direct property access
-	 * const user = state({ name: 'Alice', age: 30 });
+	 * const user = reactive({ name: 'Alice', age: 30 });
 	 * user.name = 'Bob';  // Triggers reactivity
 	 *
 	 * // Primitives - use .value
-	 * const count = state(5);
+	 * const count = reactive(5);
 	 * count.value = 10;   // Triggers reactivity
 	 * ```
 	 */
-	state<T>(initial: T): StateResult<T> {
+	reactive<T>(initial: T): ReactiveResult<T> {
 		if (isPrimitive(initial)) {
 			// For primitives, return the wrapper instance (which has { value: T } shape)
-			return new ReactiveStateWrapper<T>(initial) as StateResult<T>;
+			return new ReactiveStateWrapper<T>(initial) as ReactiveResult<T>;
 		}
 		// For objects, return the reactive value directly
-		return new ReactiveStateWrapper<T>(initial).value as StateResult<T>;
+		return new ReactiveStateWrapper<T>(initial).value as ReactiveResult<T>;
 	},
 
 	/**

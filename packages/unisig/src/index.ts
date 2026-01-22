@@ -18,7 +18,7 @@ export interface Signal<T> {
 
 /**
  * Boxed value wrapper for primitives.
- * Used when state() receives a primitive value.
+ * Used when reactive() receives a primitive value.
  */
 export interface Boxed<T> {
 	value: T;
@@ -31,14 +31,14 @@ export interface Boxed<T> {
 export type IsPrimitive<T> = T extends object ? false : true;
 
 /**
- * Conditional return type for state().
+ * Conditional return type for reactive().
  * - Objects return T directly (deep reactive proxy)
  * - Primitives return { value: T } (boxed value)
  *
  * This ensures a consistent API across adapters that may have
  * different capabilities for handling primitives.
  */
-export type StateResult<T> = T extends object ? T : Boxed<T>;
+export type ReactiveResult<T> = T extends object ? T : Boxed<T>;
 
 /**
  * Minimal adapter for standalone reactive state.
@@ -95,16 +95,16 @@ export interface BasicReactivityAdapter {
 	 * @example
 	 * ```ts
 	 * // Objects - direct property access
-	 * const user = state({ name: 'Alice', age: 30 });
+	 * const user = reactive({ name: 'Alice', age: 30 });
 	 * user.name = 'Bob';  // Triggers reactivity
 	 *
 	 * // Primitives - use .value
-	 * const count = state(5);
+	 * const count = reactive(5);
 	 * count.value = 10;   // Triggers reactivity
 	 * console.log(count.value);  // 10
 	 * ```
 	 */
-	state<T>(initial: T): StateResult<T>;
+	reactive<T>(initial: T): ReactiveResult<T>;
 
 	/**
 	 * Create a shallow reactive signal with get/set interface.
@@ -147,18 +147,18 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
 	 *
 	 * @example
 	 * ```ts
-	 * const { state } = unisig(adapter);
+	 * const { reactive } = unisig(adapter);
 	 *
 	 * // Objects - direct property access
-	 * const user = state({ name: 'Alice', age: 30 });
+	 * const user = reactive({ name: 'Alice', age: 30 });
 	 * user.name = 'Bob';  // Triggers reactivity
 	 *
 	 * // Primitives - use .value
-	 * const count = state(5);
+	 * const count = reactive(5);
 	 * count.value = 10;   // Triggers reactivity
 	 * ```
 	 */
-	state: <T>(initial: T) => StateResult<T>;
+	reactive: <T>(initial: T) => ReactiveResult<T>;
 
 	/**
 	 * Create a shallow reactive signal with get/set interface.
@@ -185,9 +185,9 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
 	 *
 	 * @example
 	 * ```ts
-	 * const { effect, state } = unisig(adapter);
+	 * const { effect, reactive } = unisig(adapter);
 	 *
-	 * const user = state({ name: 'Alice' });
+	 * const user = reactive({ name: 'Alice' });
 	 *
 	 * const cleanup = effect(() => {
 	 *   console.log('Name:', user.name);
@@ -210,11 +210,11 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
  * Create a bundle of reactive primitives from an adapter.
  *
  * This is the main entry point for using unisig. Pass your adapter
- * and get back state, signal, and effect functions pre-configured
+ * and get back reactive, signal, and effect functions pre-configured
  * with your reactivity system.
  *
  * @param adapter - The reactivity adapter to use
- * @returns A bundle with state, signal, effect, and the adapter
+ * @returns A bundle with reactive, signal, effect, and the adapter
  *
  * @example
  * ```ts
@@ -222,15 +222,15 @@ export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
  * import { unisig } from 'unisig';
  * import { svelteAdapter } from '@unisig/svelte';
  *
- * export const { state, signal, effect } = unisig(svelteAdapter);
+ * export const { reactive, signal, effect } = unisig(svelteAdapter);
  * ```
  *
  * @example
  * ```ts
  * // Usage
- * import { state, signal, effect } from './setup';
+ * import { reactive, signal, effect } from './setup';
  *
- * const user = state({ name: 'Alice', age: 30 });
+ * const user = reactive({ name: 'Alice', age: 30 });
  * const count = signal(0);
  *
  * effect(() => {
@@ -245,7 +245,7 @@ export function unisig<Adapter extends BasicReactivityAdapter>(
 	adapter: Adapter,
 ): ReactivityBundle<Adapter> {
 	return {
-		state: <T>(initial: T) => adapter.state(initial) as StateResult<T>,
+		reactive: <T>(initial: T) => adapter.reactive(initial) as ReactiveResult<T>,
 		signal: <T>(initial: T) => adapter.signal(initial),
 		effect: (fn) => adapter.effect(fn),
 		adapter,
