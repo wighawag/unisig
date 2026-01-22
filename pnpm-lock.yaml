@@ -55,11 +55,11 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@25.0.10)
 
-  integration-tests/solidjs:
+  integration-tests/solid-js:
     dependencies:
-      '@unisig/solid':
+      '@unisig/solid-js':
         specifier: workspace:*
-        version: link:../../packages/solid
+        version: link:../../packages/solid-js
       solid-js:
         specifier: ^1.9.0
         version: 1.9.10
@@ -111,7 +111,7 @@ importers:
         specifier: ^4.0.17
         version: 4.0.17(@types/node@25.0.10)(happy-dom@20.3.4)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.10)(typescript@5.9.3))
 
-  packages/solid:
+  packages/solid-js:
     devDependencies:
       '@unisig/tracker':
         specifier: workspace:*

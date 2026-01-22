@@ -283,7 +283,7 @@ Create a factory function for creating Tracker instances with a pre-configured a
 
 ```typescript
 import { unisig } from "unisig";
-import solidAdapter from "@unisig/solid";
+import solidAdapter from "@unisig/solid-js";
 
 // Create the factory with your adapter
 const createTracker = createTrackerFactory(solidAdapter);
@@ -503,7 +503,7 @@ For standalone reactive state (like Svelte runes, Solid signals, or Vue refs), u
 
 ```typescript
 import { unisig } from "unisig";
-import { solidAdapter } from "@unisig/solid";
+import { solidAdapter } from "@unisig/solid-js";
 
 // Create configured reactive primitives
 const { reactive, signal, effect } = unisig(solidAdapter);
@@ -543,7 +543,7 @@ const doubled = $derived.by(() => count.value * 2); // Svelte
 Example with Solid.js:
 
 ```typescript
-import { solidReactivityAdapter } from "@unisig/solid";
+import { solidReactivityAdapter } from "@unisig/solid-js";
 import { Tracker } from "unisig";
 
 const $ = new Tracker<UserEvents>(solidReactivityAdapter);
@@ -573,7 +573,7 @@ unisig supports using multiple signal libraries simultaneously through the [`Mul
 
 ```typescript
 import { Tracker, MultiAdapter, createMultiAdapter } from "unisig";
-import { solidAdapter } from "@unisg/solid";
+import { solidAdapter } from "@unisg/solid-js";
 import { svelteAdapter } from "@unisg/svelte";
 
 // Using MultiAdapter constructor
@@ -608,7 +608,7 @@ When building component libraries that work across multiple frameworks:
 
 ```typescript
 import { MultiAdapter } from "unisig";
-import { solidAdapter } from "@unisg/solid";
+import { solidAdapter } from "@unisg/solid-js";
 import { svelteAdapter } from "@unisg/svelte";
 
 const sharedStore = new Tracker<SharedEvents>({

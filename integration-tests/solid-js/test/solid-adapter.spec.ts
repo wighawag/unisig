@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest';
 import {createRoot} from 'solid-js';
-import solidAdapter from '@unisig/solid';
+import solidAdapter from '@unisig/solid-js';
 import {unisig} from 'unisig';
 
 describe('SolidJS Integration Tests', () => {
@@ -226,12 +226,7 @@ describe('SolidJS Integration Tests', () => {
 			expect(results).toEqual(['Alice-0-100', 'Bob-0-100', 'Bob-1-100']);
 
 			primitive.value = 200;
-			expect(results).toEqual([
-				'Alice-0-100',
-				'Bob-0-100',
-				'Bob-1-100',
-				'Bob-1-200',
-			]);
+			expect(results).toEqual(['Alice-0-100', 'Bob-0-100', 'Bob-1-100', 'Bob-1-200']);
 
 			cleanup();
 		});
