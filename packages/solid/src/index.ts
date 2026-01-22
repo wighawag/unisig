@@ -23,7 +23,7 @@ const solidReactivityAdapter: ReactivityAdapter = {
 		});
 	},
 
-	// Deep - native (requires solid-js/store package)
+	// Deep - native (requires solid/store package)
 	// For primitives, we wrap in { value: T } using createMutable
 	// For objects, we return the object directly with createMutable
 	reactive<T>(initial: T): ReactiveResult<T> {

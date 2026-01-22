@@ -12,7 +12,7 @@
 		"events",
 		"reactive",
 		"state",
-		"solid",
+		"solid-js",
 		"preact",
 		"vue",
 		"svelte",
