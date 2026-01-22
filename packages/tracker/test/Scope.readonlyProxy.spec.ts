@@ -8,7 +8,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test', value: 123};
 			const proxy = scope.readonlyProxy(obj, 'testKey');
@@ -26,7 +26,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test'};
 			const proxy = scope.readonlyProxy(obj, 'testKey');
@@ -43,7 +43,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test'};
 			const proxy = scope.readonlyProxy(obj, 'testKey');
@@ -60,7 +60,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => false,
-			});
+			} as any);
 
 			const obj = {name: 'test'};
 			const proxy = scope.readonlyProxy(obj, 'testKey');
@@ -77,7 +77,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test', value: 123};
 			const proxy = scope.readonlyItemProxy(obj, 'users', 'user1');
@@ -95,7 +95,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test'};
 			const proxy = scope.readonlyItemProxy(obj, 'users', 'user1');
@@ -112,7 +112,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {name: 'test'};
 			const proxy = scope.readonlyItemProxy(obj, 'users', 'user1');
@@ -131,7 +131,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				theme: {
@@ -156,7 +156,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				theme: {
@@ -179,7 +179,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				tags: ['tag1', 'tag2', 'tag3'],
@@ -199,7 +199,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				tags: ['tag1', 'tag2'],
@@ -220,7 +220,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				tags: ['tag1', 'tag2'],
@@ -239,7 +239,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				stats: {
@@ -262,7 +262,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				stats: {
@@ -283,7 +283,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {
 				items: [1, 2, 3],
@@ -305,7 +305,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const nestedObj = {value: 123};
 			const obj = {nested: nestedObj};
@@ -326,7 +326,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {date: new Date('2024-01-01')};
 			const proxy = scope.readonlyDeepProxy(obj, 'key');
@@ -339,7 +339,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {regex: /test/};
 			const proxy = scope.readonlyDeepProxy(obj, 'key');
@@ -352,7 +352,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {map: new Map([['key', 'value']])};
 			const proxy = scope.readonlyDeepProxy(obj, 'key');
@@ -365,7 +365,7 @@ describe('Scope Readonly Proxies', () => {
 			const scope = new Scope({
 				create: () => mockDep,
 				isInScope: () => true,
-			});
+			} as any);
 
 			const obj = {set: new Set([1, 2, 3])};
 			const proxy = scope.readonlyDeepProxy(obj, 'key');

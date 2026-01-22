@@ -23,6 +23,7 @@ function createMockAdapter() {
 		isInScope() {
 			return this.inScope;
 		},
+		reactive: undefined as any,
 	};
 
 	return adapter;
@@ -70,9 +71,7 @@ describe('Scope - Deep Proxies', () => {
 			proxied.config.theme = 'light';
 
 			// Should have triggered notify
-			const notifyCalls = adapter.deps.filter(
-				(d) => d.notify.mock.calls.length > 0,
-			);
+			const notifyCalls = adapter.deps.filter((d) => d.notify.mock.calls.length > 0);
 			expect(notifyCalls.length).toBeGreaterThan(0);
 		});
 
@@ -262,9 +261,7 @@ describe('Scope - Deep Proxies', () => {
 			proxied.items.push(4);
 
 			// Should have triggered notify for the array
-			const notifyCalls = adapter.deps.filter(
-				(d) => d.notify.mock.calls.length > 0,
-			);
+			const notifyCalls = adapter.deps.filter((d) => d.notify.mock.calls.length > 0);
 			expect(notifyCalls.length).toBeGreaterThan(0);
 		});
 
@@ -280,9 +277,7 @@ describe('Scope - Deep Proxies', () => {
 			proxied.items.splice(1, 1);
 
 			// Should have triggered notify
-			const notifyCalls = adapter.deps.filter(
-				(d) => d.notify.mock.calls.length > 0,
-			);
+			const notifyCalls = adapter.deps.filter((d) => d.notify.mock.calls.length > 0);
 			expect(notifyCalls.length).toBeGreaterThan(0);
 		});
 
@@ -298,9 +293,7 @@ describe('Scope - Deep Proxies', () => {
 			proxied.items.pop();
 
 			// Should have triggered notify
-			const notifyCalls = adapter.deps.filter(
-				(d) => d.notify.mock.calls.length > 0,
-			);
+			const notifyCalls = adapter.deps.filter((d) => d.notify.mock.calls.length > 0);
 			expect(notifyCalls.length).toBeGreaterThan(0);
 		});
 
@@ -376,9 +369,7 @@ describe('Scope - Deep Proxies', () => {
 			proxied.stats.health = 50;
 
 			// Should have triggered notify
-			const notifyCalls = adapter.deps.filter(
-				(d) => d.notify.mock.calls.length > 0,
-			);
+			const notifyCalls = adapter.deps.filter((d) => d.notify.mock.calls.length > 0);
 			expect(notifyCalls.length).toBeGreaterThan(0);
 		});
 
