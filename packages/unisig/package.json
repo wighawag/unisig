@@ -61,10 +61,6 @@
 		"format:check": "prettier --check .",
 		"build": "tsc",
 		"test": "vitest run",
-		"test:watch": "vitest",
-		"bench": "vitest bench",
-		"bench:baseline": "vitest bench --outputJson baseline.json",
-		"bench:compare": "vitest bench --compare baseline.json",
-		"bench:report": "vitest bench --reporter=json"
+		"test:watch": "vitest"
 	}
 }
