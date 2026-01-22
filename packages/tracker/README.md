@@ -17,7 +17,7 @@ Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 ```bash
 npm install @unisig/tracker
 # With an adapter
-npm install @unisig/tracker @unisig/solid-js
+npm install @unisig/tracker @unisig/solid
 # or
 npm install @unisig/tracker @unisig/svelte
 ```
@@ -26,7 +26,7 @@ npm install @unisig/tracker @unisig/svelte
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 import { createEffect } from "solid-js";
 
 // Create factory with adapter
@@ -96,7 +96,7 @@ Create a factory function for creating Tracker instances with a pre-configured a
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 
 const createTracker = createTrackerFactory(solidAdapter);
 
@@ -404,7 +404,7 @@ interface ReactivityAdapter extends BasicReactivityAdapter, ScopeAdapter {}
 
 Official adapters:
 
-- [`@unisig/solid-js`](https://github.com/wighawag/unisig/tree/main/packages/solid-js) - Solid.js adapter
+- [`@unisig/solid`](https://github.com/wighawag/unisig/tree/main/packages/solid-js) - Solid.js adapter
 - [`@unisig/svelte`](https://github.com/wighawag/unisig/tree/main/packages/svelte) - Svelte 5 adapter
 
 ### Creating Custom Adapters

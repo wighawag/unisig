@@ -1,15 +1,15 @@
-# @unisig/solid-js
+# @unisig/solid
 
 Solid.js adapter for [unisig](https://github.com/wighawag/unisig) - Universal Signals for reactive state management.
 
 ## Installation
 
 ```bash
-npm install unisig @unisig/solid-js
+npm install unisig @unisig/solid
 # or
-pnpm add unisig @unisig/solid-js
+pnpm add unisig @unisig/solid
 # or
-yarn add unisig @unisig/solid-js
+yarn add unisig @unisig/solid
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ yarn add unisig @unisig/solid-js
 
 ```typescript
 import unisig from "unisig";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 
 const { reactive, signal, effect } = unisig(solidAdapter);
 
@@ -39,7 +39,7 @@ effect(() => {
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 import { createEffect } from "solid-js";
 
 const createTracker = createTrackerFactory(solidAdapter);
@@ -80,7 +80,7 @@ createEffect(() => {
 ### Default Export
 
 ```typescript
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 ```
 
 The adapter implements both `BasicReactivityAdapter` (for `unisig`) and `ReactivityAdapter` (for `@unisig/tracker`).

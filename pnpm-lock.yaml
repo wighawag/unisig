@@ -57,7 +57,7 @@ importers:
 
   integration-tests/solid:
     dependencies:
-      '@unisig/solid-js':
+      '@unisig/solid':
         specifier: workspace:*
         version: link:../../packages/solid
       solid-js:

@@ -16,7 +16,7 @@ Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 ```bash
 npm install unisig
 # With an adapter
-npm install unisig @unisig/solid-js
+npm install unisig @unisig/solid
 # or
 npm install unisig @unisig/svelte
 ```
@@ -25,7 +25,7 @@ npm install unisig @unisig/svelte
 
 ```typescript
 import unisig from "unisig";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 
 // Create configured reactive primitives
 const { reactive, signal, effect } = unisig(solidAdapter);
@@ -171,7 +171,7 @@ type ReactiveResult<T> = T extends object ? T : Boxed<T>;
 
 Official adapters:
 
-- [`@unisig/solid-js`](https://github.com/wighawag/unisig/tree/main/packages/solid-js) - Solid.js adapter
+- [`@unisig/solid`](https://github.com/wighawag/unisig/tree/main/packages/solid) - Solid.js adapter
 - [`@unisig/svelte`](https://github.com/wighawag/unisig/tree/main/packages/svelte) - Svelte 5 adapter
 
 ### Creating Custom Adapters

@@ -1,5 +1,5 @@
 {
-	"name": "@unisig/integration-tests-solid-js",
+	"name": "@unisig/integration-tests-solid",
 	"version": "0.0.1",
 	"private": true,
 	"description": "Integration tests for @unisig/solid with SolidJS runtime",
@@ -10,7 +10,7 @@
 		"bench": "vitest bench"
 	},
 	"dependencies": {
-		"@unisig/solid-js": "workspace:*",
+		"@unisig/solid": "workspace:*",
 		"solid-js": "^1.9.0",
 		"unisig": "workspace:*"
 	},

@@ -33,7 +33,7 @@ unisig/
 │   │   └── *.spec.ts        # Integration tests
 │   ├── package.json
 │   └── tsconfig.json
-├── packages/solid-js/        # Solid.js adapter
+├── packages/solid/        # Solid.js adapter
 │   ├── src/
 │   │   └── index.ts         # Adapter implementation
 │   └── package.json
@@ -47,7 +47,7 @@ unisig/
 │       ├── EXAMPLE_GUIDE.md # Implementation guide for the example
 │       └── README.md        # Example-specific documentation
 ├── integration-tests/        # Integration tests for adapters
-│   ├── solid-js/
+│   ├── solid/
 │   └── svelte/
 ├── docs/                     # Documentation
 │   ├── PATTERNS.md          # Design patterns and best practices

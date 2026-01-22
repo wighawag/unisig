@@ -15,7 +15,7 @@
 |---------|-------------|
 | [`unisig`](./packages/unisig) | Core reactive primitives (`reactive`, `signal`, `effect`) |
 | [`@unisig/tracker`](./packages/tracker) | Targeted reactivity tracking (Tracker, Scope) |
-| [`@unisig/solid-js`](./packages/solid-js) | Solid.js adapter |
+| [`@unisig/solid`](./packages/solid) | Solid.js adapter |
 | [`@unisig/svelte`](./packages/svelte) | Svelte 5 adapter |
 
 ## Installation
@@ -25,7 +25,7 @@
 npm install unisig
 
 # With an adapter
-npm install unisig @unisig/solid-js
+npm install unisig @unisig/solid
 # or
 npm install unisig @unisig/svelte
 
@@ -41,7 +41,7 @@ The core `unisig` package provides simple reactive primitives:
 
 ```typescript
 import unisig from "unisig";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 
 // Create configured reactive primitives
 const { reactive, signal, effect } = unisig(solidAdapter);
@@ -73,7 +73,7 @@ For stores, collections, and targeted reactivity, use the Tracker package:
 
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
-import solidAdapter from "@unisig/solid-js";
+import solidAdapter from "@unisig/solid";
 import { createEffect } from "solid-js";
 
 const createTracker = createTrackerFactory(solidAdapter);
@@ -133,7 +133,7 @@ See the [`@unisig/tracker` README](./packages/tracker/README.md) for full docume
 
 Official adapters:
 
-- `@unisig/solid-js` for Solid.js
+- `@unisig/solid` for Solid.js
 - `@unisig/svelte` for Svelte 5
 
 ### Creating Custom Adapters
