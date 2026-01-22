@@ -1,4 +1,5 @@
 import type {Dependency, ScopeAdapter} from './types.js';
+import {createProxyFactory, type ProxyFactory} from './ProxyFactory.js';
 
 /**
  * Manages reactive dependencies for a class or object.
@@ -33,6 +34,7 @@ export class Scope {
 		string,
 		Map<string | number, Map<string, Dependency>>
 	>();
+	private proxyFactory: ProxyFactory;
 
 	/**
 	 * Create a new Scope, optionally with an adapter.
@@ -41,6 +43,7 @@ export class Scope {
 	 */
 	constructor(adapter?: ScopeAdapter) {
 		this.adapter = adapter;
+		this.proxyFactory = createProxyFactory(this);
 	}
 
 	/**
@@ -378,9 +381,15 @@ export class Scope {
 	}
 
 	// ============ AUTO-TRACKING PROXIES ============
+	// These methods delegate to ProxyFactory for cleaner separation of concerns.
+	// Item proxies always use custom implementation to maintain collection/item context.
+	// Non-item proxies may use adapter.reactive() when available for better performance.
 
 	/**
 	 * Create a proxy that auto-tracks property reads and auto-triggers property writes.
+	 *
+	 * If the adapter provides a `reactive()` method, it will be used for better performance.
+	 * Otherwise, falls back to a custom proxy implementation.
 	 *
 	 * @param target - The object to wrap
 	 * @param key - The dependency key for this object
@@ -400,27 +409,15 @@ export class Scope {
 	 * ```
 	 */
 	proxy<T extends object>(target: T, key: string): T {
-		const scope = this;
-		return new Proxy(target, {
-			get(obj, prop, receiver) {
-				if (typeof prop === 'string') {
-					scope.trackProp(key, prop);
-				}
-				return Reflect.get(obj, prop, receiver);
-			},
-			set(obj, prop, value, receiver) {
-				const result = Reflect.set(obj, prop, value, receiver);
-				if (typeof prop === 'string') {
-					scope.triggerProp(key, prop);
-				}
-				return result;
-			},
-		});
+		return this.proxyFactory.proxy(target, key);
 	}
 
 	/**
 	 * Create a proxy for a collection item that auto-tracks property reads
 	 * and auto-triggers property writes.
+	 *
+	 * Always uses custom proxy implementation to ensure proper integration
+	 * with Scope's granular tracking (collection/item/property levels).
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -447,54 +444,15 @@ export class Scope {
 		collection: string,
 		id: string | number,
 	): T {
-		const scope = this;
-		return new Proxy(target, {
-			get(obj, prop, receiver) {
-				if (typeof prop === 'string') {
-					scope.trackItemProp(collection, id, prop);
-				}
-				return Reflect.get(obj, prop, receiver);
-			},
-			set(obj, prop, value, receiver) {
-				const result = Reflect.set(obj, prop, value, receiver);
-				if (typeof prop === 'string') {
-					scope.triggerItemProp(collection, id, prop);
-				}
-				return result;
-			},
-		});
-	}
-
-	// ============ DEEP AUTO-TRACKING PROXIES ============
-
-	/**
-	 * Types that should not be proxied (they have special internal state)
-	 */
-	private static readonly SKIP_PROXY_TYPES = [
-		Date,
-		RegExp,
-		Map,
-		Set,
-		WeakMap,
-		WeakSet,
-		Error,
-	];
-
-	/**
-	 * Check if a value should be deeply proxied
-	 */
-	private shouldDeepProxy(value: unknown): value is object {
-		if (value === null || typeof value !== 'object') return false;
-		if (Scope.SKIP_PROXY_TYPES.some((Type) => value instanceof Type))
-			return false;
-		// Skip if it's a promise-like object
-		if (typeof (value as any).then === 'function') return false;
-		return true;
+		return this.proxyFactory.itemProxy(target, collection, id);
 	}
 
 	/**
 	 * Create a deep proxy that auto-tracks property reads at any nesting level.
 	 * Uses dot notation for nested paths (e.g., 'stats.health').
+	 *
+	 * If the adapter provides a `reactive()` method, it will be used for better performance.
+	 * Otherwise, falls back to a custom proxy implementation.
 	 *
 	 * @param target - The object to wrap
 	 * @param key - The dependency key for this object
@@ -514,12 +472,15 @@ export class Scope {
 	 * ```
 	 */
 	deepProxy<T extends object>(target: T, key: string): T {
-		return this.createDeepProxy(target, key, '', new WeakMap());
+		return this.proxyFactory.deepProxy(target, key);
 	}
 
 	/**
 	 * Create a deep proxy for a collection item that auto-tracks property reads
 	 * at any nesting level. Uses dot notation for nested paths.
+	 *
+	 * Always uses custom proxy implementation to ensure proper integration
+	 * with Scope's granular tracking (collection/item/property levels).
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -546,281 +507,16 @@ export class Scope {
 		collection: string,
 		id: string | number,
 	): T {
-		return this.createDeepItemProxy(target, collection, id, '', new WeakMap());
-	}
-
-	/**
-	 * Internal: Create a deep proxy for key-based tracking
-	 */
-	private createDeepProxy<T extends object>(
-		target: T,
-		key: string,
-		basePath: string,
-		cache: WeakMap<object, object>,
-	): T {
-		// Return cached proxy if exists (maintains identity)
-		if (cache.has(target)) {
-			return cache.get(target) as T;
-		}
-
-		const scope = this;
-
-		const proxy = new Proxy(target, {
-			get(obj, prop, receiver) {
-				const value = Reflect.get(obj, prop, receiver);
-
-				// Only track string properties (not symbols)
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.trackProp(key, fullPath);
-
-					// Recursively proxy nested objects
-					if (scope.shouldDeepProxy(value)) {
-						return scope.createDeepProxy(value, key, fullPath, cache);
-					}
-
-					// Handle arrays specially
-					if (Array.isArray(value)) {
-						return scope.createDeepArrayProxy(
-							value,
-							key,
-							'',
-							fullPath,
-							cache,
-							'prop',
-						);
-					}
-				}
-
-				return value;
-			},
-
-			set(obj, prop, value, receiver) {
-				const result = Reflect.set(obj, prop, value, receiver);
-
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.triggerProp(key, fullPath);
-				}
-
-				return result;
-			},
-		});
-
-		cache.set(target, proxy);
-		return proxy as T;
-	}
-
-	/**
-	 * Internal: Create a deep proxy for item-based tracking
-	 */
-	private createDeepItemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-		basePath: string,
-		cache: WeakMap<object, object>,
-	): T {
-		// Return cached proxy if exists (maintains identity)
-		if (cache.has(target)) {
-			return cache.get(target) as T;
-		}
-
-		const scope = this;
-
-		const proxy = new Proxy(target, {
-			get(obj, prop, receiver) {
-				const value = Reflect.get(obj, prop, receiver);
-
-				// Only track string properties (not symbols)
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.trackItemProp(collection, id, fullPath);
-
-					// Recursively proxy nested objects
-					if (scope.shouldDeepProxy(value)) {
-						return scope.createDeepItemProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-						);
-					}
-
-					// Handle arrays specially
-					if (Array.isArray(value)) {
-						return scope.createDeepArrayProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-							'item',
-						);
-					}
-				}
-
-				return value;
-			},
-
-			set(obj, prop, value, receiver) {
-				const result = Reflect.set(obj, prop, value, receiver);
-
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.triggerItemProp(collection, id, fullPath);
-				}
-
-				return result;
-			},
-		});
-
-		cache.set(target, proxy);
-		return proxy as T;
-	}
-
-	/**
-	 * Internal: Create a deep proxy for arrays
-	 * Handles both numeric index access and mutation methods
-	 */
-	private createDeepArrayProxy<T>(
-		arr: T[],
-		keyOrCollection: string,
-		idOrPath: string | number,
-		path: string,
-		cache: WeakMap<object, object>,
-		mode: 'prop' | 'item',
-	): T[] {
-		// Return cached proxy if exists
-		if (cache.has(arr)) {
-			return cache.get(arr) as T[];
-		}
-
-		const scope = this;
-
-		// Helper to track/trigger based on mode
-		const track = (propPath: string) => {
-			if (mode === 'prop') {
-				scope.trackProp(keyOrCollection, propPath);
-			} else {
-				scope.trackItemProp(keyOrCollection, idOrPath, propPath);
-			}
-		};
-
-		const trigger = (propPath: string) => {
-			if (mode === 'prop') {
-				scope.triggerProp(keyOrCollection, propPath);
-			} else {
-				scope.triggerItemProp(keyOrCollection, idOrPath, propPath);
-			}
-		};
-
-		// Mutation methods that should trigger the array itself
-		const mutationMethods = [
-			'push',
-			'pop',
-			'shift',
-			'unshift',
-			'splice',
-			'sort',
-			'reverse',
-			'fill',
-			'copyWithin',
-		];
-
-		const proxy = new Proxy(arr, {
-			get(target, prop, receiver) {
-				const value = Reflect.get(target, prop, receiver);
-
-				if (typeof prop === 'string') {
-					// Numeric index access
-					if (!isNaN(Number(prop))) {
-						const fullPath = `${path}.${prop}`;
-						track(fullPath);
-
-						if (scope.shouldDeepProxy(value)) {
-							if (mode === 'prop') {
-								return scope.createDeepProxy(
-									value as object,
-									keyOrCollection,
-									fullPath,
-									cache,
-								);
-							} else {
-								return scope.createDeepItemProxy(
-									value as object,
-									keyOrCollection,
-									idOrPath,
-									fullPath,
-									cache,
-								);
-							}
-						}
-
-						return value;
-					}
-
-					// Array length
-					if (prop === 'length') {
-						track(`${path}.length`);
-						return value;
-					}
-
-					// Mutation methods - wrap to trigger after mutation
-					if (mutationMethods.includes(prop) && typeof value === 'function') {
-						return function (this: T[], ...args: unknown[]) {
-							const result = (value as Function).apply(target, args);
-							trigger(path); // Trigger the array path
-							return result;
-						};
-					}
-
-					// Iteration methods that access elements
-					if (
-						[
-							'forEach',
-							'map',
-							'filter',
-							'find',
-							'findIndex',
-							'some',
-							'every',
-							'reduce',
-							'reduceRight',
-						].includes(prop)
-					) {
-						track(path); // Track the whole array for iteration
-						return value;
-					}
-				}
-
-				return value;
-			},
-
-			set(target, prop, value, receiver) {
-				const result = Reflect.set(target, prop, value, receiver);
-
-				if (typeof prop === 'string') {
-					if (!isNaN(Number(prop))) {
-						trigger(`${path}.${prop}`);
-					} else if (prop === 'length') {
-						trigger(path);
-					}
-				}
-
-				return result;
-			},
-		});
-
-		cache.set(arr, proxy);
-		return proxy as T[];
+		return this.proxyFactory.deepItemProxy(target, collection, id);
 	}
 
 	// ============ READONLY PROXIES ============
 
 	/**
 	 * Create a read-only proxy that tracks property reads but throws on writes.
+	 *
+	 * Note: Read-only proxies always use the custom proxy implementation
+	 * since adapter.reactive() doesn't provide read-only semantics.
 	 *
 	 * @param target - The object to wrap
 	 * @param key - The dependency key for this object
@@ -841,30 +537,15 @@ export class Scope {
 	 * ```
 	 */
 	readonlyProxy<T extends object>(target: T, key: string): Readonly<T> {
-		const scope = this;
-		return new Proxy(target, {
-			get(obj, prop, receiver) {
-				if (typeof prop === 'string') {
-					scope.trackProp(key, prop);
-				}
-				return Reflect.get(obj, prop, receiver);
-			},
-			set(obj, prop, value, receiver) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on key '${key}'`,
-				);
-			},
-			deleteProperty(obj, prop) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on key '${key}'`,
-				);
-			},
-		}) as Readonly<T>;
+		return this.proxyFactory.readonlyProxy(target, key);
 	}
 
 	/**
 	 * Create a read-only proxy for a collection item that tracks property reads
 	 * but throws on writes.
+	 *
+	 * Note: Read-only proxies always use the custom proxy implementation
+	 * since adapter.reactive() doesn't provide read-only semantics.
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -892,30 +573,15 @@ export class Scope {
 		collection: string,
 		id: string | number,
 	): Readonly<T> {
-		const scope = this;
-		return new Proxy(target, {
-			get(obj, prop, receiver) {
-				if (typeof prop === 'string') {
-					scope.trackItemProp(collection, id, prop);
-				}
-				return Reflect.get(obj, prop, receiver);
-			},
-			set(obj, prop, value, receiver) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on item '${id}' in collection '${collection}'`,
-				);
-			},
-			deleteProperty(obj, prop) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on item '${id}' in collection '${collection}'`,
-				);
-			},
-		}) as Readonly<T>;
+		return this.proxyFactory.readonlyItemProxy(target, collection, id);
 	}
 
 	/**
 	 * Create a deep read-only proxy that tracks property reads at any nesting level
 	 * but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * Note: Read-only proxies always use the custom proxy implementation
+	 * since adapter.reactive() doesn't provide read-only semantics.
 	 *
 	 * @param target - The object to wrap
 	 * @param key - The dependency key for this object
@@ -936,12 +602,15 @@ export class Scope {
 	 * ```
 	 */
 	readonlyDeepProxy<T extends object>(target: T, key: string): Readonly<T> {
-		return this.createReadonlyDeepProxy(target, key, '', new WeakMap());
+		return this.proxyFactory.readonlyDeepProxy(target, key);
 	}
 
 	/**
 	 * Create a deep read-only proxy for a collection item that tracks property reads
 	 * at any nesting level but throws on writes. Uses dot notation for nested paths.
+	 *
+	 * Note: Read-only proxies always use the custom proxy implementation
+	 * since adapter.reactive() doesn't provide read-only semantics.
 	 *
 	 * @param target - The object to wrap
 	 * @param collection - The collection name
@@ -969,271 +638,6 @@ export class Scope {
 		collection: string,
 		id: string | number,
 	): Readonly<T> {
-		return this.createReadonlyDeepItemProxy(
-			target,
-			collection,
-			id,
-			'',
-			new WeakMap(),
-		);
-	}
-
-	/**
-	 * Internal: Create a deep read-only proxy for key-based tracking
-	 */
-	private createReadonlyDeepProxy<T extends object>(
-		target: T,
-		key: string,
-		basePath: string,
-		cache: WeakMap<object, object>,
-	): T {
-		// Return cached proxy if exists (maintains identity)
-		if (cache.has(target)) {
-			return cache.get(target) as T;
-		}
-
-		const scope = this;
-
-		const proxy = new Proxy(target, {
-			get(obj, prop, receiver) {
-				const value = Reflect.get(obj, prop, receiver);
-
-				// Only track string properties (not symbols)
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.trackProp(key, fullPath);
-
-					// Recursively proxy nested objects
-					if (scope.shouldDeepProxy(value)) {
-						return scope.createReadonlyDeepProxy(value, key, fullPath, cache);
-					}
-
-					// Handle arrays specially
-					if (Array.isArray(value)) {
-						return scope.createReadonlyDeepArrayProxy(
-							value,
-							key,
-							'',
-							fullPath,
-							cache,
-							'prop',
-						);
-					}
-				}
-
-				return value;
-			},
-
-			set(obj, prop, value, receiver) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on key '${key}'`,
-				);
-			},
-
-			deleteProperty(obj, prop) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on key '${key}'`,
-				);
-			},
-		});
-
-		cache.set(target, proxy);
-		return proxy as T;
-	}
-
-	/**
-	 * Internal: Create a deep read-only proxy for item-based tracking
-	 */
-	private createReadonlyDeepItemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-		basePath: string,
-		cache: WeakMap<object, object>,
-	): T {
-		// Return cached proxy if exists (maintains identity)
-		if (cache.has(target)) {
-			return cache.get(target) as T;
-		}
-
-		const scope = this;
-
-		const proxy = new Proxy(target, {
-			get(obj, prop, receiver) {
-				const value = Reflect.get(obj, prop, receiver);
-
-				// Only track string properties (not symbols)
-				if (typeof prop === 'string') {
-					const fullPath = basePath ? `${basePath}.${prop}` : prop;
-					scope.trackItemProp(collection, id, fullPath);
-
-					// Recursively proxy nested objects
-					if (scope.shouldDeepProxy(value)) {
-						return scope.createReadonlyDeepItemProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-						);
-					}
-
-					// Handle arrays specially
-					if (Array.isArray(value)) {
-						return scope.createReadonlyDeepArrayProxy(
-							value,
-							collection,
-							id,
-							fullPath,
-							cache,
-							'item',
-						);
-					}
-				}
-
-				return value;
-			},
-
-			set(obj, prop, value, receiver) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to set property '${String(prop)}' on item '${id}' in collection '${collection}'`,
-				);
-			},
-
-			deleteProperty(obj, prop) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to delete property '${String(prop)}' on item '${id}' in collection '${collection}'`,
-				);
-			},
-		});
-
-		cache.set(target, proxy);
-		return proxy as T;
-	}
-
-	/**
-	 * Internal: Create a deep read-only proxy for arrays
-	 */
-	private createReadonlyDeepArrayProxy<T>(
-		arr: T[],
-		keyOrCollection: string,
-		idOrPath: string | number,
-		path: string,
-		cache: WeakMap<object, object>,
-		mode: 'prop' | 'item',
-	): T[] {
-		// Return cached proxy if exists
-		if (cache.has(arr)) {
-			return cache.get(arr) as T[];
-		}
-
-		const scope = this;
-
-		// Helper to track based on mode
-		const track = (propPath: string) => {
-			if (mode === 'prop') {
-				scope.trackProp(keyOrCollection, propPath);
-			} else {
-				scope.trackItemProp(keyOrCollection, idOrPath, propPath);
-			}
-		};
-
-		// Mutation methods that should throw
-		const mutationMethods = [
-			'push',
-			'pop',
-			'shift',
-			'unshift',
-			'splice',
-			'sort',
-			'reverse',
-			'fill',
-			'copyWithin',
-		];
-
-		const proxy = new Proxy(arr, {
-			get(target, prop, receiver) {
-				const value = Reflect.get(target, prop, receiver);
-
-				if (typeof prop === 'string') {
-					// Numeric index access
-					if (!isNaN(Number(prop))) {
-						const fullPath = `${path}.${prop}`;
-						track(fullPath);
-
-						if (scope.shouldDeepProxy(value)) {
-							if (mode === 'prop') {
-								return scope.createReadonlyDeepProxy(
-									value as object,
-									keyOrCollection,
-									fullPath,
-									cache,
-								);
-							} else {
-								return scope.createReadonlyDeepItemProxy(
-									value as object,
-									keyOrCollection,
-									idOrPath,
-									fullPath,
-									cache,
-								);
-							}
-						}
-
-						return value;
-					}
-
-					// Array length
-					if (prop === 'length') {
-						track(`${path}.length`);
-						return value;
-					}
-
-					// Mutation methods - wrap to throw
-					if (mutationMethods.includes(prop) && typeof value === 'function') {
-						return function (this: T[], ...args: unknown[]) {
-							throw new Error(
-								`Cannot modify read-only proxy. Attempted to call method '${prop}' on array at path '${path}'`,
-							);
-						};
-					}
-
-					// Iteration methods that access elements
-					if (
-						[
-							'forEach',
-							'map',
-							'filter',
-							'find',
-							'findIndex',
-							'some',
-							'every',
-							'reduce',
-							'reduceRight',
-						].includes(prop)
-					) {
-						track(path); // Track the whole array for iteration
-						return value;
-					}
-				}
-
-				return value;
-			},
-
-			set(target, prop, value, receiver) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to set index '${String(prop)}' on array at path '${path}'`,
-				);
-			},
-
-			deleteProperty(target, prop) {
-				throw new Error(
-					`Cannot modify read-only proxy. Attempted to delete index '${String(prop)}' on array at path '${path}'`,
-				);
-			},
-		});
-
-		cache.set(arr, proxy);
-		return proxy as T[];
+		return this.proxyFactory.readonlyDeepItemProxy(target, collection, id);
 	}
 }

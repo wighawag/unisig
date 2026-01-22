@@ -1,4 +1,4 @@
-import type {BasicReactivityAdapter} from 'unisig';
+import type {BasicReactivityAdapter, ReactiveResult} from 'unisig';
 
 /**
  * Core dependency interface - the minimal abstraction every signal library can implement.
@@ -53,6 +53,21 @@ export interface ScopeAdapter {
 	 * @param dep - The dependency this cleanup is associated with
 	 */
 	onDispose?(callback: () => void, dep: Dependency): void;
+
+	/**
+	 * Optional: Create a deep reactive state.
+	 *
+	 * If provided, Scope will use this for deep reactivity instead of its
+	 * built-in proxy implementation. This allows piggybacking on the signal
+	 * runtime for better performance.
+	 *
+	 * - For objects: Returns the object directly with deep reactivity
+	 * - For primitives: Returns { value: T } wrapper (boxed value)
+	 *
+	 * @param initial - Initial value
+	 * @returns For objects: T (deep reactive proxy). For primitives: { value: T }
+	 */
+	reactive<T>(initial: T): ReactiveResult<T>;
 }
 
 /**
