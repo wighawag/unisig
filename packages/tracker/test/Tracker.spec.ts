@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {Tracker, createTracker, createTrackerFactory} from '@unisig/tracker';
-import type {ReactivityAdapter} from 'unisig';
+import type {ScopeAdapter} from '@unisig/scope';
 
 // Mock adapter
 function createMockAdapter() {
@@ -9,7 +9,7 @@ function createMockAdapter() {
 		notify: ReturnType<typeof vi.fn>;
 	}> = [];
 
-	const adapter: ReactivityAdapter & {deps: typeof deps; inScope: boolean} = {
+	const adapter: ScopeAdapter & {deps: typeof deps; inScope: boolean} = {
 		deps,
 		inScope: true,
 		create() {
@@ -28,202 +28,29 @@ function createMockAdapter() {
 	return adapter;
 }
 
-type TestEvents = {
-	'item:added': {id: string; value: number};
-	'item:removed': string;
-	'list:cleared': void;
-};
-
 describe('Tracker', () => {
 	describe('constructor and tracker()', () => {
 		it('should create without adapter', () => {
-			const r = new Tracker<TestEvents>();
+			const r = new Tracker();
 			expect(r.getAdapter()).toBeUndefined();
 		});
 
 		it('should create with adapter', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter});
+			const r = new Tracker({adapter});
 			expect(r.getAdapter()).toBe(adapter);
 		});
 
 		it('tracker() should be equivalent to new Tracker()', () => {
-			const r = createTracker<TestEvents>();
+			const r = createTracker();
 			expect(r).toBeInstanceOf(Tracker);
-		});
-	});
-
-	describe('Event methods', () => {
-		it('on() should subscribe to events', () => {
-			const r = new Tracker<TestEvents>();
-			const listener = vi.fn();
-
-			r.on('item:added', listener);
-			r.emit('item:added', {id: '1', value: 42});
-
-			expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-		});
-
-		it('on() should return unsubscribe function', () => {
-			const r = new Tracker<TestEvents>();
-			const listener = vi.fn();
-
-			const unsub = r.on('item:added', listener);
-			unsub();
-			r.emit('item:added', {id: '1', value: 42});
-
-			expect(listener).not.toHaveBeenCalled();
-		});
-
-		it('off() should unsubscribe', () => {
-			const r = new Tracker<TestEvents>();
-			const listener = vi.fn();
-
-			r.on('item:added', listener);
-			r.off('item:added', listener);
-			r.emit('item:added', {id: '1', value: 42});
-
-			expect(listener).not.toHaveBeenCalled();
-		});
-
-		it('once() should only fire once', () => {
-			const r = new Tracker<TestEvents>();
-			const listener = vi.fn();
-
-			r.once('item:added', listener);
-			r.emit('item:added', {id: '1', value: 42});
-			r.emit('item:added', {id: '2', value: 43});
-
-			expect(listener).toHaveBeenCalledTimes(1);
-		});
-	});
-
-	describe('createSubscription()', () => {
-		it('should create a subscription function that calls listener immediately', () => {
-			type Events = {'count:changed': number};
-			const r = new Tracker<Events>();
-			const currentValue = 42;
-
-			const subscribe = r.createSubscription(
-				'count:changed',
-				() => currentValue,
-			);
-			const listener = vi.fn();
-
-			subscribe(listener);
-
-			expect(listener).toHaveBeenCalledTimes(1);
-			expect(listener).toHaveBeenCalledWith(42);
-		});
-
-		it('should also subscribe for future events', () => {
-			type Events = {'count:changed': number};
-			const r = new Tracker<Events>();
-			let currentValue = 42;
-
-			const subscribe = r.createSubscription(
-				'count:changed',
-				() => currentValue,
-			);
-			const listener = vi.fn();
-
-			subscribe(listener);
-			currentValue = 100;
-			r.emit('count:changed', currentValue);
-
-			expect(listener).toHaveBeenCalledTimes(2);
-			expect(listener).toHaveBeenNthCalledWith(1, 42);
-			expect(listener).toHaveBeenNthCalledWith(2, 100);
-		});
-
-		it('should return unsubscribe function from subscription', () => {
-			type Events = {'count:changed': number};
-			const r = new Tracker<Events>();
-
-			const subscribe = r.createSubscription('count:changed', () => 42);
-			const listener = vi.fn();
-
-			const unsub = subscribe(listener);
-
-			expect(listener).toHaveBeenCalledTimes(1);
-
-			unsub();
-			r.emit('count:changed', 100);
-
-			expect(listener).toHaveBeenCalledTimes(1);
-		});
-
-		it('should work with store pattern for exposing subscription', () => {
-			type StoreEvents = {'state:changed': {value: number}};
-
-			class Store {
-				private $ = new Tracker<StoreEvents>();
-				private state = {value: 42};
-
-				// Expose as public method
-				subscribe = this.$.createSubscription(
-					'state:changed',
-					() => this.state,
-				);
-
-				setState(value: number) {
-					this.state = {value};
-					this.$.emit('state:changed', this.state);
-				}
-			}
-
-			const store = new Store();
-			const listener = vi.fn();
-
-			// Subscribe gets initial value immediately
-			const unsub = store.subscribe(listener);
-			expect(listener).toHaveBeenCalledTimes(1);
-			expect(listener).toHaveBeenCalledWith({value: 42});
-
-			// Future events also trigger
-			store.setState(100);
-			expect(listener).toHaveBeenCalledTimes(2);
-			expect(listener).toHaveBeenNthCalledWith(2, {value: 100});
-
-			// Unsubscribe works
-			unsub();
-			store.setState(200);
-			expect(listener).toHaveBeenCalledTimes(2);
-		});
-
-		it('should call getCurrentValue function at subscription time, not creation time', () => {
-			type Events = {'count:changed': number};
-			const r = new Tracker<Events>();
-			let value = 0;
-
-			// Create subscription function
-			const subscribe = r.createSubscription('count:changed', () => value);
-
-			const listener1 = vi.fn();
-			const listener2 = vi.fn();
-
-			// Subscribe first listener with value = 0
-			subscribe(listener1);
-			expect(listener1).toHaveBeenCalledWith(0);
-
-			// Change value
-			value = 42;
-
-			// Subscribe second listener - should get current value (42)
-			subscribe(listener2);
-			expect(listener2).toHaveBeenCalledWith(42);
-
-			// First listener also gets the new value on emit
-			r.emit('count:changed', 100);
-			expect(listener1).toHaveBeenNthCalledWith(2, 100);
-			expect(listener2).toHaveBeenNthCalledWith(2, 100);
 		});
 	});
 
 	describe('Tracking methods', () => {
 		it('track() should call depend when in scope', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter});
+			const r = new Tracker({adapter});
 
 			r.track('items');
 
@@ -234,7 +61,7 @@ describe('Tracker', () => {
 		it('track() should not track when not in scope', () => {
 			const adapter = createMockAdapter();
 			adapter.inScope = false;
-			const r = new Tracker<TestEvents>({adapter});
+			const r = new Tracker({adapter});
 
 			r.track('items');
 
@@ -243,7 +70,7 @@ describe('Tracker', () => {
 
 		it('trackItem() should track both item and collection', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter});
+			const r = new Tracker({adapter});
 
 			r.trackItem('items', '1');
 
@@ -255,87 +82,43 @@ describe('Tracker', () => {
 		describe('trigger()', () => {
 			it('should notify signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.dep('items'); // Create dep
 				r.trigger('items');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.trigger('items', 'item:added', {id: '1', value: 42});
-
-				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-			});
-
-			it('should work without event', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.trigger('items');
-
-				expect(listener).not.toHaveBeenCalled();
-			});
 		});
 
 		describe('triggerItem()', () => {
 			it('should notify item signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.itemDep('items', '1');
 				r.triggerItem('items', '1');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.triggerItem('items', '1', 'item:added', {id: '1', value: 42});
-
-				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-			});
 		});
 
 		describe('triggerCollection()', () => {
 			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.dep('items');
 				r.triggerCollection('items');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('list:cleared', listener);
-				r.triggerCollection('items', 'list:cleared', undefined as void);
-
-				expect(listener).toHaveBeenCalledTimes(1);
-			});
 		});
 
 		describe('triggerItemRemoved()', () => {
 			it('should notify item and collection signals', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.itemDep('items', '1');
 				r.dep('items');
@@ -344,94 +127,46 @@ describe('Tracker', () => {
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1); // item
 				expect(adapter.deps[1].notify).toHaveBeenCalledTimes(1); // collection
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:removed', listener);
-				r.triggerItemRemoved('items', '1', 'item:removed', '1');
-
-				expect(listener).toHaveBeenCalledWith('1');
-			});
 		});
 
 		describe('triggerItemAdded()', () => {
 			it('should notify collection signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.dep('items');
 				r.triggerItemAdded('items');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.triggerItemAdded('items', 'item:added', {id: '1', value: 42});
-
-				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-			});
-		});
-	});
-
-	describe('emit()', () => {
-		it('should emit event without triggering signals', () => {
-			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter});
-			const listener = vi.fn();
-
-			r.dep('items'); // Create a dep
-			r.on('item:added', listener);
-			r.emit('item:added', {id: '1', value: 42});
-
-			expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-			expect(adapter.deps[0].notify).not.toHaveBeenCalled();
 		});
 	});
 
 	describe('clear()', () => {
-		it('should clear dependencies but not events', () => {
+		it('should clear dependencies', () => {
 			const adapter = createMockAdapter();
-			const r = new Tracker<TestEvents>({adapter});
-			const listener = vi.fn();
+			const r = new Tracker({adapter});
 
 			r.dep('items');
-			r.on('item:added', listener);
 			r.clear();
 
-			// Events should still work
-			r.emit('item:added', {id: '1', value: 42});
-			expect(listener).toHaveBeenCalled();
+			// Dependencies should be cleared
+			expect(adapter.deps).toHaveLength(1);
 		});
 	});
 
 	describe('Integration: Real usage pattern', () => {
 		it('should work as expected in a store class', () => {
-			type StoreEvents = {
-				'user:added': {id: string; name: string};
-				'user:updated': {id: string; changes: Record<string, unknown>};
-				'user:removed': string;
-			};
-
 			class UserStore {
-				private $: Tracker<StoreEvents>;
+				private $: Tracker;
 				private users = new Map<
 					string,
 					{id: string; name: string; score: number}
 				>();
 
-				constructor(adapter?: ReactivityAdapter) {
-					this.$ = new Tracker<StoreEvents>({adapter});
+				constructor(adapter?: ScopeAdapter) {
+					this.$ = new Tracker({adapter});
 				}
-
-				on: typeof this.$.on = (e, l) => this.$.on(e, l);
 
 				getAll() {
 					this.$.track('users');
@@ -445,36 +180,25 @@ describe('Tracker', () => {
 
 				add(user: {id: string; name: string; score: number}) {
 					this.users.set(user.id, user);
-					this.$.triggerItemAdded('users', 'user:added', {
-						id: user.id,
-						name: user.name,
-					});
+					this.$.triggerItemAdded('users');
 				}
 
 				update(id: string, changes: Partial<{name: string; score: number}>) {
 					const user = this.users.get(id);
 					if (!user) return;
 					Object.assign(user, changes);
-					this.$.triggerItem('users', id, 'user:updated', {id, changes});
+					this.$.triggerItem('users', id);
 				}
 
 				remove(id: string) {
 					if (!this.users.has(id)) return;
 					this.users.delete(id);
-					this.$.triggerItemRemoved('users', id, 'user:removed', id);
+					this.$.triggerItemRemoved('users', id);
 				}
 			}
 
 			const adapter = createMockAdapter();
 			const store = new UserStore(adapter);
-
-			const addedListener = vi.fn();
-			const updatedListener = vi.fn();
-			const removedListener = vi.fn();
-
-			store.on('user:added', addedListener);
-			store.on('user:updated', updatedListener);
-			store.on('user:removed', removedListener);
 
 			// Get all - should track
 			store.getAll();
@@ -489,19 +213,13 @@ describe('Tracker', () => {
 
 			// Add
 			store.add({id: '1', name: 'Alice', score: 0});
-			expect(addedListener).toHaveBeenCalledWith({id: '1', name: 'Alice'});
 			expect(adapter.deps[0].notify).toHaveBeenCalled(); // list dep notified
 
 			// Update
 			store.update('1', {score: 100});
-			expect(updatedListener).toHaveBeenCalledWith({
-				id: '1',
-				changes: {score: 100},
-			});
 
 			// Remove
 			store.remove('1');
-			expect(removedListener).toHaveBeenCalledWith('1');
 		});
 	});
 
@@ -509,7 +227,7 @@ describe('Tracker', () => {
 		describe('trackProp()', () => {
 			it('should track property and key', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.trackProp('config', 'theme');
 
@@ -522,7 +240,7 @@ describe('Tracker', () => {
 		describe('trackItemProp()', () => {
 			it('should track property, item, and collection', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.trackItemProp('items', '1', 'value');
 
@@ -533,49 +251,24 @@ describe('Tracker', () => {
 		describe('triggerProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.propDep('config', 'theme');
 				r.triggerProp('config', 'theme');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
 			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.triggerProp('config', 'theme', 'item:added', {id: '1', value: 42});
-
-				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
-			});
 		});
 
 		describe('triggerItemProp()', () => {
 			it('should notify property signal', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				r.itemPropDep('items', '1', 'value');
 				r.triggerItemProp('items', '1', 'value');
 
 				expect(adapter.deps[0].notify).toHaveBeenCalledTimes(1);
-			});
-
-			it('should emit event if provided', () => {
-				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
-				const listener = vi.fn();
-
-				r.on('item:added', listener);
-				r.triggerItemProp('items', '1', 'value', 'item:added', {
-					id: '1',
-					value: 42,
-				});
-
-				expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
 			});
 		});
 	});
@@ -584,7 +277,7 @@ describe('Tracker', () => {
 		describe('proxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -597,7 +290,7 @@ describe('Tracker', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				const obj = {theme: 'dark'};
 				const proxied = r.proxy(obj, 'config');
@@ -612,7 +305,7 @@ describe('Tracker', () => {
 		describe('itemProxy()', () => {
 			it('should auto-track property reads', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -624,7 +317,7 @@ describe('Tracker', () => {
 
 			it('should auto-trigger property writes', () => {
 				const adapter = createMockAdapter();
-				const r = new Tracker<TestEvents>({adapter});
+				const r = new Tracker({adapter});
 
 				const item = {id: '1', value: 42};
 				const proxied = r.itemProxy(item, 'items', '1');
@@ -639,23 +332,16 @@ describe('Tracker', () => {
 
 	describe('Integration: Store with property-level reactivity', () => {
 		it('should support granular property updates', () => {
-			type PlayerEvents = {
-				'player:scored': {id: string; score: number};
-				'player:renamed': {id: string; name: string};
-			};
-
 			class PlayerStore {
-				private $: Tracker<PlayerEvents>;
+				private $: Tracker;
 				private players = new Map<
 					string,
 					{id: string; name: string; score: number}
 				>();
 
-				constructor(adapter?: ReactivityAdapter) {
-					this.$ = new Tracker<PlayerEvents>({adapter});
+				constructor(adapter?: ScopeAdapter) {
+					this.$ = new Tracker({adapter});
 				}
-
-				on: typeof this.$.on = (e, l) => this.$.on(e, l);
 
 				// Get player with auto-tracking proxy
 				get(id: string) {
@@ -664,7 +350,7 @@ describe('Tracker', () => {
 					return player ? this.$.itemProxy(player, 'players', id) : undefined;
 				}
 
-				// Get only the score (granular tracking)
+				// Get only score (granular tracking)
 				getScore(id: string) {
 					this.$.trackItemProp('players', id, 'score');
 					return this.players.get(id)?.score;
@@ -680,10 +366,7 @@ describe('Tracker', () => {
 					const player = this.players.get(id);
 					if (!player) return;
 					player.score = score;
-					this.$.triggerItemProp('players', id, 'score', 'player:scored', {
-						id,
-						score,
-					});
+					this.$.triggerItemProp('players', id, 'score');
 				}
 
 				// Update only name - triggers only name watchers
@@ -691,21 +374,12 @@ describe('Tracker', () => {
 					const player = this.players.get(id);
 					if (!player) return;
 					player.name = name;
-					this.$.triggerItemProp('players', id, 'name', 'player:renamed', {
-						id,
-						name,
-					});
+					this.$.triggerItemProp('players', id, 'name');
 				}
 			}
 
 			const adapter = createMockAdapter();
 			const store = new PlayerStore(adapter);
-
-			const scoreListener = vi.fn();
-			const nameListener = vi.fn();
-
-			store.on('player:scored', scoreListener);
-			store.on('player:renamed', nameListener);
 
 			// Add a player
 			store.add({id: '1', name: 'Alice', score: 0});
@@ -719,100 +393,12 @@ describe('Tracker', () => {
 
 			// Update score - should trigger score dep
 			store.updateScore('1', 100);
-			expect(scoreListener).toHaveBeenCalledWith({id: '1', score: 100});
 			expect(scoreDep.notify).toHaveBeenCalled();
 
 			// Update name - should NOT trigger score dep again
 			const scoreNotifyCount = scoreDep.notify.mock.calls.length;
 			store.updateName('1', 'Bob');
-			expect(nameListener).toHaveBeenCalledWith({id: '1', name: 'Bob'});
 			expect(scoreDep.notify.mock.calls.length).toBe(scoreNotifyCount); // No new calls
-		});
-	});
-
-	describe('Error handling with error handler', () => {
-		it('should handle errors in event listeners with error handler', () => {
-			type Events = {
-				'user:error': {error: Error};
-			};
-
-			const errorHandler = vi.fn();
-			const r = new Tracker<Events>({errorHandler});
-			const testError = new Error('Test error');
-
-			r.on('user:error', (data) => {
-				throw testError;
-			});
-
-			r.emit('user:error', {error: testError});
-
-			expect(errorHandler).toHaveBeenCalledWith(
-				'user:error',
-				testError,
-				expect.any(Function),
-			);
-		});
-
-		it('should integrate error handler with store pattern', () => {
-			type StoreEvents = {
-				'user:added': {id: string; name: string};
-				'listener:error': {event: string; error: Error};
-			};
-
-			const errorHandler = vi.fn((event, error) => {
-				// In production, you might log this or send to error tracking
-				// console.error(`Error in ${String(event)}:`, error);
-			});
-
-			class UserStore {
-				private $ = new Tracker<StoreEvents>({errorHandler});
-				private users = new Map<string, {id: string; name: string}>();
-
-				on: typeof this.$.on = (e, l) => this.$.on(e, l);
-
-				getAll() {
-					this.$.track('users');
-					return [...this.users.values()];
-				}
-
-				add(user: {id: string; name: string}) {
-					this.users.set(user.id, user);
-					this.$.trigger('users', 'user:added', user);
-				}
-			}
-
-			const store = new UserStore();
-			const errorListener = vi.fn(() => {
-				throw new Error('Listener crashed');
-			});
-
-			store.on('user:added', errorListener);
-			store.add({id: '1', name: 'Alice'});
-
-			expect(errorHandler).toHaveBeenCalled();
-			expect(errorHandler).toHaveBeenCalledWith(
-				'user:added',
-				expect.any(Error),
-				expect.any(Function),
-			);
-		});
-
-		it('should work with tracker() factory function and error handler', () => {
-			const errorHandler = vi.fn();
-			const r = createTracker<TestEvents>({errorHandler});
-			const error = new Error('Factory error');
-
-			r.on('item:added', () => {
-				throw error;
-			});
-
-			r.emit('item:added', {id: '1', value: 42});
-
-			expect(errorHandler).toHaveBeenCalledWith(
-				'item:added',
-				error,
-				expect.any(Function),
-			);
 		});
 	});
 
@@ -821,72 +407,33 @@ describe('Tracker', () => {
 			const adapter = createMockAdapter();
 			const createTracker = createTrackerFactory(adapter);
 
-			const tracker = createTracker<TestEvents>();
+			const tracker = createTracker();
 
 			expect(tracker).toBeInstanceOf(Tracker);
 			expect(tracker.getAdapter()).toBe(adapter);
 		});
 
-		it('should create multiple Trackers with the same adapter', () => {
+		it('should create multiple Trackers with same adapter', () => {
 			const adapter = createMockAdapter();
 			const createTracker = createTrackerFactory(adapter);
 
-			const tracker1 = createTracker<TestEvents>();
-			const tracker2 = createTracker<TestEvents>();
+			const tracker1 = createTracker();
+			const tracker2 = createTracker();
 
 			expect(tracker1.getAdapter()).toBe(adapter);
 			expect(tracker2.getAdapter()).toBe(adapter);
 			expect(tracker1).not.toBe(tracker2); // Different instances
 		});
 
-		it('should allow creating Trackers with different event types', () => {
-			type Events1 = {event1: string};
-			type Events2 = {event2: number};
-
-			const adapter = createMockAdapter();
-			const createTracker = createTrackerFactory(adapter);
-
-			const tracker1 = createTracker<Events1>();
-			const tracker2 = createTracker<Events2>();
-
-			expect(tracker1).toBeInstanceOf(Tracker);
-			expect(tracker2).toBeInstanceOf(Tracker);
-		});
-
-		it('should accept additional options like errorHandler', () => {
-			const adapter = createMockAdapter();
-			const errorHandler = vi.fn();
-			const createTracker = createTrackerFactory(adapter);
-
-			const tracker = createTracker<TestEvents>({errorHandler});
-
-			expect(tracker.getAdapter()).toBe(adapter);
-			tracker.emit('item:added', {id: '1', value: 42});
-			expect(errorHandler).not.toHaveBeenCalled(); // No error, so no call
-		});
-
 		it('should work with signal tracking', () => {
 			const adapter = createMockAdapter();
 			const createTracker = createTrackerFactory(adapter);
 
-			const tracker = createTracker<TestEvents>();
+			const tracker = createTracker();
 			tracker.track('items');
 
 			expect(adapter.deps).toHaveLength(1);
 			expect(adapter.deps[0].depend).toHaveBeenCalledTimes(1);
-		});
-
-		it('should work with events', () => {
-			const adapter = createMockAdapter();
-			const createTracker = createTrackerFactory(adapter);
-
-			const tracker = createTracker<TestEvents>();
-			const listener = vi.fn();
-
-			tracker.on('item:added', listener);
-			tracker.emit('item:added', {id: '1', value: 42});
-
-			expect(listener).toHaveBeenCalledWith({id: '1', value: 42});
 		});
 	});
 });

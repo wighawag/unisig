@@ -1,9 +1,4 @@
-import {
-	type Tracker,
-	createTracker,
-	type Listener,
-	type Unsubscribe,
-} from './index.js';
+import {Tracker, createTracker} from './index.js';
 
 export interface Player {
 	id: string;
@@ -12,14 +7,6 @@ export interface Player {
 	level: number;
 }
 
-type PlayerEvents = {
-	'player:added': Player;
-	'player:removed': string;
-	'player:scored': {id: string; score: number};
-	'player:levelUp': {id: string; level: number};
-	'player:renamed': {id: string; name: string};
-};
-
 /**
  * A player store demonstrating all levels of reactivity:
  * - Collection level (all players)
@@ -27,22 +14,12 @@ type PlayerEvents = {
  * - Property level (specific property of a player)
  */
 class PlayerStore {
-	private $: Tracker<PlayerEvents>;
+	private $: Tracker;
 
 	constructor() {
 		this.$ = createTracker();
 	}
 	private players = new Map<string, Player>();
-
-	/**
-	 * Subscribe to events
-	 */
-	on<K extends keyof PlayerEvents>(
-		event: K,
-		listener: Listener<PlayerEvents[K]>,
-	): Unsubscribe {
-		return this.$.on(event, listener);
-	}
 
 	// ==================== COLLECTION LEVEL ====================
 
@@ -100,9 +77,9 @@ class PlayerStore {
 
 	/**
 	 * Get a specific player as readonly.
-	 * Returns the raw object (fast - no proxy overhead) but tracks changes.
+	 * Returns raw object (fast - no proxy overhead) but tracks changes.
 	 * The return type is `Readonly<Player>` to prevent mutations.
-	 * Use update methods to modify the player instead.
+	 * Use update methods to modify player instead.
 	 *
 	 * Re-runs when this player changes OR is removed.
 	 *
@@ -130,7 +107,7 @@ class PlayerStore {
 
 	/**
 	 * Get a raw player object (snapshot, no tracking).
-	 * Use this when you need the actual data without reactivity.
+	 * Use this when you need to actual data without reactivity.
 	 *
 	 * Performance: Direct access, no tracking overhead.
 	 * Use this for non-reactive operations (e.g., export, logging).
@@ -176,7 +153,7 @@ class PlayerStore {
 	 */
 	add(player: Player): void {
 		this.players.set(player.id, player);
-		this.$.triggerItemAdded('players', 'player:added', player);
+		this.$.triggerItemAdded('players');
 	}
 
 	/**
@@ -186,7 +163,7 @@ class PlayerStore {
 	remove(id: string): void {
 		if (!this.players.has(id)) return;
 		this.players.delete(id);
-		this.$.triggerItemRemoved('players', id, 'player:removed', id);
+		this.$.triggerItemRemoved('players', id);
 	}
 
 	/**
@@ -197,10 +174,7 @@ class PlayerStore {
 		const player = this.players.get(id);
 		if (!player) return;
 		player.score = score;
-		this.$.triggerItemProp('players', id, 'score', 'player:scored', {
-			id,
-			score,
-		});
+		this.$.triggerItemProp('players', id, 'score');
 	}
 
 	/**
@@ -211,10 +185,7 @@ class PlayerStore {
 		const player = this.players.get(id);
 		if (!player) return;
 		player.score += amount;
-		this.$.triggerItemProp('players', id, 'score', 'player:scored', {
-			id,
-			score: player.score,
-		});
+		this.$.triggerItemProp('players', id, 'score');
 	}
 
 	/**
@@ -225,7 +196,7 @@ class PlayerStore {
 		const player = this.players.get(id);
 		if (!player) return;
 		player.name = name;
-		this.$.triggerItemProp('players', id, 'name', 'player:renamed', {id, name});
+		this.$.triggerItemProp('players', id, 'name');
 	}
 
 	/**
@@ -236,10 +207,7 @@ class PlayerStore {
 		const player = this.players.get(id);
 		if (!player) return;
 		player.level = level;
-		this.$.triggerItemProp('players', id, 'level', 'player:levelUp', {
-			id,
-			level,
-		});
+		this.$.triggerItemProp('players', id, 'level');
 	}
 
 	/**
@@ -250,10 +218,7 @@ class PlayerStore {
 		const player = this.players.get(id);
 		if (!player) return;
 		player.level++;
-		this.$.triggerItemProp('players', id, 'level', 'player:levelUp', {
-			id,
-			level: player.level,
-		});
+		this.$.triggerItemProp('players', id, 'level');
 	}
 
 	/**

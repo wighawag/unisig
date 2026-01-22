@@ -1,15 +1,11 @@
 /**
  * @unisig/tracker - Tracker for unisig
  *
- * Adds granular reactivity and event emission to signals.
+ * Adds granular reactivity to signals.
  * Depends on @unisig/scope for Scope and types.
  *
  * @packageDocumentation
  */
-
-// Emitter
-export {Emitter} from './Emitter.js';
-export type {Unsubscribe, EmitterOptions, Listener, ErrorHandler} from './Emitter.js';
 
 // Tracker
 export {Tracker, createTracker, createTrackerFactory} from './Tracker.js';

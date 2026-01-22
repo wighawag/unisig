@@ -3,60 +3,28 @@ import type {
 	Dependency,
 } from '@unisig/scope';
 import {Scope} from '@unisig/scope';
-import {Emitter, type Unsubscribe, type EmitterOptions, type Listener, type ErrorHandler} from './Emitter.js';
 
 /**
  * Options for configuring Tracker behavior
  */
-export interface TrackerOptions<Events> {
+export interface TrackerOptions {
 	/**
 	 * Optional scope adapter to use immediately
 	 */
 	adapter?: ScopeAdapter;
-
-	/**
-	 * Optional error handler for event listener errors.
-	 * If provided, errors in listeners will be caught and passed to this handler.
-	 * If not provided, errors will propagate to the caller (fail-fast).
-	 *
-	 * @param event - The event being emitted
-	 * @param error - The error that occurred
-	 * @param listener - The listener function that threw the error
-	 *
-	 * @example
-	 * ```ts
-	 * const tracker = new Tracker<MyEvents>({
-	 *   adapter: myAdapter,
-	 *   errorHandler: (event, error, listener) => {
-	 *     console.error(`Error in ${String(event)}:`, error);
-	 *     Sentry.captureException(error);
-	 *   },
-	 * });
-	 * ```
-	 */
-	errorHandler?: ErrorHandler<Events>;
 }
 
 /**
- * Combined reactive helper that provides both signal tracking and event emission.
+ * Reactive helper that provides granular signal tracking.
  *
- * This is the main class you'll use to add reactivity to your existing classes.
- * It combines a Scope (for signal-based reactivity) with an Emitter (for events).
+ * This class provides granular reactivity at collection, item, and property levels.
+ * It tracks dependencies and notifies changes through the signal system.
  *
  * @example
  * ```ts
- * interface MyEvents {
- *   'user:added': User
- *   'user:removed': string
- * }
- *
  * class UserStore {
- *   private $ = new Tracker<MyEvents>({ adapter: myAdapter })
+ *   private $ = new Tracker({ adapter: myAdapter })
  *   private users = new Map<string, User>()
- *
- *   on<K extends keyof MyEvents>(event: K, listener: Listener<MyEvents[K]>) {
- *     return this.$.on(event, listener)
- *   }
  *
  *   // Read methods - call track()
  *   getAll() {
@@ -69,59 +37,41 @@ export interface TrackerOptions<Events> {
  *     return this.users.get(id)
  *   }
  *
- *   // Write methods - call trigger() and emit()
+ *   // Write methods - call trigger()
  *   add(user: User) {
  *     this.users.set(user.id, user)
- *     this.$.trigger('users', 'user:added', user)
+ *     this.$.trigger('users')
  *   }
  *
  *   remove(id: string) {
  *     const user = this.users.get(id)
  *     if (!user) return
  *     this.users.delete(id)
- *     this.$.triggerItemRemoved('users', id, 'user:removed', id)
+ *     this.$.triggerItemRemoved('users', id)
  *   }
  * }
  * ```
  */
-export class Tracker<
-	Events extends Record<string, unknown> = Record<string, unknown>,
-> {
+export class Tracker {
 	private scope: Scope;
-	private emitter: Emitter<Events>;
 
 	/**
 	 * Create a new Tracker instance.
 	 *
-	 * @param options - Optional configuration including adapter and error handler
+	 * @param options - Optional configuration including adapter
 	 *
 	 * @example
 	 * ```ts
 	 * // With adapter
-	 * const tracker = new Tracker<MyEvents>({ adapter: myAdapter });
+	 * const tracker = new Tracker({ adapter: myAdapter });
 	 *
-	 * // With error handler
-	 * const tracker = new Tracker<MyEvents>({
-	 *   adapter: myAdapter,
-	 *   errorHandler: (event, error, listener) => {
-	 *     console.error(`Error in ${String(event)}:`, error);
-	 *   },
-	 * });
-	 *
-	 * // With error handler only (no adapter)
-	 * const tracker = new Tracker<MyEvents>({
-	 *   errorHandler: (event, error, listener) => {
-	 *     console.error(`Error in ${String(event)}:`, error);
-	 *   },
-	 * });
+	 * // Without adapter (can be set later)
+	 * const tracker = new Tracker();
 	 * ```
 	 */
-	constructor(options?: TrackerOptions<Events>) {
-		const {adapter, errorHandler} = options || {};
+	constructor(options?: TrackerOptions) {
+		const {adapter} = options || {};
 		this.scope = new Scope(adapter);
-		this.emitter = new Emitter<Events>(
-			errorHandler ? {errorHandler} : undefined,
-		);
 	}
 
 	/**
@@ -136,91 +86,6 @@ export class Tracker<
 	 */
 	isInScope(): boolean {
 		return this.scope.isInScope();
-	}
-
-	// ============ EVENT METHODS ============
-
-	/**
-	 * Subscribe to an event.
-	 *
-	 * @param event - Event name to listen for
-	 * @param listener - Callback function
-	 * @returns Unsubscribe function
-	 */
-	on<K extends keyof Events>(
-		event: K,
-		listener: Listener<Events[K]>,
-	): Unsubscribe {
-		return this.emitter.on(event, listener);
-	}
-
-	/**
-	 * Unsubscribe from an event.
-	 *
-	 * @param event - Event name
-	 * @param listener - The exact listener function to remove
-	 */
-	off<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
-		this.emitter.off(event, listener);
-	}
-
-	/**
-	 * Subscribe to an event for a single emission.
-	 *
-	 * @param event - Event name
-	 * @param listener - Callback function (called once)
-	 * @returns Unsubscribe function
-	 */
-	once<K extends keyof Events>(
-		event: K,
-		listener: Listener<Events[K]>,
-	): Unsubscribe {
-		return this.emitter.once(event, listener);
-	}
-
-	/**
-	 * Create a subscription function for an event that calls the listener
-	 * immediately with the current value, then subscribes for future emissions.
-	 *
-	 * This factory pattern is useful for value-like events where subscribers
-	 * want to receive the current state immediately upon subscription.
-	 * Not all events have a concept of "current value", so this is opt-in
-	 * per event type.
-	 *
-	 * @param event - Event name to create subscription for
-	 * @param getCurrentValue - Function that returns the current value
-	 * @returns A subscription function that accepts a listener
-	 *
-	 * @example
-	 * ```ts
-	 * class Store {
-	 *   private $ = new Tracker<{ 'count:changed': number }>()
-	 *   private count = 0
-	 *
-	 *   // Create subscription function once
-	 *   subscribe = this.$.createSubscription('count:changed', () => this.count)
-	 *
-	 *   increment() {
-	 *     this.count++
-	 *     this.$.emit('count:changed', this.count)
-	 *   }
-	 * }
-	 *
-	 * // Subscriber receives current value immediately
-	 * store.subscribe((count) => console.log('Count:', count))
-	 * // Logs: "Count: 0" immediately upon subscription
-	 * ```
-	 */
-	createSubscription<K extends keyof Events>(
-		event: K,
-		getCurrentValue: () => Events[K],
-	): (listener: Listener<Events[K]>) => Unsubscribe {
-		return (listener: Listener<Events[K]>): Unsubscribe => {
-			// Call listener immediately with current value
-			listener(getCurrentValue());
-			// Then subscribe for future events
-			return this.on(event, listener);
-		};
 	}
 
 	// ============ DEPENDENCY ACCESS ============
@@ -310,188 +175,76 @@ export class Tracker<
 	// ============ TRIGGERING (for writes) ============
 
 	/**
-	 * Trigger a change notification and optionally emit an event.
+	 * Trigger a change notification for a key.
 	 *
 	 * @param key - The dependency key that changed
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	trigger(key: string): void;
-	trigger<K extends keyof Events>(key: string, event: K, data: Events[K]): void;
-	trigger(key: string, event?: unknown, data?: unknown): void {
+	trigger(key: string): void {
 		this.scope.trigger(key);
-		if (arguments.length === 3) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
-	 * Trigger a change for a specific item and optionally emit an event.
+	 * Trigger a change for a specific item.
 	 * Does NOT trigger the collection - use triggerCollection() for that.
 	 * Also notifies all property watchers for this item.
 	 *
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerItem(collection: string, id: string | number): void;
-	triggerItem<K extends keyof Events>(
-		collection: string,
-		id: string | number,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerItem(
-		collection: string,
-		id: string | number,
-		event?: unknown,
-		data?: unknown,
-	): void {
+	triggerItem(collection: string, id: string | number): void {
 		this.scope.triggerItem(collection, id);
-		if (arguments.length === 4) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
-	 * Trigger a change for a specific property of a key and optionally emit an event.
+	 * Trigger a change for a specific property of a key.
 	 * Does NOT trigger the key itself - use trigger() for that.
 	 *
 	 * @param key - The dependency key
 	 * @param prop - The property that changed
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerProp(key: string, prop: string): void;
-	triggerProp<K extends keyof Events>(
-		key: string,
-		prop: string,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerProp(
-		key: string,
-		prop: string,
-		event?: unknown,
-		data?: unknown,
-	): void {
+	triggerProp(key: string, prop: string): void {
 		this.scope.triggerProp(key, prop);
-		if (arguments.length === 4) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
-	 * Trigger a change for a specific property of an item and optionally emit an event.
+	 * Trigger a change for a specific property of an item.
 	 * Does NOT trigger the item or collection.
 	 *
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier
 	 * @param prop - The property that changed
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerItemProp(collection: string, id: string | number, prop: string): void;
-	triggerItemProp<K extends keyof Events>(
-		collection: string,
-		id: string | number,
-		prop: string,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerItemProp(
-		collection: string,
-		id: string | number,
-		prop: string,
-		event?: unknown,
-		data?: unknown,
-	): void {
+	triggerItemProp(collection: string, id: string | number, prop: string): void {
 		this.scope.triggerItemProp(collection, id, prop);
-		if (arguments.length === 5) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
-	 * Trigger a collection change and optionally emit an event.
+	 * Trigger a collection change.
 	 *
 	 * @param collection - Name of the collection
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerCollection(collection: string): void;
-	triggerCollection<K extends keyof Events>(
-		collection: string,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerCollection(collection: string, event?: unknown, data?: unknown): void {
+	triggerCollection(collection: string): void {
 		this.scope.triggerList(collection);
-		if (arguments.length === 3) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
 	 * Trigger for item removal: notifies item watchers, collection watchers,
-	 * cleans up the item dep, and optionally emits an event.
+	 * and cleans up the item dep.
 	 *
 	 * @param collection - Name of the collection
 	 * @param id - Item identifier being removed
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerItemRemoved(collection: string, id: string | number): void;
-	triggerItemRemoved<K extends keyof Events>(
-		collection: string,
-		id: string | number,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerItemRemoved(
-		collection: string,
-		id: string | number,
-		event?: unknown,
-		data?: unknown,
-	): void {
+	triggerItemRemoved(collection: string, id: string | number): void {
 		this.scope.triggerRemove(collection, id);
-		if (arguments.length === 4) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
 	}
 
 	/**
-	 * Trigger for item addition: notifies collection watchers and optionally emits an event.
+	 * Trigger for item addition: notifies collection watchers.
 	 *
 	 * @param collection - Name of the collection
-	 * @param event - Event to emit (must provide data with this)
-	 * @param data - Event data (required when event is provided)
 	 */
-	triggerItemAdded(collection: string): void;
-	triggerItemAdded<K extends keyof Events>(
-		collection: string,
-		event: K,
-		data: Events[K],
-	): void;
-	triggerItemAdded(collection: string, event?: unknown, data?: unknown): void {
+	triggerItemAdded(collection: string): void {
 		this.scope.triggerList(collection);
-		if (arguments.length === 3) {
-			this.emitter.emit(event as keyof Events, data as Events[keyof Events]);
-		}
-	}
-
-	// ============ DIRECT EMIT ============
-
-	/**
-	 * Emit an event without triggering any signals.
-	 * Use this when you only want event notification.
-	 *
-	 * @param event - Event name
-	 * @param data - Event data
-	 */
-	emit<K extends keyof Events>(event: K, data: Events[K]): void {
-		this.emitter.emit(event, data);
 	}
 
 	// ============ AUTO-TRACKING PROXIES ============
@@ -723,7 +476,6 @@ export class Tracker<
 
 	/**
 	 * Clear all dependencies.
-	 * Events are not affected.
 	 */
 	clear(): void {
 		this.scope.clear();
@@ -734,42 +486,25 @@ export class Tracker<
  * Create a new Tracker instance.
  * Convenience function alternative to `new Tracker()`.
  *
- * @param options - Optional configuration including adapter and error handler
+ * @param options - Optional configuration including adapter
  *
  * @example
  * ```ts
  * // With adapter
- * const tracker = createTracker<MyEvents>({ adapter: myAdapter });
+ * const tracker = createTracker({ adapter: myAdapter });
  *
- * // With error handler
- * const tracker = createTracker<MyEvents>({
- *   adapter: myAdapter,
- *   errorHandler: (event, error, listener) => {
- *     console.error(`Error in ${String(event)}:`, error);
- *   },
- * });
- *
- * // With error handler only (no adapter)
- * const tracker = createTracker<MyEvents>({
- *   errorHandler: (event, error, listener) => {
- *     console.error(`Error in ${String(event)}:`, error);
- *   },
- * });
+ * // Without adapter
+ * const tracker = createTracker();
  * ```
  */
-export function createTracker<
-	Events extends Record<string, unknown> = Record<string, unknown>,
->(options?: TrackerOptions<Events>): Tracker<Events> {
-	return new Tracker<Events>(options);
+export function createTracker(options?: TrackerOptions): Tracker {
+	return new Tracker(options);
 }
 
 /**
  * Options for creating a Tracker via the factory (excludes adapter since it's pre-configured).
  */
-export type TrackerFactoryOptions<Events> = Omit<
-	TrackerOptions<Events>,
-	'adapter'
->;
+export type TrackerFactoryOptions = Omit<TrackerOptions, 'adapter'>;
 
 /**
  * Create a factory function for creating Tracker instances with a pre-configured adapter.
@@ -787,35 +522,16 @@ export type TrackerFactoryOptions<Events> = Omit<
  * // Create the factory with your adapter
  * const createTracker = createTrackerFactory(svelteAdapter);
  *
- * // Use the factory to create typed Tracker instances
- * type PlayerEvents = {
- *   'score:changed': number;
- *   'name:changed': string;
- * };
- *
- * type GameEvents = {
- *   'started': void;
- *   'ended': { winner: string };
- * };
- *
- * const playerTracker = createTracker<PlayerEvents>();
- * const gameTracker = createTracker<GameEvents>();
- *
- * // You can still pass additional options like errorHandler
- * const trackerWithErrorHandling = createTracker<PlayerEvents>({
- *   errorHandler: (event, error) => console.error(`Error in ${String(event)}:`, error),
- * });
+ * // Use the factory to create Tracker instances
+ * const playerTracker = createTracker();
+ * const gameTracker = createTracker();
  * ```
  */
 export function createTrackerFactory(
 	adapter: ScopeAdapter,
-): <Events extends Record<string, unknown> = Record<string, unknown>>(
-	options?: TrackerFactoryOptions<Events>,
-) => Tracker<Events> {
-	return function <
-		Events extends Record<string, unknown> = Record<string, unknown>,
-	>(options?: TrackerFactoryOptions<Events>): Tracker<Events> {
-		return new Tracker<Events>({
+): (options?: TrackerFactoryOptions) => Tracker {
+	return function (options?: TrackerFactoryOptions): Tracker {
+		return new Tracker({
 			...options,
 			adapter,
 		});

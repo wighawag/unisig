@@ -2,7 +2,7 @@ import {createTrackerFactory} from '@unisig/tracker';
 import svelteAdapter from '@unisig/svelte';
 import {unisig} from 'unisig';
 
-export type {Tracker, Unsubscribe, Listener} from '@unisig/tracker';
+export type {Tracker} from '@unisig/tracker';
 
 export const {effect} = unisig(svelteAdapter);
 

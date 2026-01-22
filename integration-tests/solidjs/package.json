@@ -14,8 +14,8 @@
 		"unisig": "workspace:*"
 	},
 	"devDependencies": {
-		"jsdom": "^26.1.0",
+		"jsdom": "^27.4.0",
 		"typescript": "^5.3.0",
-		"vitest": "^2.0.0"
+		"vitest": "^4.0.17"
 	}
 }
