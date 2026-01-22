@@ -1,4 +1,4 @@
-import {Tracker, createTracker} from './index.js';
+import {type Tracker, createTracker} from './index.js';
 
 export interface Player {
 	id: string;
