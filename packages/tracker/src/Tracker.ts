@@ -1,7 +1,4 @@
-import type {
-	ScopeAdapter,
-	Dependency,
-} from '@unisig/scope';
+import type {ScopeAdapter, Dependency} from '@unisig/scope';
 import {Scope} from '@unisig/scope';
 
 /**
@@ -118,11 +115,7 @@ export class Tracker {
 	 * Get or create a property dependency for a specific item.
 	 * Returns undefined if no adapter is set.
 	 */
-	itemPropDep(
-		collection: string,
-		id: string | number,
-		prop: string,
-	): Dependency | undefined {
+	itemPropDep(collection: string, id: string | number, prop: string): Dependency | undefined {
 		return this.scope.itemPropDep(collection, id, prop);
 	}
 
@@ -286,11 +279,7 @@ export class Tracker {
 	 * }
 	 * ```
 	 */
-	itemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T {
+	itemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 		return this.scope.itemProxy(target, collection, id);
 	}
 
@@ -345,11 +334,7 @@ export class Tracker {
 	 * })
 	 * ```
 	 */
-	deepItemProxy<T extends object>(
-		target: T,
-		collection: string,
-		id: string | number,
-	): T {
+	deepItemProxy<T extends object>(target: T, collection: string, id: string | number): T {
 		return this.scope.deepItemProxy(target, collection, id);
 	}
 

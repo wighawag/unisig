@@ -1,9 +1,16 @@
 import {describe, it, expect, vi} from 'vitest';
-import {unisig, type BasicReactivityAdapter, type Signal, type ReactiveResult} from '../src/index.js';
+import {
+	unisig,
+	type BasicReactivityAdapter,
+	type Signal,
+	type ReactiveResult,
+} from '../src/index.js';
 
 // Helper to check if a value is a primitive
 function isPrimitive(value: unknown): boolean {
-	return value === null || (typeof value !== 'object' && typeof value !== 'function');
+	return (
+		value === null || (typeof value !== 'object' && typeof value !== 'function')
+	);
 }
 
 // Mock adapter for testing
@@ -43,11 +50,11 @@ function createMockAdapter(): BasicReactivityAdapter & {
 			// For primitives, return { value: T }
 			// For objects, return T directly
 			if (isPrimitive(initial)) {
-				const boxed = { value: initial };
+				const boxed = {value: initial};
 				states.push(boxed);
 				return boxed as ReactiveResult<T>;
 			}
-			const state = {...initial as object};
+			const state = {...(initial as object)};
 			states.push(state);
 			return state as ReactiveResult<T>;
 		},
@@ -225,8 +232,11 @@ describe('BasicReactivityAdapter interface', () => {
 		const adapter: BasicReactivityAdapter = {
 			effect: vi.fn(() => () => {}),
 			reactive: <T>(initial: T): ReactiveResult<T> => {
-				if (initial === null || (typeof initial !== 'object' && typeof initial !== 'function')) {
-					return { value: initial } as ReactiveResult<T>;
+				if (
+					initial === null ||
+					(typeof initial !== 'object' && typeof initial !== 'function')
+				) {
+					return {value: initial} as ReactiveResult<T>;
 				}
 				return initial as ReactiveResult<T>;
 			},

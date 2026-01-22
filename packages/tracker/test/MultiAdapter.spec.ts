@@ -1,9 +1,5 @@
 import {describe, it, expect, vi} from 'vitest';
-import {
-	MultiAdapter,
-	CompositeDependency,
-	createMultiAdapter,
-} from '@unisig/tracker';
+import {MultiAdapter, CompositeDependency, createMultiAdapter} from '@unisig/tracker';
 import type {Dependency, ReactivityAdapter} from 'unisig';
 import {Tracker} from '@unisig/tracker';
 

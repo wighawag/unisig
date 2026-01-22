@@ -159,10 +159,7 @@ describe('Tracker', () => {
 		it('should work as expected in a store class', () => {
 			class UserStore {
 				private $: Tracker;
-				private users = new Map<
-					string,
-					{id: string; name: string; score: number}
-				>();
+				private users = new Map<string, {id: string; name: string; score: number}>();
 
 				constructor(adapter?: ScopeAdapter) {
 					this.$ = new Tracker({adapter});
@@ -334,10 +331,7 @@ describe('Tracker', () => {
 		it('should support granular property updates', () => {
 			class PlayerStore {
 				private $: Tracker;
-				private players = new Map<
-					string,
-					{id: string; name: string; score: number}
-				>();
+				private players = new Map<string, {id: string; name: string; score: number}>();
 
 				constructor(adapter?: ScopeAdapter) {
 					this.$ = new Tracker({adapter});
