@@ -1,75 +1,172 @@
 import {describe, bench} from 'vitest';
 import {tick} from 'svelte';
 
+// Wrapper classes that use $state as class fields
+class StateObjectWrapper {
+	value = $state({name: 'Alice', age: 30});
+}
+
+class StatePrimitiveWrapper {
+	value = $state(5);
+}
+
+class StateRawObjectWrapper {
+	value = $state.raw({name: 'Alice', age: 30});
+}
+
+class NestedStateObjectWrapper {
+	value = $state({user: {name: 'Alice', profile: {bio: 'Hello'}}});
+}
+
+class DerivedWrapper {
+	count = $state(0);
+	doubled = $derived(this.count * 2);
+}
+
+class EffectWrapper {
+	count = $state(0);
+	result = 0;
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			this.result = this.count;
+		});
+	});
+}
+
+class MultipleEffectsWrapper {
+	count1 = $state(0);
+	count2 = $state(0);
+	count3 = $state(0);
+	result = 0;
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			this.result = this.count1 + this.count2 + this.count3;
+		});
+	});
+}
+
+class CounterPatternWrapper {
+	count = $state(0);
+	result = 0;
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			this.result = this.count;
+		});
+	});
+}
+
+class DerivedComputationWrapper {
+	count = $state(0);
+	doubled = $derived(this.count * 2);
+	result = 0;
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			this.result = this.doubled;
+		});
+	});
+}
+
+class ObjectMutationWrapper {
+	obj = $state({count: 0});
+	result = 0;
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			this.result = this.obj.count;
+		});
+	});
+}
+
+class HighFrequencyReadStateWrapper {
+	count = $state(0);
+}
+
+class HighFrequencyWriteStateWrapper {
+	count = $state(0);
+}
+
+class HighFrequencyReadStateObjectWrapper {
+	obj = $state({count: 0});
+}
+
+class HighFrequencyWriteStateObjectWrapper {
+	obj = $state({count: 0});
+}
+
+class EffectTrackingInsideScopeWrapper {
+	cleanup = $effect.root(() => {
+		$effect(() => {
+			$effect.tracking();
+		});
+	});
+}
+
 describe('Svelte Raw Benchmarks', () => {
 	describe('$state - Objects', () => {
 		bench('create $state object', () => {
-			$state({name: 'Alice', age: 30});
+			new StateObjectWrapper();
 		});
 
 		bench('read property from $state object', () => {
-			const obj = $state({name: 'Alice', age: 30});
-			obj.name;
+			const wrapper = new StateObjectWrapper();
+			wrapper.value.name;
 		});
 
 		bench('write property to $state object', () => {
-			const obj = $state({name: 'Alice', age: 30});
-			obj.name = 'Bob';
+			const wrapper = new StateObjectWrapper();
+			wrapper.value.name = 'Bob';
 		});
 
 		bench('read nested property from $state object', () => {
-			const obj = $state({user: {name: 'Alice', profile: {bio: 'Hello'}}});
-			obj.user.name;
+			const wrapper = new NestedStateObjectWrapper();
+			wrapper.value.user.name;
 		});
 
 		bench('write nested property to $state object', () => {
-			const obj = $state({user: {name: 'Alice', profile: {bio: 'Hello'}}});
-			obj.user.name = 'Bob';
+			const wrapper = new NestedStateObjectWrapper();
+			wrapper.value.user.name = 'Bob';
 		});
 	});
 
 	describe('$state - Primitives', () => {
 		bench('create $state primitive', () => {
-			$state(5);
+			new StatePrimitiveWrapper();
 		});
 
 		bench('read primitive value from $state', () => {
-			let count = $state(5);
-			count;
+			const wrapper = new StatePrimitiveWrapper();
+			wrapper.value;
 		});
 
 		bench('write primitive value to $state', () => {
-			let count = $state(5);
-			count = 10;
+			const wrapper = new StatePrimitiveWrapper();
+			wrapper.value = 10;
 		});
 	});
 
 	describe('$state.raw - Shallow Reactivity', () => {
 		bench('create $state.raw object', () => {
-			$state.raw({name: 'Alice', age: 30});
+			new StateRawObjectWrapper();
 		});
 
 		bench('read property from $state.raw object', () => {
-			const obj = $state.raw({name: 'Alice', age: 30});
-			obj.name;
+			const wrapper = new StateRawObjectWrapper();
+			wrapper.value.name;
 		});
 
 		bench('write property to $state.raw object', () => {
-			const obj = $state.raw({name: 'Alice', age: 30});
-			obj.name = 'Bob';
+			const wrapper = new StateRawObjectWrapper();
+			wrapper.value.name = 'Bob';
 		});
 	});
 
 	describe('$derived', () => {
 		bench('create $derived', () => {
-			const count = $state(0);
-			$derived(count * 2);
+			new DerivedWrapper();
 		});
 
 		bench('read $derived value', () => {
-			const count = $state(0);
-			const doubled = $derived(count * 2);
-			doubled;
+			const wrapper = new DerivedWrapper();
+			wrapper.doubled;
 		});
 	});
 
@@ -82,107 +179,74 @@ describe('Svelte Raw Benchmarks', () => {
 		});
 
 		bench('$effect with single $state dependency', async () => {
-			const count = $state(0);
-			let result = 0;
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					result = count;
-				});
-			});
+			const wrapper = new EffectWrapper();
 			await tick();
-			cleanup();
+			wrapper.cleanup();
 		});
 
 		bench('$effect with multiple $state dependencies', async () => {
-			const count1 = $state(0);
-			const count2 = $state(0);
-			const count3 = $state(0);
-			let result = 0;
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					result = count1 + count2 + count3;
-				});
-			});
+			const wrapper = new MultipleEffectsWrapper();
 			await tick();
-			cleanup();
+			wrapper.cleanup();
 		});
 	});
 
 	describe('Reactivity Patterns', () => {
 		bench('simple counter pattern', async () => {
-			let count = $state(0);
-			let result = 0;
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					result = count;
-				});
-			});
+			const wrapper = new CounterPatternWrapper();
 			await tick();
-			count = 1;
+			wrapper.count = 1;
 			await tick();
-			count = 2;
+			wrapper.count = 2;
 			await tick();
-			cleanup();
+			wrapper.cleanup();
 		});
 
 		bench('derived computation', async () => {
-			let count = $state(0);
-			const doubled = $derived(count * 2);
-			let result = 0;
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					result = doubled;
-				});
-			});
+			const wrapper = new DerivedComputationWrapper();
 			await tick();
-			count = 5;
+			wrapper.count = 5;
 			await tick();
-			cleanup();
+			wrapper.cleanup();
 		});
 
 		bench('object mutation pattern', async () => {
-			const obj = $state({count: 0});
-			let result = 0;
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					result = obj.count;
-				});
-			});
+			const wrapper = new ObjectMutationWrapper();
 			await tick();
-			obj.count = 1;
+			wrapper.obj.count = 1;
 			await tick();
-			obj.count = 2;
+			wrapper.obj.count = 2;
 			await tick();
-			cleanup();
+			wrapper.cleanup();
 		});
 	});
 
 	describe('High-Frequency Operations', () => {
 		bench('1000 $state reads', () => {
-			const count = $state(0);
+			const wrapper = new HighFrequencyReadStateWrapper();
 			for (let i = 0; i < 1000; i++) {
-				count;
+				wrapper.count;
 			}
 		});
 
 		bench('1000 $state writes', () => {
-			let count = $state(0);
+			const wrapper = new HighFrequencyWriteStateWrapper();
 			for (let i = 0; i < 1000; i++) {
-				count = i;
+				wrapper.count = i;
 			}
 		});
 
 		bench('1000 $state object reads', () => {
-			const obj = $state({count: 0});
+			const wrapper = new HighFrequencyReadStateObjectWrapper();
 			for (let i = 0; i < 1000; i++) {
-				obj.count;
+				wrapper.obj.count;
 			}
 		});
 
 		bench('1000 $state object writes', () => {
-			const obj = $state({count: 0});
+			const wrapper = new HighFrequencyWriteStateObjectWrapper();
 			for (let i = 0; i < 1000; i++) {
-				obj.count = i;
+				wrapper.obj.count = i;
 			}
 		});
 	});
@@ -193,12 +257,8 @@ describe('Svelte Raw Benchmarks', () => {
 		});
 
 		bench('$effect.tracking() inside scope', () => {
-			const cleanup = $effect.root(() => {
-				$effect(() => {
-					$effect.tracking();
-				});
-			});
-			cleanup();
+			const wrapper = new EffectTrackingInsideScopeWrapper();
+			wrapper.cleanup();
 		});
 	});
 });
