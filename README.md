@@ -127,7 +127,6 @@ See the [`@unisig/tracker` README](./packages/tracker/README.md) for full docume
 ## Documentation
 
 - [**Signals Refresher**](./docs/SIGNALS_REFRESHER.md) - Learn how signals work under the hood
-- [**Patterns & Best Practices**](./docs/PATTERNS.md) - Common patterns for building stores
 
 ## Adapters
 
