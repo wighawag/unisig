@@ -1,14 +1,14 @@
 import {describe, bench, beforeEach} from 'vitest';
 import {Scope} from '../src/Scope.js';
-import {createReactivityAdapter} from '../src/types.js';
+import {ReactivityAdapter} from '../src/types.js';
 
 // Simple mock adapter for benchmarking
-const mockAdapter = createReactivityAdapter({
+const mockAdapter: ReactivityAdapter = {
 	create: () => ({
 		depend: () => {},
 		notify: () => {},
 	}),
-});
+} as ReactivityAdapter;
 
 describe('Scope Performance Benchmarks', () => {
 	describe('Tracking Operations', () => {
