@@ -11,8 +11,15 @@
  */
 
 import {createSubscriber} from 'svelte/reactivity';
-import type {BasicReactivityAdapter, Signal} from 'unisig';
+import type {Signal, StateResult} from 'unisig';
 import type {ReactivityAdapter} from '@unisig/scope';
+
+/**
+ * Check if a value is a primitive (not an object or function).
+ */
+function isPrimitive(value: unknown): boolean {
+	return value === null || (typeof value !== 'object' && typeof value !== 'function');
+}
 
 /**
  * Wrapper class that uses $state as a class field to create deep reactivity.
@@ -31,16 +38,22 @@ class ReactiveStateWrapper<T> {
 		this.value = initial;
 	}
 }
-// could also be, but need furrther tests:
-/*
-class ReactiveStateWrapper<T> {
-	value: T;
+
+/**
+ * Wrapper class that uses $state.raw for shallow reactivity.
+ *
+ * Unlike ReactiveStateWrapper which uses $state (deep reactivity),
+ * this uses $state.raw which only tracks the reference itself,
+ * not nested properties. Perfect for signals where you only care
+ * about the value changing, not nested object mutations.
+ */
+class ReactiveSignalWrapper<T> {
+	value = $state.raw<T>();
 
 	constructor(initial: T) {
-		this.value = $state(initial) as T;
+		this.value = initial;
 	}
 }
-*/
 
 /**
  * Svelte dependency implementation using createSubscriber.
@@ -173,27 +186,37 @@ export const svelteAdapter: ReactivityAdapter = {
 	},
 
 	/**
-	 * Create a deep reactive object using Svelte's $state.
+	 * Create a deep reactive state using Svelte's $state.
+	 *
+	 * - For objects: Returns the object directly with deep reactivity
+	 * - For primitives: Returns { value: T } wrapper (boxed value)
 	 *
 	 * Uses ReactiveStateWrapper to circumvent the restriction that $state can
-	 * only be used as a class field declaration. Returns the reactive value
-	 * directly with property access/assignment that automatically tracks
-	 * and triggers reactivity.
+	 * only be used as a class field declaration.
 	 *
-	 * @param initial - Initial value (objects are deeply reactive)
-	 * @returns Reactive version of the value (same shape as input)
+	 * @param initial - Initial value
+	 * @returns For objects: T (deep reactive). For primitives: { value: T }
 	 *
 	 * @example
 	 * ```ts
 	 * const { state } = unisig(svelteAdapter);
 	 *
+	 * // Objects - direct property access
 	 * const user = state({ name: 'Alice', age: 30 });
 	 * user.name = 'Bob';  // Triggers reactivity
-	 * user.age = 31;      // Triggers reactivity
+	 *
+	 * // Primitives - use .value
+	 * const count = state(5);
+	 * count.value = 10;   // Triggers reactivity
 	 * ```
 	 */
-	state<T>(initial: T): T {
-		return new ReactiveStateWrapper<T>(initial).value as T;
+	state<T>(initial: T): StateResult<T> {
+		if (isPrimitive(initial)) {
+			// For primitives, return the wrapper instance (which has { value: T } shape)
+			return new ReactiveStateWrapper<T>(initial) as StateResult<T>;
+		}
+		// For objects, return the reactive value directly
+		return new ReactiveStateWrapper<T>(initial).value as StateResult<T>;
 	},
 
 	/**
@@ -215,8 +238,8 @@ export const svelteAdapter: ReactivityAdapter = {
 	 * ```
 	 */
 	signal<T>(initial: T): Signal<T> {
-		// TODO we should use a different wrapper thay uses $state.raw to make it more lean
-		const s = new ReactiveStateWrapper(initial);
+		// Use $state.raw for shallow reactivity (more performant for signals)
+		const s = new ReactiveSignalWrapper(initial);
 		return {
 			get: () => s.value as T,
 			set: (v: T) => {

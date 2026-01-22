@@ -17,6 +17,30 @@ export interface Signal<T> {
 }
 
 /**
+ * Boxed value wrapper for primitives.
+ * Used when state() receives a primitive value.
+ */
+export interface Boxed<T> {
+	value: T;
+}
+
+/**
+ * Type helper to check if T is a primitive type.
+ * Primitives: string, number, boolean, symbol, bigint, null, undefined
+ */
+export type IsPrimitive<T> = T extends object ? false : true;
+
+/**
+ * Conditional return type for state().
+ * - Objects return T directly (deep reactive proxy)
+ * - Primitives return { value: T } (boxed value)
+ *
+ * This ensures a consistent API across adapters that may have
+ * different capabilities for handling primitives.
+ */
+export type StateResult<T> = T extends object ? T : Boxed<T>;
+
+/**
  * Minimal adapter for standalone reactive state.
  *
  * This is the core interface that all reactivity adapters must implement
@@ -58,30 +82,29 @@ export interface BasicReactivityAdapter {
 	effect(fn: () => void | (() => void)): () => void;
 
 	/**
-	 * Create a deep reactive object - mutable with deep tracking.
+	 * Create a deep reactive state.
 	 *
-	 * Returns the object directly with property access/assignment that
-	 * automatically tracks and triggers reactivity.
+	 * - For objects: Returns the object directly with deep reactivity
+	 * - For primitives: Returns { value: T } wrapper (boxed value)
 	 *
-	 * Like Svelte's $state, Vue's reactive(), Solid's createMutable.
+	 * This conditional return type ensures a consistent API across adapters.
 	 *
-	 * @param initial - Initial value (objects are deeply reactive)
-	 * @returns Reactive version of the value (same shape as input)
+	 * @param initial - Initial value
+	 * @returns For objects: T (deep reactive proxy). For primitives: { value: T }
 	 *
 	 * @example
 	 * ```ts
-	 * // Svelte implementation
-	 * state<T>(initial: T): T {
-	 *   return $state(initial);
-	 * }
+	 * // Objects - direct property access
+	 * const user = state({ name: 'Alice', age: 30 });
+	 * user.name = 'Bob';  // Triggers reactivity
 	 *
-	 * // Solid implementation (using solid-js/store)
-	 * state<T extends object>(initial: T): T {
-	 *   return createMutable(initial);
-	 * }
+	 * // Primitives - use .value
+	 * const count = state(5);
+	 * count.value = 10;   // Triggers reactivity
+	 * console.log(count.value);  // 10
 	 * ```
 	 */
-	state<T>(initial: T): T;
+	state<T>(initial: T): StateResult<T>;
 
 	/**
 	 * Create a shallow reactive signal with get/set interface.
@@ -114,21 +137,28 @@ export interface BasicReactivityAdapter {
  */
 export interface ReactivityBundle<Adapter extends BasicReactivityAdapter> {
 	/**
-	 * Create a deep reactive object - mutable with deep tracking.
+	 * Create a deep reactive state.
 	 *
-	 * @param initial - Initial value (objects are deeply reactive)
-	 * @returns Reactive version of the value (same shape as input)
+	 * - For objects: Returns the object directly with deep reactivity
+	 * - For primitives: Returns { value: T } wrapper (boxed value)
+	 *
+	 * @param initial - Initial value
+	 * @returns For objects: T (deep reactive proxy). For primitives: { value: T }
 	 *
 	 * @example
 	 * ```ts
 	 * const { state } = unisig(adapter);
 	 *
+	 * // Objects - direct property access
 	 * const user = state({ name: 'Alice', age: 30 });
 	 * user.name = 'Bob';  // Triggers reactivity
-	 * user.age = 31;      // Triggers reactivity
+	 *
+	 * // Primitives - use .value
+	 * const count = state(5);
+	 * count.value = 10;   // Triggers reactivity
 	 * ```
 	 */
-	state: <T>(initial: T) => T;
+	state: <T>(initial: T) => StateResult<T>;
 
 	/**
 	 * Create a shallow reactive signal with get/set interface.
@@ -215,7 +245,7 @@ export function unisig<Adapter extends BasicReactivityAdapter>(
 	adapter: Adapter,
 ): ReactivityBundle<Adapter> {
 	return {
-		state: <T>(initial: T) => adapter.state(initial),
+		state: <T>(initial: T) => adapter.state(initial) as StateResult<T>,
 		signal: <T>(initial: T) => adapter.signal(initial),
 		effect: (fn) => adapter.effect(fn),
 		adapter,

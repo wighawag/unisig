@@ -1,5 +1,10 @@
 import {describe, it, expect, vi} from 'vitest';
-import {unisig, type BasicReactivityAdapter, type Signal} from '../src/index.js';
+import {unisig, type BasicReactivityAdapter, type Signal, type StateResult} from '../src/index.js';
+
+// Helper to check if a value is a primitive
+function isPrimitive(value: unknown): boolean {
+	return value === null || (typeof value !== 'object' && typeof value !== 'function');
+}
 
 // Mock adapter for testing
 function createMockAdapter(): BasicReactivityAdapter & {
@@ -34,14 +39,17 @@ function createMockAdapter(): BasicReactivityAdapter & {
 				if (idx !== -1) effects.splice(idx, 1);
 			};
 		},
-		state<T>(initial: T): T {
-			// Simple shallow clone for primitives, or return object as-is
-			const state =
-				typeof initial === 'object' && initial !== null
-					? {...initial}
-					: initial;
+		state<T>(initial: T): StateResult<T> {
+			// For primitives, return { value: T }
+			// For objects, return T directly
+			if (isPrimitive(initial)) {
+				const boxed = { value: initial };
+				states.push(boxed);
+				return boxed as StateResult<T>;
+			}
+			const state = {...initial as object};
 			states.push(state);
-			return state as T;
+			return state as StateResult<T>;
 		},
 		signal<T>(initial: T): Signal<T> {
 			let value = initial;
@@ -89,16 +97,27 @@ describe('unisig', () => {
 			expect(adapter.states).toHaveLength(1);
 		});
 
-		it('should create reactive state for primitives', () => {
+		it('should create reactive state for primitives with .value wrapper', () => {
 			const adapter = createMockAdapter();
 			const {state} = unisig(adapter);
 
 			const num = state(42);
 			const str = state('hello');
 
-			expect(num).toBe(42);
-			expect(str).toBe('hello');
+			// Primitives are wrapped in { value: T }
+			expect(num.value).toBe(42);
+			expect(str.value).toBe('hello');
 			expect(adapter.states).toHaveLength(2);
+		});
+
+		it('should allow setting primitive values via .value', () => {
+			const adapter = createMockAdapter();
+			const {state} = unisig(adapter);
+
+			const num = state(42);
+			num.value = 100;
+
+			expect(num.value).toBe(100);
 		});
 	});
 
@@ -205,7 +224,12 @@ describe('BasicReactivityAdapter interface', () => {
 	it('should have correct structure', () => {
 		const adapter: BasicReactivityAdapter = {
 			effect: vi.fn(() => () => {}),
-			state: <T>(initial: T) => initial,
+			state: <T>(initial: T): StateResult<T> => {
+				if (initial === null || (typeof initial !== 'object' && typeof initial !== 'function')) {
+					return { value: initial } as StateResult<T>;
+				}
+				return initial as StateResult<T>;
+			},
 			signal: <T>(initial: T) => ({get: () => initial, set: vi.fn()}),
 		};
 
