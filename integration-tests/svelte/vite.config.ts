@@ -7,4 +7,9 @@ export default defineConfig({
 		include: ['test/**/*.spec.svelte.ts'],
 		environment: 'happy-dom',
 	},
+	resolve: process.env.VITEST
+		? {
+				conditions: ['browser'],
+			}
+		: undefined,
 });
