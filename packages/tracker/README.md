@@ -1,16 +1,15 @@
 # @unisig/tracker
 
-**Granular reactivity tracking** with built-in events for any signal library.
+**Granular reactivity tracking** for any signal library.
 
 Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 
 ## Features
 
 - 📦 **Granular reactivity** - Track at collection, item, or property level
-- 🎪 **Event system** - Built-in event emitter for non-reactive contexts
-- 🔄 **Deep proxies** - Automatic tracking of nested properties
+- 🔄 **Auto-tracking proxies** - Shallow, deep, and read-only variants
 - 🎯 **Framework-agnostic** - Works with any signal library via adapters
-- ⚡ **Zero dependencies** - Lightweight and fast
+- ⚡ **Zero dependencies (except for unisig)** - Lightweight and fast
 - 📝 **Type-safe** - Full TypeScript support
 
 ## Installation
@@ -25,52 +24,6 @@ npm install @unisig/tracker @unisig/svelte
 
 ## Quick Start
 
-### Basic Usage with Events
-
-```typescript
-import { createTrackerFactory } from "@unisig/tracker";
-
-// Define your events (use `type`, not `interface`)
-type MyEvents = {
-  "user:added": { id: string; name: string };
-  "user:removed": string;
-};
-
-const createTracker = createTrackerFactory();
-
-class UserStore {
-  private $ = createTracker<MyEvents>();
-  private users = new Map<string, { id: string; name: string }>();
-
-  // Expose event subscription
-  on: typeof this.$.on = (e, l) => this.$.on(e, l);
-
-  // READ methods: call track()
-  getAll() {
-    this.$.track("users");
-    return [...this.users.values()];
-  }
-
-  // WRITE methods: call trigger() with optional event
-  add(user: { id: string; name: string }) {
-    this.users.set(user.id, user);
-    this.$.trigger("users", "user:added", user);
-  }
-}
-
-// Usage
-const store = new UserStore();
-
-// Events work anywhere
-store.on("user:added", (user) => {
-  console.log("Added:", user.name);
-});
-
-store.add({ id: "1", name: "Alice" }); // Logs: "Added: Alice"
-```
-
-### Using with Signals
-
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
 import solidAdapter from "@unisig/solid-js";
@@ -79,68 +32,65 @@ import { createEffect } from "solid-js";
 // Create factory with adapter
 const createTracker = createTrackerFactory(solidAdapter);
 
-type UserEvents = {
-  "user:added": { id: string; name: string };
-};
+class PlayerStore {
+  private $ = createTracker();
+  private players = new Map<string, { id: string; name: string; score: number }>();
 
-class UserStore {
-  private $ = createTracker<UserEvents>();
-  private users = new Map<string, { id: string; name: string }>();
-
+  // READ methods: call track()
   getAll() {
-    this.$.track("users");
-    return [...this.users.values()];
+    this.$.track("players");
+    return [...this.players.values()];
   }
 
-  add(user: { id: string; name: string }) {
-    this.users.set(user.id, user);
-    this.$.trigger("users", "user:added", user);
+  getPlayer(id: string) {
+    this.$.trackItem("players", id);
+    return this.players.get(id);
+  }
+
+  getScore(id: string) {
+    this.$.trackItemProp("players", id, "score");
+    return this.players.get(id)?.score;
+  }
+
+  // WRITE methods: call trigger()
+  add(player: { id: string; name: string; score: number }) {
+    this.players.set(player.id, player);
+    this.$.triggerItemAdded("players");
+  }
+
+  updateScore(id: string, score: number) {
+    const player = this.players.get(id);
+    if (player) {
+      player.score = score;
+      this.$.triggerItemProp("players", id, "score");
+    }
+  }
+
+  remove(id: string) {
+    if (this.players.has(id)) {
+      this.players.delete(id);
+      this.$.triggerItemRemoved("players", id);
+    }
   }
 }
 
-const store = new UserStore();
+const store = new PlayerStore();
 
-// In a reactive context:
+// Reactive tracking in Solid.js
 createEffect(() => {
-  const users = store.getAll(); // Automatically tracked
-  console.log("Users:", users);
+  const players = store.getAll();
+  console.log("Players:", players.length);
 });
 
-store.add({ id: "1", name: "Alice" }); // Effect re-runs
-```
-
-## Why Both Signals and Events?
-
-Signals require a "reactive scope" (an effect, computed, etc.) to work. Outside of that:
-
-```typescript
-// This WON'T work - not inside an effect
-const users = store.getAll(); // track() does nothing outside reactive scope
-```
-
-**Events always work**, regardless of context:
-
-```typescript
-// This ALWAYS works
-store.on("user:added", (user) => {
-  console.log("Added:", user); // Fires every time, no matter where you call it
+createEffect(() => {
+  const score = store.getScore("player1");
+  console.log("Player 1 score:", score);
 });
 ```
-
-**Use events when:**
-- Working in plain JavaScript (no framework)
-- Doing one-time operations (API calls, logging)
-- Framework hasn't set up reactive scope yet
-
-**Use signals when:**
-- Inside a framework's reactive system (Solid's `createEffect`, Vue's `watchEffect`, etc.)
-- You want automatic, fine-grained updates
-
-This library gives you **both** — events for reliability, signals for power.
 
 ## API Reference
 
-### `createTrackerFactory(adapter?)`
+### `createTrackerFactory(adapter)`
 
 Create a factory function for creating Tracker instances with a pre-configured adapter.
 
@@ -148,45 +98,23 @@ Create a factory function for creating Tracker instances with a pre-configured a
 import { createTrackerFactory } from "@unisig/tracker";
 import solidAdapter from "@unisig/solid-js";
 
-// Create the factory with your adapter
 const createTracker = createTrackerFactory(solidAdapter);
 
-// Use the factory to create typed Tracker instances
-type PlayerEvents = {
-  'player:added': Player;
-  'player:removed': string;
-};
-
-const playerTracker = createTracker<PlayerEvents>();
-
-// You can still pass additional options like errorHandler
-const trackerWithErrorHandling = createTracker<PlayerEvents>({
-  errorHandler: (event, error) => console.error(`Error in ${String(event)}:`, error),
-});
+// Create Tracker instances
+const playerTracker = createTracker();
+const gameTracker = createTracker();
 ```
 
-**Benefits:**
-- **Single adapter source** - Ensures all stores use the same adapter
-- **Type-safe** - Each Tracker can have its own event types
-- **Cleaner code** - No need to repeat `{ adapter }` on every instantiation
-- **Better for testing** - Easy to create factories with mock adapters
+### `Tracker`
 
-### `Tracker<Events>`
-
-Main class combining signals and events.
+Main class for granular signal tracking.
 
 ```typescript
-const $ = createTracker<MyEvents>({ adapter })  // Pass adapter in options
+const $ = createTracker();
+
+// Check scope
 $.getAdapter()             // Get current adapter
 $.isInScope()              // Check if in reactive scope
-
-// Events (always work)
-$.on(event, listener)      // Subscribe to event
-$.off(event, listener)     // Unsubscribe
-$.once(event, listener)    // Subscribe once
-$.emit(event, data)        // Emit event only (no signal)
-$.hasListeners(event)      // Check if event has listeners
-$.removeAllListeners(event?) // Remove listeners
 
 // Tracking (for reads)
 $.track(key)               // Track dependency by key
@@ -195,66 +123,34 @@ $.trackProp(key, prop)     // Track specific property of a key
 $.trackItemProp(collection, id, prop) // Track specific property of an item
 
 // Triggering (for writes)
-$.trigger(key, event?, data?)           // Notify + emit
-$.triggerItem(collection, id, event?, data?)  // Notify item + all its props
-$.triggerList(collection, event?, data?)      // Notify list
-$.triggerAdd(collection, event?, data?)       // Alias for triggerList
-$.triggerRemove(collection, id, event?, data?) // Notify item + list + cleanup
-$.triggerProp(key, prop, event?, data?)       // Notify property only
-$.triggerItemProp(collection, id, prop, event?, data?) // Notify item property only
+$.trigger(key)             // Notify key watchers
+$.triggerItem(collection, id)  // Notify item + all its props
+$.triggerProp(key, prop)   // Notify property only
+$.triggerItemProp(collection, id, prop) // Notify item property only
+$.triggerCollection(collection)  // Notify collection watchers
+$.triggerItemAdded(collection)   // Notify collection (alias)
+$.triggerItemRemoved(collection, id) // Notify item + collection + cleanup
 
-// Direct access
+// Direct dependency access
 $.dep(key)                 // Get/create dependency
 $.itemDep(collection, id)  // Get/create item dependency
 $.propDep(key, prop)       // Get/create property dependency
 $.itemPropDep(collection, id, prop) // Get/create item property dependency
 $.clear()                  // Clear all dependencies
 
-// Auto-tracking proxies (shallow - first level only)
-$.proxy(target, key)       // Create auto-tracking proxy for an object
-$.itemProxy(target, collection, id) // Create auto-tracking proxy for a collection item
+// Auto-tracking proxies (shallow)
+$.proxy(target, key)       // Create auto-tracking proxy
+$.itemProxy(target, collection, id) // Create item proxy
 
-// Deep auto-tracking proxies (any nesting level)
+// Deep auto-tracking proxies
 $.deepProxy(target, key)   // Deep proxy with dot notation paths
-$.deepItemProxy(target, collection, id) // Deep proxy for collection items
-```
+$.deepItemProxy(target, collection, id) // Deep proxy for items
 
-### Error Handling
-
-By default, errors in event listeners propagate immediately (fail-fast behavior). For production environments, you can configure an error handler:
-
-```typescript
-import { createTrackerFactory } from "@unisig/tracker";
-
-const createTracker = createTrackerFactory(myAdapter);
-
-// With error handler for production
-const tracker = createTracker<MyEvents>({
-  errorHandler: (event, error, listener) => {
-    console.error(`Error in ${String(event)}:`, error);
-    // Send to error tracking service
-    Sentry.captureException(error, { tags: { event: String(event) } });
-  },
-});
-
-// Now all listeners get a chance to run, even if one fails
-tracker.on("user:added", (user) => {
-  throw new Error("Oops!"); // Caught by errorHandler
-});
-
-tracker.on("user:added", (user) => {
-  console.log("This still runs!"); // ✅
-});
-```
-
-**Error Handler Signature:**
-
-```typescript
-type ErrorHandler<Events> = (
-  event: keyof Events,
-  error: Error,
-  listener: Listener<unknown>,
-) => void;
+// Read-only proxies (track only, throw on write)
+$.readonlyProxy(target, key)
+$.readonlyItemProxy(target, collection, id)
+$.readonlyDeepProxy(target, key)
+$.readonlyDeepItemProxy(target, collection, id)
 ```
 
 ## Granular Reactivity
@@ -267,15 +163,15 @@ type ErrorHandler<Events> = (
 **Example:**
 ```typescript
 // Reading tracks collection, item, and property
-getUserScore(id: string) {
-  this.$.trackItemProp('users', id, 'score'); // Tracks property, item, AND collection
-  return this.users.get(id)?.score;
+getScore(id: string) {
+  this.$.trackItemProp('players', id, 'score'); // Tracks property, item, AND collection
+  return this.players.get(id)?.score;
 }
 
 // Writing only triggers the property
-updateUserScore(id: string, score: number) {
-  this.users.get(id).score = score;
-  this.$.triggerItemProp('users', id, 'score'); // Only triggers property, NOT collection
+updateScore(id: string, score: number) {
+  this.players.get(id).score = score;
+  this.$.triggerItemProp('players', id, 'score'); // Only triggers property, NOT collection
 }
 ```
 
@@ -284,8 +180,8 @@ updateUserScore(id: string, score: number) {
 Track the entire collection:
 
 ```typescript
-class UserStore {
-  private $ = createTracker<UserEvents>();
+class Store {
+  private $ = createTracker();
 
   getAll() {
     this.$.track("users");
@@ -294,7 +190,7 @@ class UserStore {
 
   add(user) {
     this.users.set(user.id, user);
-    this.$.triggerList("users");
+    this.$.triggerCollection("users");
   }
 }
 ```
@@ -304,15 +200,15 @@ class UserStore {
 Track specific items:
 
 ```typescript
-class UserStore {
-  private $ = createTracker<UserEvents>();
+class Store {
+  private $ = createTracker();
 
-  getUser(id) {
+  get(id) {
     this.$.trackItem("users", id);
     return this.users.get(id);
   }
 
-  updateUser(id, changes) {
+  update(id, changes) {
     Object.assign(this.users.get(id), changes);
     this.$.triggerItem("users", id);
   }
@@ -324,8 +220,8 @@ class UserStore {
 Track specific properties:
 
 ```typescript
-class UserStore {
-  private $ = createTracker<UserEvents>();
+class Store {
+  private $ = createTracker();
 
   getScore(id) {
     this.$.trackItemProp("users", id, "score");
@@ -344,10 +240,10 @@ class UserStore {
 ### Shallow Proxies
 
 ```typescript
-class UserStore {
-  private $ = createTracker<UserEvents>();
+class Store {
+  private $ = createTracker();
 
-  getUser(id) {
+  get(id) {
     this.$.trackItem("users", id);
     const user = this.users.get(id);
     return user ? this.$.itemProxy(user, "users", id) : undefined;
@@ -356,12 +252,12 @@ class UserStore {
 
 // Usage
 createEffect(() => {
-  const user = store.getUser("1");
+  const user = store.get("1");
   console.log(user?.score); // Auto-tracks 'users:1:score'
 });
 
 // Can modify through proxy
-const user = store.getUser("1");
+const user = store.get("1");
 if (user) {
   user.score = 100; // Auto-triggers 'users:1:score'
 }
@@ -369,14 +265,14 @@ if (user) {
 
 ### Deep Proxies
 
-For nested objects, use deep proxies:
+For nested objects:
 
 ```typescript
-class GameStore {
-  private $ = createTracker<GameEvents>();
+class Store {
+  private $ = createTracker();
   private players = new Map<string, Player>();
 
-  getPlayer(id) {
+  get(id) {
     this.$.trackItem("players", id);
     const player = this.players.get(id);
     return player ? this.$.deepItemProxy(player, "players", id) : undefined;
@@ -385,10 +281,33 @@ class GameStore {
 
 // Usage
 createEffect(() => {
-  const player = store.getPlayer("1");
+  const player = store.get("1");
   // Nested access is automatically tracked:
   console.log(player?.stats.health); // Tracks 'stats.health'
   console.log(player?.inventory[0]); // Tracks 'inventory.0'
+});
+```
+
+### Read-Only Proxies
+
+For safe read access that prevents accidental mutations:
+
+```typescript
+class Store {
+  private $ = createTracker();
+
+  getReadonly(id) {
+    this.$.trackItem("users", id);
+    const user = this.users.get(id);
+    return user ? this.$.readonlyDeepItemProxy(user, "users", id) : undefined;
+  }
+}
+
+// Usage
+createEffect(() => {
+  const user = store.getReadonly("1");
+  console.log(user?.score); // Works - tracks 'score'
+  user.score = 100; // Throws: Cannot modify read-only proxy
 });
 ```
 
@@ -416,7 +335,7 @@ Deep proxies do **not** proxy:
 
 ```typescript
 class PlayerStore {
-  private $ = createTracker<PlayerEvents>();
+  private $ = createTracker();
   private players = new Map<string, Player>();
 
   // ✅ Fast: Returns raw object with tracking
@@ -430,17 +349,17 @@ class PlayerStore {
     const player = this.players.get(id);
     if (!player) return;
     player.score = score;
-    this.$.triggerItemProp("players", id, "score", "player:scored", { id, score });
+    this.$.triggerItemProp("players", id, "score");
   }
 }
 ```
 
-### When to Use Live Objects
+### When to Use Proxied Getters
 
-Use live getters (with proxies) only when you need fine-grained property-level tracking:
+Use proxied getters only when you need fine-grained property-level tracking with automatic triggering:
 
 ```typescript
-// For complex components that need granular updates
+// For complex components that need granular updates AND writes through proxy
 getLive(id: string): Player | undefined {
   this.$.trackItem('players', id)
   const player = this.players.get(id)
@@ -453,44 +372,21 @@ getLive(id: string): Player | undefined {
 | Use Case | Recommended Approach | Performance |
 |----------|---------------------|-------------|
 | Simple list display | `get()` / `getAll()` (read-only) | ⚡ ~16M ops/sec |
-| Property display | `getName()` / `getScore()` (property getters) | ⚡ ~16M ops/sec |
-| Complex component | `getLive()` / `getAllLive()` (live/proxied) | 🐢 ~100K ops/sec |
-
-## TypeScript
-
-Full TypeScript support with strong event typing:
-
-```typescript
-// Use `type` instead of `interface` for event maps
-type Events = {
-  "item:added": { id: string; value: number };
-  "item:removed": string;
-  cleared: void;
-};
-
-const $ = createTracker<Events>();
-
-// Type-safe events
-$.on("item:added", (item) => {
-  item.id; // string
-  item.value; // number
-});
-
-$.emit("item:added", { id: "1", value: 42 }); // ✓
-$.emit("item:added", { id: "1" }); // ✗ Error: missing value
-```
+| Property display | `getScore()` / `getName()` (property getters) | ⚡ ~16M ops/sec |
+| Complex component | `getLive()` (deep proxy) | 🐢 ~100K ops/sec |
 
 ## Types
 
-### `ReactivityAdapter`
+### `ScopeAdapter`
 
 The adapter interface for `@unisig/tracker`:
 
 ```typescript
-interface ReactivityAdapter {
-  create: () => Dependency;
-  isInScope?: () => boolean;
-  onDispose?: (callback: () => void, dep: Dependency) => void;
+interface ScopeAdapter {
+  create(): Dependency;
+  isInScope?(): boolean;
+  onDispose?(callback: () => void, dep: Dependency): void;
+  reactive?<T>(initial: T): ReactiveResult<T>;
 }
 ```
 
@@ -498,9 +394,17 @@ interface ReactivityAdapter {
 
 ```typescript
 interface Dependency {
-  depend: () => void;
-  notify: () => void;
+  depend(): void;
+  notify(): void;
 }
+```
+
+### `ReactivityAdapter`
+
+Full adapter that extends both `BasicReactivityAdapter` and `ScopeAdapter`:
+
+```typescript
+interface ReactivityAdapter extends BasicReactivityAdapter, ScopeAdapter {}
 ```
 
 ## Adapters
@@ -513,10 +417,10 @@ Official adapters:
 ### Creating Custom Adapters
 
 ```typescript
-import type { ReactivityAdapter } from "@unisig/tracker";
+import type { ScopeAdapter } from "@unisig/tracker";
 import { createSignal, getOwner, onCleanup } from "solid-js";
 
-const solidAdapter: ReactivityAdapter = {
+const solidAdapter: ScopeAdapter = {
   create: () => {
     const [track, trigger] = createSignal(undefined, { equals: false });
     return { depend: () => track(), notify: () => trigger(undefined) };

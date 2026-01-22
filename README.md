@@ -2,7 +2,7 @@
 
 **Universal signals** — add reactivity to any data with pluggable signal adapters.
 
-**Zero dependencies.** Works with any signal library (Solid.js, Preact Signals, Vue, MobX, Svelte, etc.) or just events.
+**Zero dependencies.** Self contained
 
 ## Features
 
@@ -16,7 +16,7 @@
 | Package | Description |
 |---------|-------------|
 | [`unisig`](./packages/unisig) | Core reactive primitives (`reactive`, `signal`, `effect`) |
-| [`@unisig/tracker`](./packages/tracker) | Granular reactivity tracking with events (Tracker, Emitter, Scope) |
+| [`@unisig/tracker`](./packages/tracker) | Granular reactivity tracking (Tracker, Scope) |
 | [`@unisig/solid-js`](./packages/solid-js) | Solid.js adapter |
 | [`@unisig/svelte`](./packages/svelte) | Svelte 5 adapter |
 
@@ -76,21 +76,13 @@ For stores, collections, and granular reactivity, use the Tracker package:
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
 import solidAdapter from "@unisig/solid-js";
-
-// Define your events
-type PlayerEvents = {
-  "player:added": { id: string; name: string };
-  "player:removed": string;
-};
+import { createEffect } from "solid-js";
 
 const createTracker = createTrackerFactory(solidAdapter);
 
 class PlayerStore {
-  private $ = createTracker<PlayerEvents>();
+  private $ = createTracker();
   private players = new Map<string, { id: string; name: string; score: number }>();
-
-  // Expose event subscription
-  on: typeof this.$.on = (e, l) => this.$.on(e, l);
 
   // READ methods: call track()
   getAll() {
@@ -103,18 +95,35 @@ class PlayerStore {
     return this.players.get(id);
   }
 
-  // WRITE methods: call trigger() with optional event
+  getScore(id: string) {
+    this.$.trackItemProp("players", id, "score");
+    return this.players.get(id)?.score;
+  }
+
+  // WRITE methods: call trigger()
   add(player: { id: string; name: string; score: number }) {
     this.players.set(player.id, player);
-    this.$.trigger("players", "player:added", player);
+    this.$.triggerCollection("players");
+  }
+
+  updateScore(id: string, score: number) {
+    this.players.get(id)!.score = score;
+    this.$.triggerItemProp("players", id, "score");
   }
 }
+
+const store = new PlayerStore();
+
+// Reactive tracking in Solid.js
+createEffect(() => {
+  const players = store.getAll();
+  console.log("Players:", players.length);
+});
 ```
 
 See the [`@unisig/tracker` README](./packages/tracker/README.md) for full documentation on:
 - Granular reactivity (collection, item, property level)
-- Event system (built-in event emitter)
-- Auto-tracking proxies (shallow and deep)
+- Auto-tracking proxies (shallow, deep, and read-only)
 - Performance patterns
 
 ## Documentation
@@ -146,9 +155,9 @@ const myAdapter: BasicReactivityAdapter = {
 For `@unisig/tracker` (granular tracking):
 
 ```typescript
-import type { ReactivityAdapter } from "@unisig/tracker";
+import type { ScopeAdapter } from "@unisig/tracker";
 
-const myAdapter: ReactivityAdapter = {
+const myAdapter: ScopeAdapter = {
   create: () => ({
     depend: () => { /* track dependency */ },
     notify: () => { /* trigger update */ },

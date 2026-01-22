@@ -147,41 +147,9 @@ const solidAdapter = {
 };
 ```
 
-## Why unisig Also Supports Events
-
-Signals require a "reactive scope" (an effect, computed, etc.) to work. Outside of that:
-
-```typescript
-// This WON'T work - not inside an effect
-const users = store.getAll(); // track() does nothing outside reactive scope
-```
-
-**Events always work**, regardless of context:
-
-```typescript
-// This ALWAYS works
-store.on("user:added", (user) => {
-  console.log("Added:", user); // Fires every time, no matter where you call it
-});
-```
-
-**Use events when:**
-
-- Working in plain JavaScript (no framework)
-- Doing one-time operations (API calls, logging)
-- Framework hasn't set up reactive scope yet
-
-**Use signals when:**
-
-- Inside a framework's reactive system (Solid's `createEffect`, Vue's `watchEffect`, etc.)
-- You want automatic, fine-grained updates
-
-unisig gives you **both** — events for reliability, signals for power.
-
 ## Summary
 
 1. **Signals track dependencies automatically** - When you read a value inside an effect, the signal remembers that effect
 2. **Signals notify on changes** - When you write a value, all tracked effects re-run
 3. **This works because of a global "current effect"** - The signal checks this when read
 4. **Adapters unify different libraries** - They all do the same thing, just with different APIs
-5. **Events are the fallback** - They always work, even outside reactive scopes
