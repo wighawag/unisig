@@ -324,13 +324,6 @@ Deep proxies do **not** proxy:
 
 ## Performance: Read-Only vs Proxied Getters
 
-### Performance Comparison
-
-| Approach | Performance | Speedup |
-|----------|-------------|---------|
-| Proxied getters (deep proxy) | ~100K ops/sec | 1x (baseline) |
-| **Read-only getters (raw object)** | **~16M ops/sec** | **160x faster** |
-
 ### Recommendation: Use Read-Only Getters by Default
 
 ```typescript
