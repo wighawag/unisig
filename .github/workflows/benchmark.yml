@@ -13,7 +13,7 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,8 +32,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          node-version: "20"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -41,190 +41,190 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # Check if baseline exists
-      - name: Check for baseline
-        id: baseline-check
-        run: |
-          if [ -f "packages/unisig/baseline.json" ]; then
-            echo "has_baseline=true" >> $GITHUB_OUTPUT
-            echo "✅ Baseline found"
-          else
-            echo "has_baseline=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No baseline found"
-          fi
+      # # Check if baseline exists
+      # - name: Check for baseline
+      #   id: baseline-check
+      #   run: |
+      #     if [ -f "packages/unisig/baseline.json" ]; then
+      #       echo "has_baseline=true" >> $GITHUB_OUTPUT
+      #       echo "✅ Baseline found"
+      #     else
+      #       echo "has_baseline=false" >> $GITHUB_OUTPUT
+      #       echo "⚠️ No baseline found"
+      #     fi
 
-      # ============================================
-      # MAIN BRANCH: Generate and commit baseline
-      # ============================================
-      - name: Run benchmarks and generate baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        working-directory: packages/unisig
-        run: |
-          echo "🔄 Running benchmarks and generating baseline..."
-          pnpm bench --outputJson baseline.json
-          echo "✅ Baseline generated"
+      # # ============================================
+      # # MAIN BRANCH: Generate and commit baseline
+      # # ============================================
+      # - name: Run benchmarks and generate baseline
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   working-directory: packages/unisig
+      #   run: |
+      #     echo "🔄 Running benchmarks and generating baseline..."
+      #     pnpm bench --outputJson baseline.json
+      #     echo "✅ Baseline generated"
 
-      - name: Commit baseline to repository
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Ensure we're on the main branch (not detached HEAD)
-          git checkout main || true
-          
-          # Check if baseline changed or was created
-          git add packages/unisig/baseline.json
-          
-          if git diff --cached --quiet; then
-            echo "📊 No changes to baseline"
-          else
-            git commit -m "chore: update benchmark baseline [skip ci]"
-            git push origin main
-            echo "✅ Baseline committed and pushed"
-          fi
+      # - name: Commit baseline to repository
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git config --local user.name "github-actions[bot]"
 
-      # ============================================
-      # PULL REQUEST: Compare against baseline
-      # ============================================
-      - name: Run benchmarks with comparison
-        if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'true'
-        id: bench-compare
-        working-directory: packages/unisig
-        run: |
-          echo "🔄 Running benchmarks and comparing against baseline..."
-          
-          # Run benchmark with comparison and capture output
-          set +e
-          pnpm bench --compare baseline.json 2>&1 | tee benchmark-results.txt
-          set -e
-          
-          echo "✅ Benchmark comparison completed"
+      #     # Ensure we're on the main branch (not detached HEAD)
+      #     git checkout main || true
 
-      - name: Run benchmarks without comparison (no baseline)
-        if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'false'
-        working-directory: packages/unisig
-        run: |
-          echo "⚠️ No baseline found - running benchmarks without comparison"
-          echo "ℹ️ Push to main first to generate a baseline"
-          
-          # Run benchmarks without comparison
-          set +e
-          pnpm bench 2>&1 | tee benchmark-results.txt
-          set -e
+      #     # Check if baseline changed or was created
+      #     git add packages/unisig/baseline.json
 
-      # Generate markdown report for PR comment
-      - name: Generate benchmark report (with comparison)
-        if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'true'
-        working-directory: packages/unisig
-        run: |
-          {
-            echo "## 📊 Benchmark Results"
-            echo ""
-            echo "Comparing PR benchmarks against baseline from \`main\` branch."
-            echo ""
-            echo "<details>"
-            echo "<summary>📈 Click to expand full benchmark comparison</summary>"
-            echo ""
-            echo "\`\`\`"
-            cat benchmark-results.txt | head -1000
-            echo "\`\`\`"
-            echo ""
-            echo "</details>"
-            echo ""
-            echo "---"
-            echo ""
-            echo "**Legend:**"
-            echo "- 🟢 **Faster** - Performance improved"
-            echo "- 🔴 **Slower** - Performance regressed"  
-            echo "- ⚪ **Similar** - No significant change"
-            echo ""
-            echo "*Benchmarks run on GitHub Actions runner. Results may vary slightly between runs.*"
-          } > benchmark-report.md
+      #     if git diff --cached --quiet; then
+      #       echo "📊 No changes to baseline"
+      #     else
+      #       git commit -m "chore: update benchmark baseline [skip ci]"
+      #       git push origin main
+      #       echo "✅ Baseline committed and pushed"
+      #     fi
 
-      - name: Generate benchmark report (no baseline)
-        if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'false'
-        working-directory: packages/unisig
-        run: |
-          {
-            echo "## 📊 Benchmark Results"
-            echo ""
-            echo "⚠️ **No baseline available for comparison.**"
-            echo ""
-            echo "This is likely because the benchmark baseline hasn't been generated yet."
-            echo "The baseline will be created when these changes are merged to \`main\`."
-            echo ""
-            echo "<details>"
-            echo "<summary>📈 Click to expand raw benchmark results</summary>"
-            echo ""
-            echo "\`\`\`"
-            cat benchmark-results.txt | head -1000
-            echo "\`\`\`"
-            echo ""
-            echo "</details>"
-            echo ""
-            echo "*Benchmarks run on GitHub Actions runner.*"
-          } > benchmark-report.md
+      # # ============================================
+      # # PULL REQUEST: Compare against baseline
+      # # ============================================
+      # - name: Run benchmarks with comparison
+      #   if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'true'
+      #   id: bench-compare
+      #   working-directory: packages/unisig
+      #   run: |
+      #     echo "🔄 Running benchmarks and comparing against baseline..."
 
-      # Post comment on PR
-      - name: Comment on PR with benchmark results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const reportPath = 'packages/unisig/benchmark-report.md';
-            
-            if (!fs.existsSync(reportPath)) {
-              console.log('No benchmark report found');
-              return;
-            }
-            
-            const report = fs.readFileSync(reportPath, 'utf8');
-            
-            // Find existing benchmark comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('📊 Benchmark Results')
-            );
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: report
-              });
-              console.log('Updated existing benchmark comment');
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: report
-              });
-              console.log('Created new benchmark comment');
-            }
+      #     # Run benchmark with comparison and capture output
+      #     set +e
+      #     pnpm bench --compare baseline.json 2>&1 | tee benchmark-results.txt
+      #     set -e
 
-      # Upload benchmark artifacts for debugging
-      - name: Upload benchmark artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results-${{ github.run_number }}
-          path: |
-            packages/unisig/baseline.json
-            packages/unisig/benchmark-results.txt
-            packages/unisig/benchmark-report.md
-          retention-days: 30
-          if-no-files-found: ignore
+      #     echo "✅ Benchmark comparison completed"
+
+      # - name: Run benchmarks without comparison (no baseline)
+      #   if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'false'
+      #   working-directory: packages/unisig
+      #   run: |
+      #     echo "⚠️ No baseline found - running benchmarks without comparison"
+      #     echo "ℹ️ Push to main first to generate a baseline"
+
+      #     # Run benchmarks without comparison
+      #     set +e
+      #     pnpm bench 2>&1 | tee benchmark-results.txt
+      #     set -e
+
+      # # Generate markdown report for PR comment
+      # - name: Generate benchmark report (with comparison)
+      #   if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'true'
+      #   working-directory: packages/unisig
+      #   run: |
+      #     {
+      #       echo "## 📊 Benchmark Results"
+      #       echo ""
+      #       echo "Comparing PR benchmarks against baseline from \`main\` branch."
+      #       echo ""
+      #       echo "<details>"
+      #       echo "<summary>📈 Click to expand full benchmark comparison</summary>"
+      #       echo ""
+      #       echo "\`\`\`"
+      #       cat benchmark-results.txt | head -1000
+      #       echo "\`\`\`"
+      #       echo ""
+      #       echo "</details>"
+      #       echo ""
+      #       echo "---"
+      #       echo ""
+      #       echo "**Legend:**"
+      #       echo "- 🟢 **Faster** - Performance improved"
+      #       echo "- 🔴 **Slower** - Performance regressed"
+      #       echo "- ⚪ **Similar** - No significant change"
+      #       echo ""
+      #       echo "*Benchmarks run on GitHub Actions runner. Results may vary slightly between runs.*"
+      #     } > benchmark-report.md
+
+      # - name: Generate benchmark report (no baseline)
+      #   if: github.event_name == 'pull_request' && steps.baseline-check.outputs.has_baseline == 'false'
+      #   working-directory: packages/unisig
+      #   run: |
+      #     {
+      #       echo "## 📊 Benchmark Results"
+      #       echo ""
+      #       echo "⚠️ **No baseline available for comparison.**"
+      #       echo ""
+      #       echo "This is likely because the benchmark baseline hasn't been generated yet."
+      #       echo "The baseline will be created when these changes are merged to \`main\`."
+      #       echo ""
+      #       echo "<details>"
+      #       echo "<summary>📈 Click to expand raw benchmark results</summary>"
+      #       echo ""
+      #       echo "\`\`\`"
+      #       cat benchmark-results.txt | head -1000
+      #       echo "\`\`\`"
+      #       echo ""
+      #       echo "</details>"
+      #       echo ""
+      #       echo "*Benchmarks run on GitHub Actions runner.*"
+      #     } > benchmark-report.md
+
+      # # Post comment on PR
+      # - name: Comment on PR with benchmark results
+      #   if: github.event_name == 'pull_request'
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const fs = require('fs');
+      #       const reportPath = 'packages/unisig/benchmark-report.md';
+
+      #       if (!fs.existsSync(reportPath)) {
+      #         console.log('No benchmark report found');
+      #         return;
+      #       }
+
+      #       const report = fs.readFileSync(reportPath, 'utf8');
+
+      #       // Find existing benchmark comment
+      #       const { data: comments } = await github.rest.issues.listComments({
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         issue_number: context.issue.number,
+      #       });
+
+      #       const botComment = comments.find(comment =>
+      #         comment.user.type === 'Bot' &&
+      #         comment.body.includes('📊 Benchmark Results')
+      #       );
+
+      #       if (botComment) {
+      #         // Update existing comment
+      #         await github.rest.issues.updateComment({
+      #           owner: context.repo.owner,
+      #           repo: context.repo.repo,
+      #           comment_id: botComment.id,
+      #           body: report
+      #         });
+      #         console.log('Updated existing benchmark comment');
+      #       } else {
+      #         // Create new comment
+      #         await github.rest.issues.createComment({
+      #           owner: context.repo.owner,
+      #           repo: context.repo.repo,
+      #           issue_number: context.issue.number,
+      #           body: report
+      #         });
+      #         console.log('Created new benchmark comment');
+      #       }
+
+      # # Upload benchmark artifacts for debugging
+      # - name: Upload benchmark artifacts
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: benchmark-results-${{ github.run_number }}
+      #     path: |
+      #       packages/unisig/baseline.json
+      #       packages/unisig/benchmark-results.txt
+      #       packages/unisig/benchmark-report.md
+      #     retention-days: 30
+      #     if-no-files-found: ignore

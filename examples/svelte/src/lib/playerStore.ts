@@ -1,6 +1,5 @@
 import {
 	type Tracker,
-	type ReactivityAdapter,
 	createTracker,
 	type Listener,
 	type Unsubscribe,
