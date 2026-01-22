@@ -215,6 +215,7 @@ export const svelteAdapter: ReactivityAdapter = {
 	 * ```
 	 */
 	signal<T>(initial: T): Signal<T> {
+		// TODO we should use a different wrapper thay uses $state.raw to make it more lean
 		const s = new ReactiveStateWrapper(initial);
 		return {
 			get: () => s.value as T,
