@@ -1,5 +1,5 @@
 {
-	"name": "@unisig/svelte",
+	"name": "@unisig/solid",
 	"version": "0.0.1",
 	"description": "Solid.js adapter for unisig - reactive state with signals",
 	"publishConfig": {
@@ -19,7 +19,7 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/wighawag/unisig.git",
-		"directory": "packages/svelte"
+		"directory": "packages/solid"
 	},
 	"homepage": "https://github.com/wighawag/unisig#readme",
 	"bugs": {
