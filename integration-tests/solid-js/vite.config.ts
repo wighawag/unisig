@@ -6,8 +6,15 @@ export default defineConfig({
 	test: {
 		include: ['test/**/*.spec.ts'],
 		environment: 'jsdom',
+		benchmark: {
+			include: ['bench/**/*.bench.ts'],
+		},
 	},
-	resolve: {
-		conditions: ['development', 'browser'],
-	},
+	resolve: process.env.VITEST
+		? {
+				conditions: ['browser'],
+			}
+		: {
+				conditions: ['development', 'browser'],
+			},
 });
