@@ -705,6 +705,34 @@ For most applications with 2-3 adapters, this overhead is negligible. If you hav
 
 ## Granular Reactivity
 
+### Philosophy: Tracking is Broad, Triggering is Granular
+
+unisig follows a deliberate design philosophy:
+
+- **Tracking (reading) is broad**: When you read data, you subscribe to all levels that might affect you.
+- **Triggering (writing) is granular**: When you write data, you only notify what actually changed.
+
+This ensures effects re-run when they should, but not when they shouldn't.
+
+**Example:**
+```typescript
+// Reading tracks collection, item, and property
+getUserScore(id: string) {
+  this.$.trackItemProp('users', id, 'score'); // Tracks property, item, AND collection
+  return this.users.get(id)?.score;
+}
+
+// Writing only triggers the property
+updateUserScore(id: string, score: number) {
+  this.users.get(id).score = score;
+  this.$.triggerItemProp('users', id, 'score'); // Only triggers property, NOT collection
+}
+```
+
+**Why this matters:**
+- A "5 players online" counter using `getCount()` (which tracks collection) won't re-run when a player's score changes.
+- A player's score display using `getUserScore()` will re-run only when that specific score changes.
+
 ### Collection Level
 
 Track the entire collection:

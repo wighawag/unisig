@@ -4,6 +4,7 @@ This guide covers common patterns for building efficient, reactive data stores w
 
 ## Table of Contents
 
+- [Tracking vs Triggering Philosophy](#tracking-vs-triggering-philosophy)
 - [Read-Only vs Proxied Getters](#read-only-vs-proxied-getters)
 - [Pre-Indexing for O(1) Lookups](#pre-indexing-for-o1-lookups)
 - [Lazy Caching](#lazy-caching)
@@ -11,6 +12,79 @@ This guide covers common patterns for building efficient, reactive data stores w
 - [Event-Based Alternatives](#event-based-alternatives)
 
 ---
+
+## Tracking vs Triggering Philosophy
+
+unisig follows a deliberate design philosophy that ensures efficient reactivity:
+
+- **Tracking (reading) is broad**: When you read data, you subscribe to all levels that might affect you.
+- **Triggering (writing) is granular**: When you write data, you only notify what actually changed.
+
+### Why This Matters
+
+Consider a player store with collection-level, item-level, and property-level tracking:
+
+```typescript
+class PlayerStore {
+  private $ = new Tracker<PlayerEvents>();
+  private players = new Map<string, Player>();
+
+  // Reading tracks collection, item, and property
+  getPlayerScore(id: string): number | undefined {
+    this.$.trackItemProp('players', id, 'score'); // Tracks property, item, AND collection
+    return this.players.get(id)?.score;
+  }
+
+  // Writing only triggers the property
+  updatePlayerScore(id: string, score: number): void {
+    this.players.get(id)!.score = score;
+    this.$.triggerItemProp('players', id, 'score'); // Only triggers property, NOT collection
+  }
+}
+```
+
+**Key implications:**
+
+1. **A "5 players online" counter** using `getCount()` (which tracks collection) won't re-run when a player's score changes.
+2. **A player's score display** using `getPlayerScore()` will re-run only when that specific score changes.
+3. **Collection-level effects** (like `getAll()`) are not triggered by property changes, preventing unnecessary re-renders.
+
+### How It Works Internally
+
+The [`trackItemProp`](packages/scope/src/Scope.ts:252) method tracks at three levels:
+- Property level (`players:id:score`)
+- Item level (`players:id`)
+- Collection level (`players`)
+
+The [`triggerItemProp`](packages/scope/src/Scope.ts:342) method only triggers at the property level.
+
+This separation ensures:
+- **Effects get the dependencies they need** for removal detection (collection) and complete replacement (item).
+- **Effects don't get unnecessary updates** from unrelated changes.
+
+### Practical Example
+
+```typescript
+// Effect 1: Count players (collection-level)
+createEffect(() => {
+  const count = playerStore.getCount(); // tracks 'players' collection
+  console.log(`${count} players online`);
+});
+
+// Effect 2: Show player score (property-level)
+createEffect(() => {
+  const score = playerStore.getPlayerScore('player-1'); // tracks 'players:player-1:score'
+  console.log(`Score: ${score}`);
+});
+
+// Update score - only Effect 2 re-runs
+playerStore.updatePlayerScore('player-1', 100);
+
+// Add player - both effects re-run (collection changes)
+playerStore.addPlayer({ id: 'player-2', score: 0 });
+```
+
+This philosophy is baked into all tracking methods (`track`, `trackItem`, `trackProp`, `trackItemProp`) and their corresponding trigger methods.
 
 ## Read-Only vs Live Getters
 
