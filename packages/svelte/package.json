@@ -50,15 +50,15 @@
 		"svelte": "^5.7.0"
 	},
 	"dependencies": {
-		"@unisig/scope": "workspace:*",
-		"unisig": "workspace:*"
+		"unisig": "workspace:*",
+		"@unisig/scope": "workspace:*"
 	},
 	"devDependencies": {
-		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"prettier": "^3.8.1",
-		"svelte": "^5.48.0",
+		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"prettier": "^3.8.0",
+		"svelte": "^5.28.0",
 		"typescript": "^5.3.0",
-		"vitest": "^4.0.17"
+		"vitest": "^2.0.0"
 	},
 	"scripts": {
 		"format": "prettier --write .",

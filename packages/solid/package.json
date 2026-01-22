@@ -47,14 +47,14 @@
 		"solid-js": "1.x.x"
 	},
 	"dependencies": {
-		"@unisig/scope": "workspace:*",
-		"unisig": "workspace:*"
+		"unisig": "workspace:*",
+		"@unisig/scope": "workspace:*"
 	},
 	"devDependencies": {
-		"prettier": "^3.8.1",
+		"prettier": "^3.8.0",
 		"solid-js": "1.x.x",
 		"typescript": "^5.3.0",
-		"vitest": "^4.0.17"
+		"vitest": "^2.0.0"
 	},
 	"scripts": {
 		"format": "prettier --write .",
