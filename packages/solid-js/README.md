@@ -14,21 +14,80 @@ yarn add unisig @unisig/solid-js
 
 ## Usage
 
-### Basic Setup
+### With `unisig` (Reactive Primitives)
 
+```typescript
+import unisig from "unisig";
+import solidAdapter from "@unisig/solid-js";
 
-```ts
-import solidAdapter from '@unisig/solid-js';
-import unisig from 'unisig';
+const { reactive, signal, effect } = unisig(solidAdapter);
 
-const {reactive, signal, effect} = unisig(solidAdapter);
+// Create reactive state
+const count = reactive(0);
+count.value++; // Triggers reactivity
+
+const user = reactive({ name: "Alice", score: 0 });
+user.score = 100; // Triggers reactivity
+
+// Create effects
+effect(() => {
+  console.log(`Score: ${user.score}`);
+});
 ```
 
+### With `@unisig/tracker` (Granular Tracking)
 
+```typescript
+import { createTrackerFactory } from "@unisig/tracker";
+import solidAdapter from "@unisig/solid-js";
+import { createEffect } from "solid-js";
+
+const createTracker = createTrackerFactory(solidAdapter);
+
+type PlayerEvents = {
+  "player:scored": { id: string; score: number };
+};
+
+class PlayerStore {
+  private $ = createTracker<PlayerEvents>();
+  private players = new Map<string, { id: string; score: number }>();
+
+  getScore(id: string) {
+    this.$.trackItemProp("players", id, "score");
+    return this.players.get(id)?.score;
+  }
+
+  updateScore(id: string, score: number) {
+    const player = this.players.get(id);
+    if (player) {
+      player.score = score;
+      this.$.triggerItemProp("players", id, "score", "player:scored", { id, score });
+    }
+  }
+}
+
+const store = new PlayerStore();
+
+// Reactive tracking in Solid.js
+createEffect(() => {
+  const score = store.getScore("player1");
+  console.log(`Player 1 score: ${score}`);
+});
+```
+
+## API
+
+### Default Export
+
+```typescript
+import solidAdapter from "@unisig/solid-js";
+```
+
+The adapter implements both `BasicReactivityAdapter` (for `unisig`) and `ReactivityAdapter` (for `@unisig/tracker`).
 
 ## Acknowledgments
 
-This adapter is derived from [@signaldb/svelte](https://github.com/maxnowack/signaldb) by [Max Nowack](https://github.com/maxnowack). The core dependency tracking implementation using `createSubscriber` from `svelte/reactivity` originates from his excellent work on signaldb.
+This adapter is derived from [@signaldb/solid](https://github.com/maxnowack/signaldb) by [Max Nowack](https://github.com/maxnowack). The core dependency tracking implementation originates from his excellent work on signaldb.
 
 ## License
 

@@ -56,7 +56,6 @@
 		"vitest": "^4.0.17"
 	},
 	"scripts": {
-		"prepublishOnly": "cp ../../README.md .",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"build": "tsc",
