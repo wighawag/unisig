@@ -6,7 +6,7 @@
 
 - 🎯 **Framework-agnostic** - Works with any signal library
 - ⚡ **Zero dependencies** - Lightweight and minimal overhead
-- 🔌 **Pluggable adapters** - Works with signaldb adapters
+- 🔌 **Pluggable adapters** - svelte and solid-js currently implemented 
 - 📝 **Type-safe** - Full TypeScript support
 
 ## Packages
