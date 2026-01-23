@@ -74,7 +74,9 @@ For stores, collections, and targeted reactivity, use the Tracker package:
 ```typescript
 import { createTrackerFactory } from "@unisig/tracker";
 import solidAdapter from "@unisig/solid";
-import { createEffect } from "solid-js";
+import unisig from "unisig";
+
+const {effect} = unisig(solidAdapter);
 
 const createTracker = createTrackerFactory(solidAdapter);
 
@@ -112,8 +114,7 @@ class PlayerStore {
 
 const store = new PlayerStore();
 
-// Reactive tracking in Solid.js
-createEffect(() => {
+effect(() => {
   const players = store.getAll();
   console.log("Players:", players.length);
 });
