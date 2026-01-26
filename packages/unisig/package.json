@@ -1,6 +1,6 @@
 {
 	"name": "unisig",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Universal signals - framework-agnostic reactive state with pluggable signal adapters",
 	"publishConfig": {
 		"access": "public"
