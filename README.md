@@ -6,7 +6,7 @@
 
 - 🎯 **Framework-agnostic** - Works with any signal library
 - ⚡ **Zero dependencies** - Lightweight and minimal overhead
-- 🔌 **Pluggable adapters** - Works with signaldb adapters
+- 🔌 **Pluggable adapters** - svelte and solid-js currently implemented 
 - 📝 **Type-safe** - Full TypeScript support
 
 ## Packages
@@ -68,7 +68,6 @@ effect(() => {
 
 - [**Signals Refresher**](./docs/SIGNALS_REFRESHER.md) - Learn how signals work under the hood
 - [**@unisig/tracker**](./packages/tracker/README.md) - Experimental targeted reactivity tracking (subject to change)
-
 
 ## Adapters
 
