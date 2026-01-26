@@ -1,6 +1,6 @@
 {
 	"name": "@unisig/solid",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Solid.js adapter for unisig - reactive state with signals",
 	"publishConfig": {
 		"access": "public"

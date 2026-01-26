@@ -1,5 +1,11 @@
 # unisig
 
+## 0.1.2
+
+### Patch Changes
+
+- readme again
+
 ## 0.1.1
 
 ### Patch Changes

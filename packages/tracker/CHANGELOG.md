@@ -1,5 +1,13 @@
 # @unisig/tracker
 
+## 0.1.2
+
+### Patch Changes
+
+- readme again
+- Updated dependencies
+  - unisig@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes

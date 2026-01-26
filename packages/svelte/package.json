@@ -1,6 +1,6 @@
 {
 	"name": "@unisig/svelte",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Svelte 5 adapter for unisig - reactive state with signals",
 	"publishConfig": {
 		"access": "public"

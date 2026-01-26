@@ -1,6 +1,6 @@
 {
 	"name": "@unisig/tracker",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Tracker for unisig - adds specific reactivity and event for your data",
 	"publishConfig": {
 		"access": "public"

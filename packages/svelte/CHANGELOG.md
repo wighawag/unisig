@@ -1,5 +1,13 @@
 # @unisig/svelte
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @unisig/tracker@0.1.2
+  - unisig@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
