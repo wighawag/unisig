@@ -60,7 +60,7 @@ Creates a bundle of reactive primitives from an adapter.
 ```typescript
 import unisig from "unisig";
 
-const { reactive, signal, effect, adapter } = unisig(myAdapter);
+const { reactive, signal, effect } = unisig(myAdapter);
 ```
 
 **Parameters:**
