@@ -70,7 +70,6 @@ const { reactive, signal, effect, adapter } = unisig(myAdapter);
 - `reactive<T>(initial)` - Create deep reactive state
 - `signal<T>(initial)` - Create shallow signal with get/set
 - `effect(fn)` - Create reactive effect
-- `adapter` - The raw adapter
 
 ### `reactive<T>(initial)`
 
@@ -196,7 +195,7 @@ const myAdapter: BasicReactivityAdapter = {
 
 ## Related Packages
 
-For stores, collections, and targeted reactivity (collection/item/property level tracking), see [`@unisig/tracker`](https://github.com/wighawag/unisig/tree/main/packages/tracker).
+For stores, collections, and targeted reactivity (collection/item/property level tracking), see **experimental** package: [`@unisig/tracker`](https://github.com/wighawag/unisig/tree/main/packages/tracker) (subject to changes).
 
 ## License
 

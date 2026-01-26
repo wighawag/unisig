@@ -2,6 +2,8 @@
 
 **Targeted reactivity tracking** for any signal library.
 
+> **⚠️ Experimental**: This package is experimental and subject to change. Use with caution in production.
+
 Part of the [unisig monorepo](https://github.com/wighawag/unisig).
 
 ## Features
